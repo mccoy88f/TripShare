@@ -4,7 +4,10 @@
 #   --target web  → Caddy con il frontend compilato (HTTPS automatico)
 
 ARG NODE_VERSION=22
-FROM node:${NODE_VERSION}-alpine AS base
+# Installazione e build girano sempre sull'architettura di chi compila (niente emulazione QEMU):
+# il codice JS è identico per amd64 e arm64, e pnpm scarica i binari nativi di entrambe
+# (vedi supportedArchitectures in pnpm-workspace.yaml).
+FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine AS base
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=true
 RUN corepack enable
 WORKDIR /repo
@@ -26,15 +29,17 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm --filter @tripshare/api deploy --prod --legacy /out \
  && cp -r apps/api/dist /out/dist \
  && cp -r packages/db/drizzle /out/drizzle \
- && rm -rf /out/src /out/test /out/*.config.ts /out/tsconfig.json
+ && rm -rf /out/src /out/test /out/*.config.ts /out/tsconfig.json \
+ && mkdir -p /uploads
 
 FROM node:${NODE_VERSION}-alpine AS api
 ARG APP_VERSION=dev
 ENV NODE_ENV=production PORT=3000 MIGRATIONS_DIR=/app/drizzle APP_VERSION=${APP_VERSION}
 WORKDIR /app
 COPY --from=build --chown=node:node /out ./
-# Cartella delle foto caricate (volume "uploads" nel compose).
-RUN mkdir -p /data/uploads && chown node:node /data/uploads
+# Cartella delle foto caricate (volume "uploads" nel compose). Nessun RUN nello stage finale:
+# così l'immagine arm64 si costruisce senza emulazione.
+COPY --from=build --chown=node:node /uploads /data/uploads
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
