@@ -25,6 +25,11 @@ export async function bootstrap(deps: {
   const { env, db, auth, settings, log } = deps;
 
   if (env.OPENROUTER_API_KEY) await settings.seed('openrouter.apiKey', env.OPENROUTER_API_KEY);
+  if (env.GEMINI_API_KEY) {
+    await settings.seed('gemini.apiKey', env.GEMINI_API_KEY);
+    // Con la sola chiave Gemini nelle variabili d'ambiente, Gemini diventa il provider centrale.
+    if (!env.OPENROUTER_API_KEY) await settings.seed('ai.provider', 'gemini');
+  }
 
   if (!env.SUPERADMIN_EMAIL) {
     log.warn('SUPERADMIN_EMAIL non impostata: nessun super admin verrà creato');

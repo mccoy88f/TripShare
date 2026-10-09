@@ -1,13 +1,20 @@
 import { Worker } from 'bullmq';
 import { Redis } from 'ioredis';
+import { createDb } from '@tripshare/db';
+import { AI_QUEUE, processAiJob } from './ai/jobs.js';
 import { EMAIL_QUEUE, createDirectEmailSender, type EmailJob } from './email/index.js';
 import { envWarnings, loadEnv } from './env.js';
+import { SettingsService } from './settings.js';
+import { FileStorage } from './storage.js';
 
-// Worker per i lavori in background. Per ora gestisce l'invio delle email; nelle fasi successive
-// si aggiungono le code per AI, immagini, notifiche push ed export.
+// Worker per i lavori in background: invio delle email e lavori AI (scontrini, prenotazioni,
+// generazione dei viaggi, assistente…), così le richieste lunghe non bloccano l'API.
 const env = loadEnv();
 const connection = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null });
 const sender = createDirectEmailSender(env);
+const { db, close } = createDb(env.DATABASE_URL);
+const storage = new FileStorage(env.UPLOADS_DIR);
+await storage.init();
 
 const emailWorker = new Worker<EmailJob>(
   EMAIL_QUEUE,
@@ -27,12 +34,38 @@ emailWorker.on('failed', (job, err) =>
   ),
 );
 
+const aiWorker = new Worker<{ jobId: string }>(
+  AI_QUEUE,
+  async (job) => {
+    // Le impostazioni possono cambiare dal pannello admin: si rileggono a ogni lavoro.
+    const fresh = new SettingsService(db, env.ENCRYPTION_KEY);
+    await processAiJob(
+      {
+        db,
+        settings: fresh,
+        storage,
+        encryptionKey: env.ENCRYPTION_KEY,
+        appUrl: env.APP_URL,
+        appName: env.APP_NAME,
+        log: (msg) => console.warn(msg),
+      },
+      job.data.jobId,
+    );
+  },
+  { connection, concurrency: 4 },
+);
+aiWorker.on('failed', (job, err) =>
+  console.error(`[ai] lavoro ${job?.data.jobId} non riuscito: ${err.message}`),
+);
+
 for (const warning of envWarnings(env)) console.warn(`[config] ${warning}`);
 console.log(`Worker avviato, SMTP ${env.smtp.host}:${env.smtp.port}`);
 
 const shutdown = async () => {
   await emailWorker.close();
+  await aiWorker.close();
   connection.disconnect();
+  await close();
   process.exit(0);
 };
 process.on('SIGTERM', shutdown);

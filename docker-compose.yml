@@ -50,7 +50,12 @@ services:
     restart: unless-stopped
     command: ['node', '--enable-source-maps', 'dist/worker.js']
     env_file: .env
-    environment: *app-env
+    environment:
+      <<: *app-env
+      UPLOADS_DIR: /data/uploads
+    # Il worker legge scontrini e screenshot caricati per l'AI.
+    volumes:
+      - uploads:/data/uploads
     healthcheck: { disable: true }
     depends_on:
       api: { condition: service_healthy }

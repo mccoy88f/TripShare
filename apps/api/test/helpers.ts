@@ -38,6 +38,7 @@ export async function createTestApp(
     email,
     storage,
     httpFetch,
+    aiWait: true,
     fxRate: async (from, to) => ({
       rate: from === 'GBP' && to === 'EUR' ? 1.16 : 1,
       date: '2026-10-12',

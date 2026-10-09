@@ -1,5 +1,6 @@
 import { router } from '../trpc/init.js';
 import { adminRouter } from './admin.js';
+import { aiRouter } from './ai.js';
 import { expensesRouter, settlementsRouter } from './expenses.js';
 import { invitationsRouter } from './invitations.js';
 import { meRouter } from './me.js';
@@ -13,6 +14,7 @@ export const appRouter = router({
   public: publicRouter,
   me: meRouter,
   admin: adminRouter,
+  ai: aiRouter,
   trips: tripsRouter,
   plan: planRouter,
   notes: notesRouter,

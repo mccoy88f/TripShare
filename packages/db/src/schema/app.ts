@@ -36,5 +36,9 @@ export const userSecret = pgTable('user_secret', {
     .references(() => user.id, { onDelete: 'cascade' }),
   /** Chiave OpenRouter personale, cifrata con ENCRYPTION_KEY. */
   openrouterKey: jsonb(),
+  /** Chiave Gemini (Google AI Studio) personale, cifrata con ENCRYPTION_KEY. */
+  geminiKey: jsonb(),
+  /** Provider preferito quando l'utente ha entrambe le chiavi: "openrouter" o "gemini". */
+  aiProvider: text(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });

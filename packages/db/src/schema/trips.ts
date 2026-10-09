@@ -245,10 +245,12 @@ export const aiJob = pgTable(
     model: text(),
     promptTokens: integer(),
     completionTokens: integer(),
-    /** Costo in dollari riportato da OpenRouter. */
+    /** Costo in dollari riportato da OpenRouter (Gemini non lo riporta). */
     cost: doublePrecision(),
     /** "central" (chiave dell'istanza) o "user" (chiave personale). */
     keySource: text(),
+    /** "openrouter" o "gemini". */
+    provider: text(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     finishedAt: timestamp({ withTimezone: true }),
   },

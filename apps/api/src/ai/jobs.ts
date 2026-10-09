@@ -1,0 +1,283 @@
+import { and, count, desc, eq, inArray } from 'drizzle-orm';
+import sharp from 'sharp';
+import { aiChatMessage, aiJob, trip, user, type Database } from '@tripshare/db';
+import { isLocale, type Locale } from '@tripshare/shared';
+import { applyPlanOps, PlanOpError, type TripDocument } from '@tripshare/shared/trip-format';
+import { listMembers } from '../services/members.js';
+import { activeMemberCount, readPlan } from '../services/plan.js';
+import { computeLedgers } from '../services/trips.js';
+import type { SettingsService } from '../settings.js';
+import type { FileStorage } from '../storage.js';
+import { AiAccessError, resolveAiAccess } from './access.js';
+import { AiError, complete, type ChatMessage } from './client.js';
+import {
+  AiInputSchema,
+  buildRepairMessage,
+  buildTask,
+  checkResult,
+  PURPOSE,
+  type AiInput,
+  type ChatResult,
+  type TaskContext,
+  type VerifyResult,
+} from './tasks.js';
+
+export const AI_QUEUE = 'ai';
+/** Lavori contemporanei per utente (in coda o in corso). */
+const MAX_ACTIVE = 3;
+
+export interface AiDeps {
+  db: Database;
+  settings: SettingsService;
+  storage?: FileStorage;
+  encryptionKey: string;
+  appUrl: string;
+  appName: string;
+  httpFetch?: typeof fetch;
+  /** Accoda il lavoro al worker; senza coda il lavoro gira subito nel processo. */
+  enqueue?: (jobId: string) => Promise<void>;
+  log?: (msg: string) => void;
+}
+
+export class AiJobError extends Error {}
+
+/** Crea un lavoro AI dopo aver verificato accesso e limiti; lo accoda o lo esegue. */
+export async function startAiJob(
+  deps: AiDeps,
+  userId: string,
+  tripId: string | null,
+  input: AiInput,
+  options: { wait?: boolean } = {},
+) {
+  const parsed = AiInputSchema.parse(input);
+  // Verifica subito chiave e quota, così l'errore arriva all'utente senza passare dal worker.
+  try {
+    await resolveAiAccess(deps, userId, PURPOSE[parsed.kind]);
+  } catch (err) {
+    if (err instanceof AiAccessError) throw new AiJobError(err.message);
+    throw err;
+  }
+  const [active] = await deps.db
+    .select({ n: count() })
+    .from(aiJob)
+    .where(and(eq(aiJob.userId, userId), inArray(aiJob.status, ['queued', 'running'])));
+  if ((active?.n ?? 0) >= MAX_ACTIVE) throw new AiJobError('AI_TOO_MANY_JOBS');
+
+  const [row] = await deps.db
+    .insert(aiJob)
+    .values({ userId, tripId, kind: parsed.kind, input: parsed, status: 'queued' })
+    .returning({ id: aiJob.id });
+  const id = row!.id;
+  if (deps.enqueue && !options.wait) await deps.enqueue(id);
+  else if (options.wait) await processAiJob(deps, id);
+  else
+    void processAiJob(deps, id).catch((err: unknown) =>
+      deps.log?.(`[ai] lavoro ${id}: ${String(err)}`),
+    );
+  return { id };
+}
+
+async function fileDataUrl(storage: FileStorage | undefined, name: string, mime: string) {
+  const data = await storage?.readPrivate(name);
+  if (!data) throw new AiJobError('AI_FILE_NOT_FOUND');
+  if (mime === 'application/pdf') return `data:application/pdf;base64,${data.toString('base64')}`;
+  // Le foto vengono ridotte: bastano 1600 px per leggere uno scontrino e costano meno token.
+  const jpeg = await sharp(data, { failOn: 'error', limitInputPixels: 80_000_000 })
+    .rotate()
+    .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 82 })
+    .toBuffer()
+    .catch(() => {
+      throw new AiJobError('AI_INVALID_IMAGE');
+    });
+  return `data:image/jpeg;base64,${jpeg.toString('base64')}`;
+}
+
+async function loadTripContext(db: Database, tripId: string, locale: Locale) {
+  const [row] = await db.select().from(trip).where(eq(trip.id, tripId));
+  if (!row) throw new AiJobError('TRIP_NOT_FOUND');
+  const [members, count, ledgers] = await Promise.all([
+    listMembers(db, tripId),
+    activeMemberCount(db, tripId),
+    computeLedgers(db, [tripId]),
+  ]);
+  const plan = readPlan(row, count, locale);
+  const ledger = ledgers.get(tripId);
+  const active = members.filter((m) => !m.removed);
+  return {
+    plan,
+    extra: {
+      group: active.map((m) => m.name),
+      spentSoFar: ledger ? { amountMinor: ledger.total, currency: row.currency } : undefined,
+    },
+  };
+}
+
+/** Esegue un lavoro: chiama il modello, valida la risposta (con correzioni) e salva il risultato. */
+export async function processAiJob(deps: AiDeps, jobId: string) {
+  const { db } = deps;
+  const [job] = await db.select().from(aiJob).where(eq(aiJob.id, jobId));
+  if (!job || (job.status !== 'queued' && job.status !== 'running')) return;
+  await db.update(aiJob).set({ status: 'running' }).where(eq(aiJob.id, jobId));
+
+  let promptTokens = 0;
+  let completionTokens = 0;
+  let cost: number | null = null;
+  let model: string | null = null;
+  let provider: string | null = null;
+  let keySource: string | null = null;
+  try {
+    const input = AiInputSchema.parse(job.input);
+    const [owner] = await db
+      .select({ locale: user.locale })
+      .from(user)
+      .where(eq(user.id, job.userId));
+    const locale: Locale = owner?.locale && isLocale(owner.locale) ? owner.locale : 'it';
+    const access = await resolveAiAccess(deps, job.userId, PURPOSE[input.kind]);
+    provider = access.provider;
+    keySource = access.source;
+
+    const ctx: TaskContext = { locale };
+    let plan: TripDocument | undefined;
+    if (job.tripId && input.kind !== 'generate') {
+      const t = await loadTripContext(db, job.tripId, locale);
+      plan = t.plan;
+      ctx.plan = plan;
+      ctx.extra = t.extra;
+    }
+    if (input.kind === 'receipt' || input.kind === 'booking')
+      ctx.fileDataUrl = await fileDataUrl(deps.storage, input.file, input.mime);
+    if (input.kind === 'chat') {
+      if (!job.tripId) throw new AiJobError('TRIP_NOT_FOUND');
+      const history = await db
+        .select({ role: aiChatMessage.role, content: aiChatMessage.content })
+        .from(aiChatMessage)
+        .where(and(eq(aiChatMessage.tripId, job.tripId), eq(aiChatMessage.userId, job.userId)))
+        .orderBy(desc(aiChatMessage.createdAt))
+        .limit(12);
+      ctx.history = history
+        .reverse()
+        .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
+      await db
+        .insert(aiChatMessage)
+        .values({ tripId: job.tripId, userId: job.userId, role: 'user', content: input.message });
+    }
+
+    const spec = buildTask(input, ctx);
+    if (input.kind === 'chat' && plan) {
+      // Le modifiche proposte devono potersi applicare davvero al programma attuale.
+      const base = plan;
+      spec.validate = (value) => {
+        try {
+          applyPlanOps(base, (value as ChatResult).actions);
+          return null;
+        } catch (err) {
+          return [
+            {
+              path: 'actions',
+              message: err instanceof PlanOpError || err instanceof Error ? err.message : 'invalid',
+            },
+          ];
+        }
+      };
+    }
+
+    const messages: ChatMessage[] = [...spec.messages];
+    let value: unknown = null;
+    let citations: { url: string; title?: string }[] = [];
+    for (let attempt = 0; ; attempt++) {
+      const res = await complete({
+        provider: access.provider,
+        apiKey: access.apiKey,
+        model: access.model,
+        fallbacks: access.fallbacks,
+        messages,
+        jsonSchema: { name: spec.schemaName, schema: spec.jsonSchema },
+        web: spec.web,
+        denyDataCollection: access.denyDataCollection,
+        appUrl: deps.appUrl,
+        appName: deps.appName,
+        fetchImpl: deps.httpFetch,
+      });
+      model = res.model;
+      promptTokens += res.promptTokens ?? 0;
+      completionTokens += res.completionTokens ?? 0;
+      if (res.cost !== null) cost = (cost ?? 0) + res.cost;
+      if (res.citations) citations = res.citations;
+      const checked = checkResult(spec, res.content);
+      if ('value' in checked) {
+        value = checked.value;
+        break;
+      }
+      if (attempt >= spec.repairs) throw new AiJobError('AI_INVALID_RESPONSE');
+      messages.push({ role: 'assistant', content: res.content });
+      messages.push(buildRepairMessage(checked.issues, locale));
+    }
+
+    if (input.kind === 'verify') {
+      const v = value as VerifyResult;
+      if (v.sources.length === 0 && citations.length)
+        v.sources = citations.slice(0, 5).map((c) => ({ title: c.title ?? c.url, url: c.url }));
+    }
+    let result: unknown = value;
+    if (input.kind === 'chat') {
+      const chat = value as ChatResult;
+      const [msg] = await db
+        .insert(aiChatMessage)
+        .values({
+          tripId: job.tripId!,
+          userId: job.userId,
+          role: 'assistant',
+          content: chat.reply,
+          actions: chat.actions.length ? chat.actions : null,
+        })
+        .returning({ id: aiChatMessage.id });
+      result = { ...chat, messageId: msg!.id };
+    }
+    await db
+      .update(aiJob)
+      .set({
+        status: 'done',
+        result: result as object,
+        model,
+        provider,
+        keySource,
+        promptTokens,
+        completionTokens,
+        cost,
+        finishedAt: new Date(),
+      })
+      .where(eq(aiJob.id, jobId));
+  } catch (err) {
+    const code =
+      err instanceof AiJobError || err instanceof AiAccessError || err instanceof AiError
+        ? err.message
+        : 'AI_FAILED';
+    deps.log?.(`[ai] lavoro ${jobId} (${job.kind}) non riuscito: ${String(err)}`);
+    await db
+      .update(aiJob)
+      .set({
+        status: 'error',
+        error: code.slice(0, 500),
+        model,
+        provider,
+        keySource,
+        promptTokens: promptTokens || null,
+        completionTokens: completionTokens || null,
+        cost,
+        finishedAt: new Date(),
+      })
+      .where(eq(aiJob.id, jobId));
+  }
+}
+
+/** Messaggi della chat con l'assistente (dal più vecchio). */
+export async function chatHistory(db: Database, tripId: string, userId: string) {
+  const rows = await db
+    .select()
+    .from(aiChatMessage)
+    .where(and(eq(aiChatMessage.tripId, tripId), eq(aiChatMessage.userId, userId)))
+    .orderBy(desc(aiChatMessage.createdAt))
+    .limit(100);
+  return rows.reverse();
+}

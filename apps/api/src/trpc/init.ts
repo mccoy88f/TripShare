@@ -22,6 +22,10 @@ export interface AppServices {
   storage?: FileStorage;
   /** fetch per le chiamate esterne (OpenRouter), sostituibile nei test. */
   httpFetch?: typeof fetch;
+  /** Coda dei lavori AI (eseguiti dal worker). Senza coda girano nel processo dell'API. */
+  aiQueue?: Queue<{ jobId: string }>;
+  /** Nei test: esegue i lavori AI in modo sincrono. */
+  aiWait?: boolean;
   /** Tasso di cambio (iniettabile nei test). */
   fxRate?: (from: string, to: string, date?: string) => Promise<{ rate: number; date: string }>;
 }

@@ -21,6 +21,43 @@ export const SETTINGS = {
     default: [] as string[],
     secret: false,
   },
+  /** Provider usato con la chiave centrale. */
+  'ai.provider': {
+    schema: z.enum(['openrouter', 'gemini']),
+    default: 'openrouter' as const,
+    secret: false,
+  },
+  /** Richieste AI al mese per utente sulla chiave centrale (0 = nessun limite). */
+  'ai.monthlyRequests': {
+    schema: z.number().int().min(0).max(100_000),
+    default: 300,
+    secret: false,
+  },
+  'gemini.apiKey': {
+    schema: z.string().min(10).max(300).nullable(),
+    default: null,
+    secret: true,
+  },
+  'gemini.models': {
+    schema: z.object({
+      vision: MODEL_ID,
+      planner: MODEL_ID,
+      chat: MODEL_ID,
+      web: MODEL_ID,
+      light: MODEL_ID,
+      fallbacks: z.array(MODEL_ID).max(5),
+    }),
+    default: {
+      vision: 'gemini-flash-latest',
+      planner: 'gemini-flash-latest',
+      chat: 'gemini-flash-latest',
+      web: 'gemini-flash-latest',
+      light: 'gemini-flash-lite-latest',
+      fallbacks: [] as string[],
+    },
+    secret: false,
+  },
+  /** Modalità delle chiavi AI (vale per tutti i provider). */
   'openrouter.mode': {
     schema: z.enum(['central', 'per_user', 'mixed']),
     default: 'central' as const,

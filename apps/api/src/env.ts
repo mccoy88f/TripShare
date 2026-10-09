@@ -39,6 +39,7 @@ const EnvSchema = z
     SMTP_TLS_REJECT_UNAUTHORIZED: optional(bool),
 
     OPENROUTER_API_KEY: optional(z.string()),
+    GEMINI_API_KEY: optional(z.string()),
   })
   .transform((env) => {
     const appUrl = new URL(env.APP_URL);

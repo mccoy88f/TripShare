@@ -5,7 +5,7 @@ import rateLimit from '@fastify/rate-limit';
 import { fastifyTRPCPlugin, type FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
 import Fastify, { type FastifyRequest } from 'fastify';
 import { and, eq } from 'drizzle-orm';
-import { bookingTicket, trip, tripMember, user } from '@tripshare/db';
+import { bookingTicket, expense, trip, tripMember, user } from '@tripshare/db';
 import { TICKET_CODE_FORMATS } from './routers/tickets.js';
 import { tripDocumentJsonSchema } from '@tripshare/shared/trip-format';
 import { requireMember } from './services/trips.js';
@@ -216,6 +216,63 @@ export async function buildServer(
           'content-disposition',
           `inline; filename*=UTF-8''${encodeURIComponent(ticket.fileName ?? 'ticket')}`,
         );
+        reply.header('x-content-type-options', 'nosniff');
+        return reply.send(data);
+      },
+    );
+
+    const AI_FILE_TYPES: Record<string, string> = {
+      'application/pdf': 'pdf',
+      'image/png': 'png',
+      'image/jpeg': 'jpg',
+      'image/webp': 'webp',
+      'image/gif': 'gif',
+    };
+
+    /** Foto o PDF di uno scontrino o di una conferma di prenotazione, da far leggere all'AI. */
+    app.post<{ Params: { id: string } }>('/api/trips/:id/ai-files', async (req, reply) => {
+      const session = await sessionOf(req);
+      if (!session) return reply.status(401).send({ error: 'UNAUTHORIZED' });
+      try {
+        await requireMember(services.db, req.params.id, session.user.id, 'editor');
+      } catch {
+        return reply.status(404).send({ error: 'TRIP_NOT_FOUND' });
+      }
+      const maxMb = await services.settings.get('uploads.maxMb');
+      const file = await req.file({ limits: { fileSize: maxMb * 1024 * 1024 } });
+      if (!file) return reply.status(400).send({ error: 'NO_FILE' });
+      const ext = AI_FILE_TYPES[file.mimetype];
+      if (!ext) return reply.status(415).send({ error: 'UNSUPPORTED_FILE' });
+      const buffer = await file.toBuffer().catch(() => null);
+      if (!buffer || file.file.truncated)
+        return reply.status(413).send({ error: 'FILE_TOO_LARGE' });
+      const name = await storage.savePrivate(buffer, ext);
+      return { file: name, mime: file.mimetype };
+    });
+
+    /** Scontrino allegato a una spesa del viaggio. */
+    app.get<{ Params: { id: string; name: string } }>(
+      '/api/trips/:id/receipts/:name',
+      async (req, reply) => {
+        const session = await sessionOf(req);
+        if (!session) return reply.status(401).send({ error: 'UNAUTHORIZED' });
+        try {
+          await requireMember(services.db, req.params.id, session.user.id);
+        } catch {
+          return reply.status(404).send({ error: 'NOT_FOUND' });
+        }
+        const [row] = await services.db
+          .select({ id: expense.id })
+          .from(expense)
+          .where(and(eq(expense.tripId, req.params.id), eq(expense.receipt, req.params.name)));
+        const data = row ? await storage.readPrivate(req.params.name) : null;
+        if (!data) return reply.status(404).send({ error: 'NOT_FOUND' });
+        const ext = req.params.name.split('.').pop()!;
+        const mime =
+          Object.entries(AI_FILE_TYPES).find(([, e]) => e === ext)?.[0] ??
+          'application/octet-stream';
+        reply.header('content-type', mime);
+        reply.header('cache-control', 'private, max-age=86400');
         reply.header('x-content-type-options', 'nosniff');
         return reply.send(data);
       },

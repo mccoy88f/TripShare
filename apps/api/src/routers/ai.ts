@@ -1,0 +1,177 @@
+import { TRPCError } from '@trpc/server';
+import { and, eq, isNull } from 'drizzle-orm';
+import { z } from 'zod';
+import { aiChatMessage, aiJob, userSecret } from '@tripshare/db';
+import { AI_PROVIDERS, monthlyCentralUsage, userKeys } from '../ai/access.js';
+import { aiDeps } from '../ai/deps.js';
+import { AiJobError, chatHistory, startAiJob } from '../ai/jobs.js';
+import { AiInputSchema } from '../ai/tasks.js';
+import { encrypt, maskSecret } from '../crypto.js';
+import { checkGeminiKey } from '../gemini.js';
+import { checkKey } from '../openrouter.js';
+import { requireMember } from '../services/trips.js';
+import { authedProcedure, router } from '../trpc/init.js';
+
+/** Ruolo minimo nel viaggio per ogni compito AI. */
+const MIN_ROLE = {
+  receipt: 'editor',
+  booking: 'editor',
+  generate: 'editor',
+  verify: 'editor',
+  packing: 'editor',
+  chat: 'viewer',
+} as const;
+
+export const aiRouter = router({
+  /** Stato dell'AI per l'utente: modalità, chiavi personali e consumo della quota centrale. */
+  status: authedProcedure.query(async ({ ctx }) => {
+    const s = ctx.settings;
+    const [mode, provider, orKey, gKey, quotaUsd, quotaRequests, keys, usage] = await Promise.all([
+      s.get('openrouter.mode'),
+      s.get('ai.provider'),
+      s.get('openrouter.apiKey'),
+      s.get('gemini.apiKey'),
+      s.get('openrouter.monthlyQuotaUsd'),
+      s.get('ai.monthlyRequests'),
+      userKeys(ctx.db, ctx.env.ENCRYPTION_KEY, ctx.user.id),
+      monthlyCentralUsage(ctx.db, ctx.user.id),
+    ]);
+    const centralReady = !!(provider === 'gemini' ? gKey : orKey);
+    const hasOwn = !!(keys.openrouter || keys.gemini);
+    return {
+      mode,
+      centralProvider: provider,
+      centralReady: mode !== 'per_user' && centralReady,
+      available: hasOwn && mode !== 'central' ? true : mode !== 'per_user' && centralReady,
+      keys: {
+        openrouter: keys.openrouter ? maskSecret(keys.openrouter) : null,
+        gemini: keys.gemini ? maskSecret(keys.gemini) : null,
+      },
+      preferred: keys.preferred,
+      usage: { ...usage, quotaUsd, quotaRequests },
+    };
+  }),
+
+  /** Salva (dopo averla verificata) o rimuove una chiave personale. */
+  setKey: authedProcedure
+    .input(
+      z.object({
+        provider: z.enum(AI_PROVIDERS),
+        key: z.string().trim().min(10).max(300).nullable(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if ((await ctx.settings.get('openrouter.mode')) === 'central')
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'AI_OWN_KEYS_DISABLED' });
+      if (input.key) {
+        try {
+          if (input.provider === 'gemini') await checkGeminiKey(input.key, ctx.httpFetch);
+          else await checkKey(input.key, ctx.httpFetch);
+        } catch {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'AI_INVALID_KEY' });
+        }
+      }
+      const value = input.key ? encrypt(input.key, ctx.env.ENCRYPTION_KEY) : null;
+      const column = input.provider === 'gemini' ? 'geminiKey' : 'openrouterKey';
+      await ctx.db
+        .insert(userSecret)
+        .values({ userId: ctx.user.id, [column]: value, aiProvider: input.provider })
+        .onConflictDoUpdate({
+          target: userSecret.userId,
+          set: {
+            [column]: value,
+            ...(input.key ? { aiProvider: input.provider } : {}),
+            updatedAt: new Date(),
+          },
+        });
+      return { ok: true };
+    }),
+
+  setPreferred: authedProcedure
+    .input(z.object({ provider: z.enum(AI_PROVIDERS) }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .insert(userSecret)
+        .values({ userId: ctx.user.id, aiProvider: input.provider })
+        .onConflictDoUpdate({
+          target: userSecret.userId,
+          set: { aiProvider: input.provider, updatedAt: new Date() },
+        });
+      return { ok: true };
+    }),
+
+  /** Avvia un lavoro AI; il risultato si legge con `job`. */
+  start: authedProcedure
+    .input(z.object({ tripId: z.uuid().nullable(), input: AiInputSchema }))
+    .mutation(async ({ ctx, input }) => {
+      if (input.tripId) {
+        await requireMember(ctx.db, input.tripId, ctx.user.id, MIN_ROLE[input.input.kind]);
+      } else if (input.input.kind !== 'generate') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'TRIP_REQUIRED' });
+      }
+      try {
+        return await startAiJob(aiDeps(ctx), ctx.user.id, input.tripId, input.input, {
+          wait: ctx.aiWait,
+        });
+      } catch (err) {
+        if (err instanceof AiJobError)
+          throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
+        throw err;
+      }
+    }),
+
+  job: authedProcedure.input(z.object({ id: z.uuid() })).query(async ({ ctx, input }) => {
+    const [job] = await ctx.db
+      .select({
+        id: aiJob.id,
+        kind: aiJob.kind,
+        status: aiJob.status,
+        result: aiJob.result,
+        error: aiJob.error,
+        model: aiJob.model,
+        provider: aiJob.provider,
+      })
+      .from(aiJob)
+      .where(and(eq(aiJob.id, input.id), eq(aiJob.userId, ctx.user.id)));
+    if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
+    return job;
+  }),
+
+  chat: router({
+    history: authedProcedure.input(z.object({ tripId: z.uuid() })).query(async ({ ctx, input }) => {
+      await requireMember(ctx.db, input.tripId, ctx.user.id);
+      return chatHistory(ctx.db, input.tripId, ctx.user.id);
+    }),
+
+    clear: authedProcedure
+      .input(z.object({ tripId: z.uuid() }))
+      .mutation(async ({ ctx, input }) => {
+        await requireMember(ctx.db, input.tripId, ctx.user.id);
+        await ctx.db
+          .delete(aiChatMessage)
+          .where(
+            and(eq(aiChatMessage.tripId, input.tripId), eq(aiChatMessage.userId, ctx.user.id)),
+          );
+        return { ok: true };
+      }),
+
+    /** Segna come applicate le modifiche proposte da un messaggio dell'assistente. */
+    markApplied: authedProcedure
+      .input(z.object({ tripId: z.uuid(), messageId: z.uuid() }))
+      .mutation(async ({ ctx, input }) => {
+        await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
+        await ctx.db
+          .update(aiChatMessage)
+          .set({ appliedAt: new Date() })
+          .where(
+            and(
+              eq(aiChatMessage.id, input.messageId),
+              eq(aiChatMessage.tripId, input.tripId),
+              eq(aiChatMessage.userId, ctx.user.id),
+              isNull(aiChatMessage.appliedAt),
+            ),
+          );
+        return { ok: true };
+      }),
+  }),
+});

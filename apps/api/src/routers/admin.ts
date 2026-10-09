@@ -1,7 +1,8 @@
-import { count, desc, ilike, or, sql } from 'drizzle-orm';
+import { count, desc, eq, gte, ilike, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { auditLog, user } from '@tripshare/db';
+import { aiJob, auditLog, user } from '@tripshare/db';
 import { TRPCError } from '@trpc/server';
+import { checkGeminiKey, clearGeminiCache, listGeminiModels } from '../gemini.js';
 import { checkKey, clearModelsCache, listModels } from '../openrouter.js';
 import { SETTINGS, isSettingKey, type SettingKey } from '../settings.js';
 import { router, superadminProcedure } from '../trpc/init.js';
@@ -58,12 +59,73 @@ export const adminRouter = router({
         }
         await ctx.settings.set(key, parsed.data as never, ctx.session!.user.id);
         if (key === 'openrouter.apiKey') clearModelsCache();
+        if (key === 'gemini.apiKey') clearGeminiCache();
         await audit(ctx, 'settings.update', {
           key,
           value: SETTINGS[key].secret ? '[secret]' : parsed.data,
         });
         return { ok: true };
       }),
+  }),
+
+  gemini: router({
+    /** Modelli disponibili per la chiave Gemini configurata. */
+    models: superadminProcedure
+      .input(z.object({ refresh: z.boolean().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        const key = await ctx.settings.get('gemini.apiKey');
+        try {
+          return await listGeminiModels(key, ctx.httpFetch, input?.refresh);
+        } catch (err) {
+          throw new TRPCError({
+            code: 'BAD_GATEWAY',
+            message: err instanceof Error ? err.message : 'GEMINI_UNAVAILABLE',
+          });
+        }
+      }),
+
+    checkKey: superadminProcedure.mutation(async ({ ctx }) => {
+      const key = await ctx.settings.get('gemini.apiKey');
+      if (!key) throw new TRPCError({ code: 'BAD_REQUEST', message: 'GEMINI_NO_KEY' });
+      try {
+        return await checkGeminiKey(key, ctx.httpFetch);
+      } catch (err) {
+        throw new TRPCError({
+          code: 'BAD_GATEWAY',
+          message: err instanceof Error ? err.message : 'GEMINI_UNAVAILABLE',
+        });
+      }
+    }),
+  }),
+
+  /** Uso dell'AI nel mese corrente, per utente e per provider. */
+  aiUsage: superadminProcedure.query(async ({ ctx }) => {
+    const start = new Date();
+    start.setUTCDate(1);
+    start.setUTCHours(0, 0, 0, 0);
+    const rows = await ctx.db
+      .select({
+        userId: aiJob.userId,
+        name: user.name,
+        email: user.email,
+        provider: aiJob.provider,
+        keySource: aiJob.keySource,
+        requests: count(),
+        errors: sql<number>`count(*) filter (where ${aiJob.status} = 'error')`,
+        tokens: sql<number>`coalesce(sum(${aiJob.promptTokens}), 0) + coalesce(sum(${aiJob.completionTokens}), 0)`,
+        cost: sql<number>`coalesce(sum(${aiJob.cost}), 0)`,
+      })
+      .from(aiJob)
+      .innerJoin(user, eq(user.id, aiJob.userId))
+      .where(gte(aiJob.createdAt, start))
+      .groupBy(aiJob.userId, user.name, user.email, aiJob.provider, aiJob.keySource)
+      .orderBy(desc(count()));
+    return rows.map((r) => ({
+      ...r,
+      errors: Number(r.errors),
+      tokens: Number(r.tokens),
+      cost: Number(r.cost),
+    }));
   }),
 
   openrouter: router({

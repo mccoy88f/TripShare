@@ -53,6 +53,12 @@ const ExpenseInput = z.object({
   /** "planned": da pagare, conta nel budget ma non nei saldi finché non viene pagata. */
   status: z.enum(['paid', 'planned']).default('paid'),
   bookingId: z.string().max(64).nullable().optional(),
+  /** Scontrino caricato con /api/trips/:id/ai-files. */
+  receipt: z
+    .string()
+    .regex(/^[a-f0-9]{32}\.[a-z0-9]{1,8}$/)
+    .nullable()
+    .optional(),
 });
 type ExpenseInputT = z.infer<typeof ExpenseInput>;
 
@@ -196,6 +202,7 @@ export const expensesRouter = router({
           notes: input.notes,
           status: input.status,
           bookingId: input.bookingId ?? null,
+          receipt: input.receipt ?? null,
           createdBy: ctx.user.id,
         })
         .returning({ id: expense.id });
@@ -238,6 +245,7 @@ export const expensesRouter = router({
             notes: input.notes,
             status: input.status,
             bookingId: input.bookingId ?? null,
+            ...(input.receipt !== undefined ? { receipt: input.receipt } : {}),
             updatedAt: new Date(),
           })
           .where(eq(expense.id, input.id));
