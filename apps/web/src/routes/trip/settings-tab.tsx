@@ -32,6 +32,7 @@ export function SettingsTab({ trip }: { trip: TripDetail }) {
     trpc.trips.removeCover.mutationOptions({ onSuccess: refresh, onError }),
   );
   const remove = useMutation(trpc.trips.delete.mutationOptions({ onError }));
+  const setCover = useMutation(trpc.trips.setUnsplashCover.mutationOptions());
   const hasExpenses = trip.ledger.total > 0;
 
   return (
@@ -53,13 +54,20 @@ export function SettingsTab({ trip }: { trip: TripDetail }) {
         submitLabel={t('common.save')}
         pending={update.isPending || uploading}
         onRemoveCover={() => removeCover.mutate({ id: trip.id })}
-        onSubmit={async (values, file) => {
+        onSubmit={async (values, file, unsplash) => {
           await update.mutateAsync({ id: trip.id, data: toTripInput(values) });
           if (file) {
             setUploading(true);
             await uploadImage(`/api/trips/${trip.id}/cover`, file).catch(() =>
               toast.error(t('trip.form.photoError')),
             );
+            setUploading(false);
+          }
+          if (unsplash) {
+            setUploading(true);
+            await setCover
+              .mutateAsync({ id: trip.id, photoId: unsplash.id })
+              .catch(() => toast.error(t('trip.form.photoError')));
             setUploading(false);
           }
           await refresh();

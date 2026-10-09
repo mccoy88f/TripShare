@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { expense, trip, tripMember, user } from '@tripshare/db';
 import { CURRENCY_CODES } from '@tripshare/shared';
 import { computeLedgers, requireMember } from '../services/trips.js';
+import { downloadPhoto, searchPhotos } from '../unsplash.js';
 import { listMembers } from '../services/members.js';
 import { authedProcedure, router } from '../trpc/init.js';
 
@@ -113,10 +114,54 @@ export const tripsRouter = router({
       const { trip: t } = await requireMember(ctx.db, input.id, ctx.user.id, 'editor');
       await ctx.db
         .update(trip)
-        .set({ coverImage: null, updatedAt: new Date() })
+        .set({ coverImage: null, coverCredit: null, updatedAt: new Date() })
         .where(eq(trip.id, input.id));
       await ctx.storage?.removeByUrl(t.coverImage);
       return { ok: true };
+    }),
+
+  /** Cerca foto per la copertina su Unsplash (se il super admin ha impostato la chiave). */
+  coverSearch: authedProcedure
+    .input(z.object({ query: z.string().trim().min(2).max(100) }))
+    .query(async ({ ctx, input }) => {
+      const key = await ctx.settings.get('unsplash.accessKey');
+      if (!key) throw new TRPCError({ code: 'BAD_REQUEST', message: 'UNSPLASH_NOT_CONFIGURED' });
+      try {
+        return await searchPhotos(key, input.query, ctx.env.APP_NAME, ctx.httpFetch);
+      } catch (err) {
+        throw new TRPCError({
+          code: 'BAD_GATEWAY',
+          message: err instanceof Error ? err.message : 'UNSPLASH_UNAVAILABLE',
+        });
+      }
+    }),
+
+  /** Usa una foto di Unsplash come copertina (scaricata e salvata come le altre). */
+  setUnsplashCover: authedProcedure
+    .input(z.object({ id: z.uuid(), photoId: z.string().min(1).max(40) }))
+    .mutation(async ({ ctx, input }) => {
+      const { trip: t } = await requireMember(ctx.db, input.id, ctx.user.id, 'editor');
+      const key = await ctx.settings.get('unsplash.accessKey');
+      if (!key || !ctx.storage)
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'UNSPLASH_NOT_CONFIGURED' });
+      let url: string;
+      let credit: { name: string; url: string };
+      try {
+        const photo = await downloadPhoto(key, input.photoId, ctx.env.APP_NAME, ctx.httpFetch);
+        url = await ctx.storage.saveImage(photo.image, 'cover');
+        credit = photo.credit;
+      } catch (err) {
+        throw new TRPCError({
+          code: 'BAD_GATEWAY',
+          message: err instanceof Error ? err.message : 'UNSPLASH_UNAVAILABLE',
+        });
+      }
+      await ctx.db
+        .update(trip)
+        .set({ coverImage: url, coverCredit: credit, updatedAt: new Date() })
+        .where(eq(trip.id, input.id));
+      await ctx.storage.removeByUrl(t.coverImage);
+      return { url, credit };
     }),
 
   delete: authedProcedure.input(z.object({ id: z.uuid() })).mutation(async ({ ctx, input }) => {

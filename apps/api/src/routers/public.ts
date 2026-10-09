@@ -8,5 +8,7 @@ export const publicRouter = router({
     registrationMode: await ctx.settings.get('registration.mode'),
     locales: LOCALES,
     currencies: CURRENCY_CODES,
+    /** Ricerca delle copertine su Unsplash disponibile. */
+    unsplash: !!(await ctx.settings.get('unsplash.accessKey')),
   })),
 });

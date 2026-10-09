@@ -20,6 +20,7 @@ export function NewTripPage() {
   const { data: me } = useMe();
   const [uploading, setUploading] = useState(false);
   const create = useMutation(trpc.trips.create.mutationOptions());
+  const setCover = useMutation(trpc.trips.setUnsplashCover.mutationOptions());
 
   const replace = useMutation(trpc.plan.replace.mutationOptions());
   const ai = useAiStatus();
@@ -87,7 +88,7 @@ export function NewTripPage() {
           initial={emptyTripForm(currency)}
           submitLabel={t('trip.new.submit')}
           pending={create.isPending || uploading}
-          onSubmit={async (values, file) => {
+          onSubmit={async (values, file, unsplash) => {
             try {
               const { id } = await create.mutateAsync(toTripInput(values));
               if (file) {
@@ -95,6 +96,13 @@ export function NewTripPage() {
                 await uploadImage(`/api/trips/${id}/cover`, file).catch(() =>
                   toast.error(t('trip.form.photoError')),
                 );
+                setUploading(false);
+              }
+              if (unsplash) {
+                setUploading(true);
+                await setCover
+                  .mutateAsync({ id: id, photoId: unsplash.id })
+                  .catch(() => toast.error(t('trip.form.photoError')));
                 setUploading(false);
               }
               await queryClient.invalidateQueries({ queryKey: trpc.trips.list.queryKey() });

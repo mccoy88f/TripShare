@@ -1,7 +1,8 @@
 # TripShare
 
 App per **organizzare viaggi di gruppo e dividere le spese** in stile Splitwise. È una PWA
-installabile, gira in Docker e usa OpenRouter per l'AI. Interfaccia in italiano e inglese.
+installabile, gira in Docker e usa l'AI di OpenRouter o Google Gemini. Interfaccia in italiano e
+inglese.
 
 - Piano completo: [`docs/PIANO.md`](docs/PIANO.md)
 - Formato standard del viaggio (JSON per AI, import ed export): [`docs/TRIP_FORMAT.md`](docs/TRIP_FORMAT.md)
@@ -13,8 +14,8 @@ installabile, gira in Docker e usa OpenRouter per l'AI. Interfaccia in italiano 
 | 0. Fondamenta: monorepo, Docker con HTTPS, database, design system, i18n, CI, PWA                       | ✅    |
 | 1. Account e sito pubblico: registrazione con verifica email, accesso, profilo con foto, pannello admin | ✅    |
 | 2. Viaggi e spese: copertine, inviti, membri senza account, spese multivaluta, saldi, PayPal.me         | ✅    |
-| 3. Pianificazione                                                                                       | ⏳    |
-| 4. AI con OpenRouter (formato del viaggio già pronto)                                                   | ⏳    |
+| 3. Pianificazione: programma, luoghi, prenotazioni, biglietti, budget, bagagli, note                    | ✅    |
+| 4. AI con OpenRouter o Gemini: scontrini, prenotazioni, generatore, assistente, verifiche               | ✅    |
 | 5. Tempo reale e offline                                                                                | ⏳    |
 | 6. Rifinitura                                                                                           | ⏳    |
 
@@ -65,9 +66,21 @@ Coolify ha già un proxy (Traefik) sulle porte 80 e 443 e gestisce lui HTTPS. Pe
 | `SMTP_FROM`                    | no           | Se vuota: `"TripShare" <SMTP_USER>` quando `SMTP_USER` è un indirizzo email, altrimenti `"TripShare" <noreply@DOMAIN>` |
 | `SMTP_TLS_REJECT_UNAUTHORIZED` | no           | `false` solo per server SMTP con certificato self-signed                                                               |
 | `OPENROUTER_API_KEY`           | no           | Valore iniziale; si gestisce dal pannello admin                                                                        |
+| `GEMINI_API_KEY`               | no           | Chiave di Google AI Studio, valore iniziale; con la sola chiave Gemini diventa il provider centrale                    |
 
 Le email passano da una coda (Redis + BullMQ) gestita dal servizio `worker`: se il server
-SMTP non risponde, l'invio viene ritentato fino a 6 volte nel giro di circa 15 minuti.
+SMTP non risponde, l'invio viene ritentato fino a 6 volte nel giro di circa 15 minuti. Anche i
+lavori AI (scontrini, prenotazioni, generazione dei viaggi, assistente) girano nel `worker`, che
+per questo monta lo stesso volume `uploads` dell'API.
+
+**AI.** Dal pannello admin (scheda AI) si sceglie il provider della chiave centrale (OpenRouter o
+Google Gemini), i modelli per ogni compito e i limiti mensili per utente. In modalità "per utente"
+o "mista" ognuno può aggiungere nel profilo la propria chiave OpenRouter o Gemini.
+
+**Unsplash.** Facoltativo: con la _Access Key_ di un'applicazione Unsplash
+(unsplash.com/developers, non servono Secret Key né Application ID) nel pannello admin compare
+"Cerca foto" per scegliere la copertina dei viaggi; l'autore della foto viene citato sulla
+copertina come richiedono le regole di Unsplash.
 
 ## Sviluppo
 

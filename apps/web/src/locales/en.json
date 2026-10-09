@@ -219,7 +219,7 @@
     "payments": "Repayments",
     "paypalEnabled": "Show PayPal.me links",
     "uploads": "Maximum file size (MB)",
-    "unsplash": "Unsplash key (covers)",
+    "unsplash": "Unsplash Access Key (cover search)",
     "aiMode": "Key mode",
     "aiModes": {
       "central": "Central: one key for everyone",
@@ -904,5 +904,15 @@
       "add_one": "Add {{count}} item",
       "add_other": "Add {{count}} items"
     }
+  },
+  "unsplash": {
+    "button": "Search photos",
+    "title": "Cover photo from Unsplash",
+    "placeholder": "Search, e.g. Edinburgh",
+    "search": "Search",
+    "error": "Search unavailable",
+    "none": "No photos found.",
+    "credit": "Free photos from",
+    "photoBy": "Photo by"
   }
 }

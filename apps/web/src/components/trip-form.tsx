@@ -1,9 +1,14 @@
-import { Camera, Loader2, Smile, Trash2 } from 'lucide-react';
+import { Camera, ImageIcon, Loader2, Smile, Trash2 } from 'lucide-react';
 import { useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CURRENCIES, CURRENCY_CODES, type CurrencyCode } from '@tripshare/shared';
 import { COVER_GRADIENTS, DEFAULT_COVER, TripCover } from '@/components/trip-cover';
 import { Button } from '@/components/ui/button';
+import {
+  UnsplashPicker,
+  useUnsplashEnabled,
+  type UnsplashPick,
+} from '@/components/unsplash-picker';
 import { EmojiPicker } from '@/components/ui/emoji-picker';
 import { Field, Input, Select } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -34,13 +39,17 @@ export function TripForm({
   currencyLocked?: boolean;
   submitLabel: string;
   pending?: boolean;
-  onSubmit: (values: TripFormValues, coverFile: File | null) => void;
+  /** `unsplash`: foto scelta su Unsplash, da impostare dopo il salvataggio. */
+  onSubmit: (values: TripFormValues, coverFile: File | null, unsplash: UnsplashPick | null) => void;
   onRemoveCover?: () => void;
 }) {
   const { t } = useTranslation();
   const [v, setV] = useState(initial);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [unsplash, setUnsplash] = useState<UnsplashPick | null>(null);
+  const [searching, setSearching] = useState(false);
+  const unsplashEnabled = useUnsplashEnabled();
   const [pickerOpen, setPickerOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const set = <K extends keyof TripFormValues>(k: K, value: TripFormValues[K]) =>
@@ -51,7 +60,7 @@ export function TripForm({
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (datesInvalid) return;
-    onSubmit({ ...v, title: v.title.trim() }, file);
+    onSubmit({ ...v, title: v.title.trim() }, file, unsplash);
   };
 
   return (
@@ -79,6 +88,17 @@ export function TripForm({
               <Camera />
               {shownImage ? t('trip.form.changePhoto') : t('trip.form.addPhoto')}
             </Button>
+            {unsplashEnabled && (
+              <Button
+                type="button"
+                size="sm"
+                className="bg-white/90 text-slate-900 hover:bg-white"
+                onClick={() => setSearching(true)}
+              >
+                <ImageIcon />
+                {t('unsplash.button')}
+              </Button>
+            )}
             {shownImage && (
               <Button
                 type="button"
@@ -89,6 +109,7 @@ export function TripForm({
                   if (preview) {
                     setPreview(null);
                     setFile(null);
+                    setUnsplash(null);
                   } else onRemoveCover?.();
                 }}
               >
@@ -106,10 +127,28 @@ export function TripForm({
             const f = e.target.files?.[0];
             if (!f) return;
             setFile(f);
+            setUnsplash(null);
             setPreview(URL.createObjectURL(f));
             e.target.value = '';
           }}
         />
+        {unsplash && (
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            {t('unsplash.photoBy')} {unsplash.author} · Unsplash
+          </p>
+        )}
+        {searching && (
+          <UnsplashPicker
+            open
+            initialQuery={v.destination || v.title}
+            onOpenChange={setSearching}
+            onPick={(photo) => {
+              setUnsplash(photo);
+              setFile(null);
+              setPreview(photo.thumb);
+            }}
+          />
+        )}
         {!shownImage && (
           <div
             className="mt-3 flex flex-wrap gap-2"

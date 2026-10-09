@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AvatarStack } from '@/components/avatar-stack';
 import { TripCover } from '@/components/trip-cover';
+import { CoverCredit } from '@/components/unsplash-picker';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { dateRange, money } from '@/lib/format';
@@ -126,6 +127,9 @@ export function TripPage() {
                 {t('trip.totalSpent', { amount: money(trip.ledger.total, trip.currency) })}
               </span>
               <AvatarStack users={activeMembers} max={6} />
+            </div>
+            <div className="mt-1.5">
+              <CoverCredit credit={trip.coverCredit} />
             </div>
           </div>
         </div>

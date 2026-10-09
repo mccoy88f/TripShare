@@ -29,6 +29,8 @@ export const trip = pgTable('trip', {
   /** Valuta del viaggio: saldi e budget sono calcolati in questa valuta. */
   currency: text().notNull(),
   coverImage: text(),
+  /** Autore della foto di copertina scelta da Unsplash: { name, url }. */
+  coverCredit: jsonb(),
   coverColor: text(),
   /** Programma nel formato standard TripShare (TripDocument v1). */
   plan: jsonb(),

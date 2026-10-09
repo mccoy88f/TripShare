@@ -296,7 +296,7 @@ export async function buildServer(
         .where(and(eq(trip.id, req.params.id)));
       await services.db
         .update(trip)
-        .set({ coverImage: url, updatedAt: new Date() })
+        .set({ coverImage: url, coverCredit: null, updatedAt: new Date() })
         .where(eq(trip.id, req.params.id));
       await storage.removeByUrl(previous?.coverImage);
       return { url };
