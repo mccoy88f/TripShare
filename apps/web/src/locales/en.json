@@ -685,7 +685,8 @@
       "scheduleTitle": "Add to the plan",
       "suggestDay": "Suggest the day with AI",
       "addToPlan": "Add to the plan",
-      "scheduled": "{{name}} added to the plan"
+      "scheduled": "{{name}} added to the plan",
+      "inPlan": "In the plan"
     },
     "placeKinds": {
       "sight": "Sight",

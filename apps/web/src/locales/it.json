@@ -685,7 +685,8 @@
       "scheduleTitle": "Aggiungi al programma",
       "suggestDay": "Suggerisci il giorno con l'AI",
       "addToPlan": "Aggiungi al programma",
-      "scheduled": "{{name}} aggiunto al programma"
+      "scheduled": "{{name}} aggiunto al programma",
+      "inPlan": "In programma"
     },
     "placeKinds": {
       "sight": "Attrazione",

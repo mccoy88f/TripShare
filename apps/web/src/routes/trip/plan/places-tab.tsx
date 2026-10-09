@@ -4,6 +4,7 @@ import {
   ExternalLink,
   Loader2,
   MapPin,
+  CalendarCheck,
   CalendarPlus,
   Sparkles,
   Trash2,
@@ -202,11 +203,18 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
                         {t('ai.verify.button')}
                       </Button>
                     )}
-                    {plan.days.length > 0 && (
+                    {/* Un luogo già nel programma non si aggiunge di nuovo da qui. */}
+                    {plan.days.length > 0 && days.length === 0 && (
                       <Button size="sm" variant="outline" onClick={() => setScheduling(p)}>
                         <CalendarPlus />
                         {t('plan.place.schedule')}
                       </Button>
+                    )}
+                    {days.length > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                        <CalendarCheck className="size-4" />
+                        {t('plan.place.inPlan')}
+                      </span>
                     )}
                   </span>
                 )}
