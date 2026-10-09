@@ -26,6 +26,8 @@ export async function listMembers(db: Database, tripId: string) {
     paypalMe: r.paypalMe ?? null,
     role: r.member.role,
     placeholder: !r.member.userId,
+    /** Invitato via email che non ha ancora accettato. */
+    invitedEmail: r.member.userId ? null : r.member.invitedEmail,
     removed: !!r.member.removedAt,
   }));
 }

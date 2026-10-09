@@ -50,6 +50,8 @@ export const tripMember = pgTable(
       .references(() => trip.id, { onDelete: 'cascade' }),
     userId: text().references(() => user.id, { onDelete: 'set null' }),
     name: text().notNull(),
+    /** Email di chi è stato invitato e non ha ancora accettato (solo per i segnaposto). */
+    invitedEmail: text(),
     avatarEmoji: text(),
     avatarColor: text(),
     role: text().notNull().default('editor'),

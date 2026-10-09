@@ -26,6 +26,7 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
   });
   const [placeholder, setPlaceholder] = useState('');
   const [email, setEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
   const [emailRole, setEmailRole] = useState<'editor' | 'viewer'>('editor');
 
   const refresh = () =>
@@ -72,9 +73,15 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
 
   const inviteByEmail = async (e: FormEvent) => {
     e.preventDefault();
-    await createInvite.mutateAsync({ tripId: trip.id, email: email.trim(), role: emailRole });
+    await createInvite.mutateAsync({
+      tripId: trip.id,
+      email: email.trim(),
+      role: emailRole,
+      ...(inviteName.trim() ? { name: inviteName.trim() } : {}),
+    });
     toast.success(t('members.emailSent', { email: email.trim() }));
     setEmail('');
+    setInviteName('');
     await refresh();
   };
 
@@ -95,7 +102,11 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
                 )}
               </p>
               <div className="mt-0.5 flex flex-wrap gap-1.5">
-                {m.placeholder ? (
+                {m.invitedEmail ? (
+                  <Badge variant="warning" title={m.invitedEmail}>
+                    ✉️ {t('members.pending', { email: m.invitedEmail })}
+                  </Badge>
+                ) : m.placeholder ? (
                   <Badge variant="warning">{t('members.placeholder')}</Badge>
                 ) : (
                   <Badge variant="outline">{t(`members.roles.${m.role}`)}</Badge>
@@ -123,7 +134,26 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
                   ))}
                 </Select>
               )}
-              {canEdit && m.placeholder && (
+              {canEdit && m.invitedEmail && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={createInvite.isPending}
+                  onClick={async () => {
+                    await createInvite.mutateAsync({
+                      tripId: trip.id,
+                      memberId: m.id,
+                      email: m.invitedEmail!,
+                    });
+                    toast.success(t('members.emailSent', { email: m.invitedEmail }));
+                    await refresh();
+                  }}
+                >
+                  <Mail />
+                  {t('members.resend')}
+                </Button>
+              )}
+              {canEdit && m.placeholder && !m.invitedEmail && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -179,6 +209,15 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
                   placeholder="nome@email.it"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                />
+              </Field>
+              <Field label={t('members.inviteName')} htmlFor="inv-name" className="min-w-40 flex-1">
+                <Input
+                  id="inv-name"
+                  maxLength={80}
+                  placeholder={t('members.inviteNamePlaceholder')}
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
                 />
               </Field>
               <Select

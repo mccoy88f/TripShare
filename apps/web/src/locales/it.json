@@ -367,13 +367,13 @@
     "remove": "Rimuovi",
     "confirmRemove": "Rimuovere {{name}} dal viaggio? Le spese già segnate restano.",
     "inviteTitle": "Invita il gruppo",
-    "inviteText": "Chi apre il link si registra (o accede) ed entra subito nel viaggio.",
+    "inviteText": "Chi apre il link si registra (o accede) ed entra subito nel viaggio. Chi inviti via email compare subito tra i partecipanti: puoi già assegnargli spese, biglietti e bagagli.",
     "createLink": "Crea e condividi link",
     "shareText": "Unisciti al viaggio \"{{title}}\" su TripShare",
     "copied": "Link copiato",
     "byEmail": "Invita via email",
     "send": "Invia",
-    "emailSent": "Invito inviato a {{email}}",
+    "emailSent": "Invito inviato a {{email}}: puoi già assegnargli spese e biglietti.",
     "addPlaceholder": "Aggiungi persona senza account",
     "placeholderHint": "Puoi segnare spese per lei da subito; quando si registrerà potrà collegarsi.",
     "add": "Aggiungi",
@@ -388,8 +388,13 @@
     "confirmLeave": "Vuoi uscire da questo viaggio?",
     "errors": {
       "LAST_OWNER": "Il viaggio deve avere almeno un proprietario.",
-      "PLACEHOLDER_ROLE": "Le persone senza account non hanno un ruolo."
-    }
+      "PLACEHOLDER_ROLE": "Le persone senza account non hanno un ruolo.",
+      "ALREADY_MEMBER": "Questa persona fa già parte del viaggio."
+    },
+    "pending": "Invitato · {{email}}",
+    "resend": "Reinvia",
+    "inviteName": "Nome (facoltativo)",
+    "inviteNamePlaceholder": "Come compare nel viaggio"
   },
   "trip": {
     "totalSpent": "Spesi {{amount}}",

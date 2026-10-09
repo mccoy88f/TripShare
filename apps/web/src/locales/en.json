@@ -367,13 +367,13 @@
     "remove": "Remove",
     "confirmRemove": "Remove {{name}} from the trip? Logged expenses stay.",
     "inviteTitle": "Invite the group",
-    "inviteText": "Whoever opens the link signs up (or signs in) and joins the trip right away.",
+    "inviteText": "Whoever opens the link signs up (or signs in) and joins right away. People invited by email appear among the travelers immediately: you can already assign expenses, tickets and packing to them.",
     "createLink": "Create and share link",
     "shareText": "Join the trip \"{{title}}\" on TripShare",
     "copied": "Link copied",
     "byEmail": "Invite by email",
     "send": "Send",
-    "emailSent": "Invitation sent to {{email}}",
+    "emailSent": "Invitation sent to {{email}}: you can already assign expenses and tickets to them.",
     "addPlaceholder": "Add a person without an account",
     "placeholderHint": "You can log expenses for them right away; they can link their account when they sign up.",
     "add": "Add",
@@ -388,8 +388,13 @@
     "confirmLeave": "Do you want to leave this trip?",
     "errors": {
       "LAST_OWNER": "The trip must keep at least one owner.",
-      "PLACEHOLDER_ROLE": "People without an account have no role."
-    }
+      "PLACEHOLDER_ROLE": "People without an account have no role.",
+      "ALREADY_MEMBER": "This person is already in the trip."
+    },
+    "pending": "Invited · {{email}}",
+    "resend": "Resend",
+    "inviteName": "Name (optional)",
+    "inviteNamePlaceholder": "How they appear in the trip"
   },
   "trip": {
     "totalSpent": "{{amount}} spent",

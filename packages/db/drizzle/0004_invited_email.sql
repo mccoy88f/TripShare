@@ -1,0 +1,1 @@
+ALTER TABLE "trip_member" ADD COLUMN "invited_email" text;

@@ -19,7 +19,7 @@ import { UserAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Field, Input, Select } from '@/components/ui/input';
+import { Input, Select } from '@/components/ui/input';
 import {
   CODE_FORMAT_LABELS,
   CODE_FORMATS,

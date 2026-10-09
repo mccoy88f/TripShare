@@ -187,22 +187,55 @@ run('trips, invitations, expenses and balances (integration)', () => {
 
   it('sends email invitations and restricts them to that address', async () => {
     const { marco, tripId } = await setupTrip();
-    const invite = await t.trpc<{ token: string }>('invitations.create', marco, {
+    const invite = await t.trpc<{ token: string; memberId: string }>('invitations.create', marco, {
       tripId,
       email: 'giulia@example.com',
+      name: 'Giulia',
       role: 'viewer',
     });
+    // Giulia è già nel viaggio, in attesa: le si può assegnare una spesa prima che accetti.
+    const before = await t.trpc<{
+      myMemberId: string;
+      members: { id: string; name: string; invitedEmail: string | null }[];
+    }>('trips.get', marco, { id: tripId }, 'query');
+    const pending = before.data.members.find((m) => m.id === invite.data.memberId)!;
+    expect(pending).toMatchObject({ name: 'Giulia', invitedEmail: 'giulia@example.com' });
+    await t.trpc('expenses.create', marco, {
+      tripId,
+      title: 'Museo',
+      category: 'tickets',
+      amount: 2000,
+      currency: 'EUR',
+      date: '2026-10-13',
+      payers: [{ memberId: before.data.myMemberId, amount: 2000 }],
+      split: { method: 'equal', members: [before.data.myMemberId, pending.id] },
+    });
+    const again = await t.trpc<{ memberId: string; token: string }>('invitations.create', marco, {
+      tripId,
+      email: 'GIULIA@example.com',
+    });
+    expect(again.data.memberId).toBe(pending.id);
+    const active = await t.trpc<{ id: string }[]>('invitations.list', marco, { tripId }, 'query');
+    expect(active.data).toHaveLength(1);
     const mail = t.sent.find((m) => m.template.kind === 'trip-invite');
     expect(mail?.to).toBe('giulia@example.com');
 
     const other = await t.signUp('other@example.com', 'Other');
-    const denied = await t.trpc('invitations.accept', other.cookie, { token: invite.data.token });
+    const denied = await t.trpc('invitations.accept', other.cookie, { token: again.data.token });
     expect(denied.error?.message).toBe('INVITATION_OTHER_EMAIL');
 
     const giulia = await t.signUp('giulia@example.com', 'Giulia');
     expect(
-      (await t.trpc('invitations.accept', giulia.cookie, { token: invite.data.token })).status,
+      (await t.trpc('invitations.accept', giulia.cookie, { token: again.data.token })).status,
     ).toBe(200);
+    const mine = await t.trpc<{ myMemberId: string; ledger: { balances: Record<string, number> } }>(
+      'trips.get',
+      giulia.cookie,
+      { id: tripId },
+      'query',
+    );
+    expect(mine.data.myMemberId).toBe(pending.id);
+    expect(mine.data.ledger.balances[pending.id]).toBe(-1000);
     // Come viewer non può aggiungere spese.
     const trip = await t.trpc<{ myMemberId: string }>(
       'trips.get',

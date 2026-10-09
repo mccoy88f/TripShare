@@ -67,7 +67,10 @@ export const invitationsRouter = router({
       z.object({
         tripId: z.uuid(),
         email: z.email().optional(),
-        role: z.enum(['editor', 'viewer']).default('editor'),
+        /** Nome con cui l'invitato compare nel viaggio finché non accetta. */
+        name: z.string().trim().min(1).max(80).optional(),
+        /** Se manca: il ruolo dell'invito precedente alla stessa persona, altrimenti "editor". */
+        role: z.enum(['editor', 'viewer']).optional(),
         memberId: z.uuid().optional(),
         expiresInDays: z.number().int().min(1).max(90).default(14),
         maxUses: z.number().int().min(1).max(100).optional(),
@@ -75,19 +78,88 @@ export const invitationsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const { trip: t } = await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
-      if (input.memberId) {
+      let memberId = input.memberId;
+      const email = input.email?.toLowerCase();
+      if (memberId) {
         const [placeholder] = await ctx.db
           .select()
           .from(tripMember)
           .where(
             and(
-              eq(tripMember.id, input.memberId),
+              eq(tripMember.id, memberId),
               eq(tripMember.tripId, input.tripId),
               isNull(tripMember.userId),
             ),
           );
         if (!placeholder)
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'NOT_A_PLACEHOLDER' });
+        if (email && placeholder.invitedEmail !== email) {
+          await ctx.db
+            .update(tripMember)
+            .set({ invitedEmail: email })
+            .where(eq(tripMember.id, memberId));
+        }
+      } else if (email) {
+        // Chi è invitato via email compare subito nel viaggio come partecipante in attesa:
+        // gli si possono già assegnare spese, biglietti e bagagli. Accettando l'invito ne prende il posto.
+        const [alreadyMember] = await ctx.db
+          .select({ id: tripMember.id })
+          .from(tripMember)
+          .innerJoin(user, eq(user.id, tripMember.userId))
+          .where(
+            and(
+              eq(tripMember.tripId, input.tripId),
+              isNull(tripMember.removedAt),
+              sql`lower(${user.email}) = ${email}`,
+            ),
+          );
+        if (alreadyMember) throw new TRPCError({ code: 'BAD_REQUEST', message: 'ALREADY_MEMBER' });
+        const [existing] = await ctx.db
+          .select({ id: tripMember.id })
+          .from(tripMember)
+          .where(
+            and(
+              eq(tripMember.tripId, input.tripId),
+              isNull(tripMember.userId),
+              isNull(tripMember.removedAt),
+              eq(tripMember.invitedEmail, email),
+            ),
+          );
+        if (existing) memberId = existing.id;
+        else {
+          const [created] = await ctx.db
+            .insert(tripMember)
+            .values({
+              tripId: input.tripId,
+              name: input.name ?? email.split('@')[0]!.slice(0, 80),
+              invitedEmail: email,
+            })
+            .returning({ id: tripMember.id });
+          memberId = created!.id;
+        }
+      }
+      let role = input.role;
+      if (memberId) {
+        const [previous] = await ctx.db
+          .select({ role: tripInvitation.role })
+          .from(tripInvitation)
+          .where(
+            and(eq(tripInvitation.tripId, input.tripId), eq(tripInvitation.memberId, memberId)),
+          )
+          .orderBy(desc(tripInvitation.createdAt))
+          .limit(1);
+        role ??= previous?.role === 'viewer' ? 'viewer' : undefined;
+        // Un solo invito attivo per persona: quello nuovo sostituisce i precedenti.
+        await ctx.db
+          .update(tripInvitation)
+          .set({ revokedAt: new Date() })
+          .where(
+            and(
+              eq(tripInvitation.tripId, input.tripId),
+              eq(tripInvitation.memberId, memberId),
+              isNull(tripInvitation.revokedAt),
+            ),
+          );
       }
       const token = randomBytes(18).toString('base64url');
       const [created] = await ctx.db
@@ -95,11 +167,11 @@ export const invitationsRouter = router({
         .values({
           tripId: input.tripId,
           token,
-          email: input.email?.toLowerCase(),
-          role: input.role,
-          memberId: input.memberId,
+          email,
+          role: role ?? 'editor',
+          memberId,
           // Un invito via email (o per un segnaposto) vale per una persona sola.
-          maxUses: input.email || input.memberId ? 1 : (input.maxUses ?? null),
+          maxUses: email || memberId ? 1 : (input.maxUses ?? null),
           expiresAt: new Date(Date.now() + input.expiresInDays * DAYS),
           createdBy: ctx.user.id,
         })
@@ -127,7 +199,7 @@ export const invitationsRouter = router({
           },
         });
       }
-      return { ...created!, url };
+      return { ...created!, url, memberId: memberId ?? null };
     }),
 
   revoke: authedProcedure
@@ -210,7 +282,19 @@ export const invitationsRouter = router({
         .where(and(eq(tripMember.tripId, invitation.tripId), eq(tripMember.userId, ctx.user.id)));
       if (existing && !existing.removedAt) return { tripId: invitation.tripId };
 
-      const claimId = invitation.memberId ?? input.claimMemberId;
+      // Se esiste un partecipante in attesa con la mia email, prendo il suo posto.
+      const [pendingForMe] = await ctx.db
+        .select({ id: tripMember.id })
+        .from(tripMember)
+        .where(
+          and(
+            eq(tripMember.tripId, invitation.tripId),
+            isNull(tripMember.userId),
+            isNull(tripMember.removedAt),
+            eq(tripMember.invitedEmail, ctx.user.email.toLowerCase()),
+          ),
+        );
+      const claimId = invitation.memberId ?? input.claimMemberId ?? pendingForMe?.id;
       await ctx.db.transaction(async (tx) => {
         if (existing) {
           // Rientro dopo essere uscito dal viaggio: il vecchio membro torna attivo.
@@ -227,6 +311,7 @@ export const invitationsRouter = router({
               name: ctx.user.name,
               avatarEmoji: null,
               avatarColor: null,
+              invitedEmail: null,
             })
             .where(
               and(
