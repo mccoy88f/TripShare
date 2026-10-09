@@ -263,6 +263,24 @@ export const aiJob = pgTable(
 );
 
 /** Conversazione con l'assistente di un viaggio (privata per ogni utente). */
+export const aiConversation = pgTable(
+  'ai_conversation',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    tripId: uuid()
+      .notNull()
+      .references(() => trip.id, { onDelete: 'cascade' }),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    title: text().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('ai_conversation_trip_user_idx').on(t.tripId, t.userId, t.updatedAt)],
+);
+
+/** Messaggio di una conversazione con l'assistente. */
 export const aiChatMessage = pgTable(
   'ai_chat_message',
   {
@@ -273,6 +291,7 @@ export const aiChatMessage = pgTable(
     userId: text()
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
+    conversationId: uuid().references(() => aiConversation.id, { onDelete: 'cascade' }),
     role: text().notNull(),
     content: text().notNull(),
     /** Operazioni sul programma proposte dall'assistente. */

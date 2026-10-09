@@ -1,6 +1,6 @@
-import { and, count, desc, eq, inArray } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNull } from 'drizzle-orm';
 import sharp from 'sharp';
-import { aiChatMessage, aiJob, trip, user, type Database } from '@tripshare/db';
+import { aiChatMessage, aiConversation, aiJob, trip, user, type Database } from '@tripshare/db';
 import { isLocale, type Locale } from '@tripshare/shared';
 import { applyPlanOps, PlanOpError, type TripDocument } from '@tripshare/shared/trip-format';
 import { listMembers } from '../services/members.js';
@@ -136,6 +136,7 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
     const locale: Locale = owner?.locale && isLocale(owner.locale) ? owner.locale : 'it';
     const access = await resolveAiAccess(deps, job.userId, PURPOSE[input.kind]);
     provider = access.provider;
+    model = access.model;
     keySource = access.source;
 
     const ctx: TaskContext = { locale };
@@ -153,15 +154,27 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
       const history = await db
         .select({ role: aiChatMessage.role, content: aiChatMessage.content })
         .from(aiChatMessage)
-        .where(and(eq(aiChatMessage.tripId, job.tripId), eq(aiChatMessage.userId, job.userId)))
+        .where(
+          and(
+            eq(aiChatMessage.tripId, job.tripId),
+            eq(aiChatMessage.userId, job.userId),
+            input.conversationId
+              ? eq(aiChatMessage.conversationId, input.conversationId)
+              : isNull(aiChatMessage.conversationId),
+          ),
+        )
         .orderBy(desc(aiChatMessage.createdAt))
         .limit(12);
       ctx.history = history
         .reverse()
         .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
-      await db
-        .insert(aiChatMessage)
-        .values({ tripId: job.tripId, userId: job.userId, role: 'user', content: input.message });
+      await db.insert(aiChatMessage).values({
+        tripId: job.tripId,
+        userId: job.userId,
+        conversationId: input.conversationId ?? null,
+        role: 'user',
+        content: input.message,
+      });
     }
 
     const spec = buildTask(input, ctx);
@@ -228,6 +241,7 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
         .values({
           tripId: job.tripId!,
           userId: job.userId,
+          conversationId: input.conversationId ?? null,
           role: 'assistant',
           content: chat.reply,
           actions: chat.actions.length ? chat.actions : null,
@@ -235,6 +249,11 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
         })
         .returning({ id: aiChatMessage.id });
       result = { ...chat, messageId: msg!.id };
+      if (input.conversationId)
+        await db
+          .update(aiConversation)
+          .set({ updatedAt: new Date() })
+          .where(eq(aiConversation.id, input.conversationId));
     }
     await db
       .update(aiJob)
@@ -273,12 +292,23 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
   }
 }
 
-/** Messaggi della chat con l'assistente (dal più vecchio). */
-export async function chatHistory(db: Database, tripId: string, userId: string) {
+/** Messaggi di una conversazione con l'assistente (dal più vecchio). */
+export async function chatHistory(
+  db: Database,
+  tripId: string,
+  userId: string,
+  conversationId: string,
+) {
   const rows = await db
     .select()
     .from(aiChatMessage)
-    .where(and(eq(aiChatMessage.tripId, tripId), eq(aiChatMessage.userId, userId)))
+    .where(
+      and(
+        eq(aiChatMessage.tripId, tripId),
+        eq(aiChatMessage.userId, userId),
+        eq(aiChatMessage.conversationId, conversationId),
+      ),
+    )
     .orderBy(desc(aiChatMessage.createdAt))
     .limit(100);
   return rows.reverse();

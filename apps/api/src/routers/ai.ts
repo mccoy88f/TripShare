@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
-import { aiChatMessage, aiJob, userSecret } from '@tripshare/db';
+import { aiChatMessage, aiConversation, aiJob, userSecret } from '@tripshare/db';
 import { AI_PROVIDERS, monthlyCentralUsage, userKeys } from '../ai/access.js';
 import { aiDeps } from '../ai/deps.js';
 import { AiJobError, chatHistory, startAiJob } from '../ai/jobs.js';
@@ -109,10 +109,40 @@ export const aiRouter = router({
       } else if (input.input.kind !== 'generate') {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'TRIP_REQUIRED' });
       }
+      let job = input.input;
+      if (job.kind === 'chat' && input.tripId) {
+        // Ogni messaggio appartiene a una conversazione: se manca se ne apre una nuova.
+        let conversationId = job.conversationId;
+        if (conversationId) {
+          const [own] = await ctx.db
+            .select({ id: aiConversation.id })
+            .from(aiConversation)
+            .where(
+              and(
+                eq(aiConversation.id, conversationId),
+                eq(aiConversation.tripId, input.tripId),
+                eq(aiConversation.userId, ctx.user.id),
+              ),
+            );
+          if (!own) throw new TRPCError({ code: 'NOT_FOUND', message: 'CONVERSATION_NOT_FOUND' });
+        } else {
+          const title = job.message.replace(/\s+/g, ' ').trim().slice(0, 60);
+          const [created] = await ctx.db
+            .insert(aiConversation)
+            .values({ tripId: input.tripId, userId: ctx.user.id, title })
+            .returning({ id: aiConversation.id });
+          conversationId = created!.id;
+        }
+        job = { ...job, conversationId };
+      }
       try {
-        return await startAiJob(aiDeps(ctx), ctx.user.id, input.tripId, input.input, {
+        const started = await startAiJob(aiDeps(ctx), ctx.user.id, input.tripId, job, {
           wait: ctx.aiWait,
         });
+        return {
+          ...started,
+          conversationId: job.kind === 'chat' ? (job.conversationId ?? null) : null,
+        };
       } catch (err) {
         if (err instanceof AiJobError)
           throw new TRPCError({ code: 'BAD_REQUEST', message: err.message });
@@ -138,19 +168,40 @@ export const aiRouter = router({
   }),
 
   chat: router({
-    history: authedProcedure.input(z.object({ tripId: z.uuid() })).query(async ({ ctx, input }) => {
-      await requireMember(ctx.db, input.tripId, ctx.user.id);
-      return chatHistory(ctx.db, input.tripId, ctx.user.id);
-    }),
-
-    clear: authedProcedure
+    /** Conversazioni dell'utente nel viaggio (la più recente per prima). */
+    conversations: authedProcedure
       .input(z.object({ tripId: z.uuid() }))
+      .query(async ({ ctx, input }) => {
+        await requireMember(ctx.db, input.tripId, ctx.user.id);
+        return ctx.db
+          .select()
+          .from(aiConversation)
+          .where(
+            and(eq(aiConversation.tripId, input.tripId), eq(aiConversation.userId, ctx.user.id)),
+          )
+          .orderBy(desc(aiConversation.updatedAt));
+      }),
+
+    history: authedProcedure
+      .input(z.object({ tripId: z.uuid(), conversationId: z.uuid() }))
+      .query(async ({ ctx, input }) => {
+        await requireMember(ctx.db, input.tripId, ctx.user.id);
+        return chatHistory(ctx.db, input.tripId, ctx.user.id, input.conversationId);
+      }),
+
+    /** Elimina una conversazione con tutti i suoi messaggi. */
+    remove: authedProcedure
+      .input(z.object({ tripId: z.uuid(), conversationId: z.uuid() }))
       .mutation(async ({ ctx, input }) => {
         await requireMember(ctx.db, input.tripId, ctx.user.id);
         await ctx.db
-          .delete(aiChatMessage)
+          .delete(aiConversation)
           .where(
-            and(eq(aiChatMessage.tripId, input.tripId), eq(aiChatMessage.userId, ctx.user.id)),
+            and(
+              eq(aiConversation.id, input.conversationId),
+              eq(aiConversation.tripId, input.tripId),
+              eq(aiConversation.userId, ctx.user.id),
+            ),
           );
         return { ok: true };
       }),

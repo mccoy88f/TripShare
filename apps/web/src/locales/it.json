@@ -173,7 +173,8 @@
       "getKey": "Come ottenere una chiave",
       "inUse": "In uso",
       "use": "Usa questa"
-    }
+    },
+    "goAdmin": "Vai all'area admin"
   },
   "admin": {
     "title": "Amministrazione",
@@ -294,7 +295,11 @@
     "aiUsageEmpty": "Nessuna richiesta questo mese.",
     "aiUsageRow": "{{requests}} richieste · {{errors}} errori · {{tokens}} token",
     "ownKey": "chiave personale",
-    "centralKey": "chiave centrale"
+    "centralKey": "chiave centrale",
+    "aiTest": "Prova",
+    "aiTestOk": "Funziona · {{model}} · {{ms}} ms · risposta: {{content}}",
+    "aiTestError": "Errore con {{model}}: {{error}}",
+    "aiErrors": "Ultimi errori"
   },
   "legal": {
     "privacyTitle": "Informativa sulla privacy",
@@ -896,8 +901,8 @@
       "placeholder": "Scrivi all'assistente…",
       "send": "Invia",
       "thinking": "Sto pensando…",
-      "clear": "Cancella conversazione",
-      "confirmClear": "Cancellare la conversazione con l'assistente?",
+      "clear": "Elimina conversazione",
+      "confirmClear": "Eliminare questa conversazione?",
       "proposed_one": "{{count}} modifica proposta",
       "proposed_other": "{{count}} modifiche proposte",
       "apply": "Applica al programma",
@@ -916,7 +921,9 @@
         "deleteAlternative": "Rimuovi alternativa",
         "setExchangeRates": "Tassi di cambio"
       },
-      "addExpense": "Aggiungi"
+      "addExpense": "Aggiungi",
+      "newChat": "Nuova chat",
+      "conversations": "Conversazioni"
     },
     "verify": {
       "button": "Verifica",

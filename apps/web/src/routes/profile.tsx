@@ -313,10 +313,10 @@ export function ProfilePage() {
       </form>
       <AiKeysCard />
       {me.role === 'superadmin' && (
-        <Button asChild variant="outline" size="lg" className="justify-self-start">
+        <Button asChild variant="outline" size="lg" className="w-full">
           <Link to="/app/admin">
             <Shield />
-            {t('nav.admin')}
+            {t('profile.goAdmin')}
           </Link>
         </Button>
       )}

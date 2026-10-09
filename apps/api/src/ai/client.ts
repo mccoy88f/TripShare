@@ -98,9 +98,9 @@ async function completeOpenRouter(req: CompletionRequest): Promise<CompletionRes
   } | null;
   if (!res.ok || !json || json.error) {
     const message = json?.error?.message ?? `HTTP ${res.status}`;
-    if (res.status === 401) throw new AiError('AI_INVALID_KEY', 401);
-    if (res.status === 402) throw new AiError('AI_NO_CREDIT', 402);
-    if (res.status === 429) throw new AiError('AI_RATE_LIMITED', 429);
+    if (res.status === 401) throw new AiError(`AI_INVALID_KEY: ${message}`.slice(0, 500), 401);
+    if (res.status === 402) throw new AiError(`AI_NO_CREDIT: ${message}`.slice(0, 500), 402);
+    if (res.status === 429) throw new AiError(`AI_RATE_LIMITED: ${message}`.slice(0, 500), 429);
     throw new AiError(`AI_PROVIDER_ERROR: ${message}`.slice(0, 500), res.status);
   }
   const content = json.choices?.[0]?.message?.content ?? '';
@@ -136,18 +136,6 @@ function toGeminiParts(content: ChatMessage['content']): GeminiPart[] {
   );
 }
 
-/** Rimuove dallo schema le parole chiave che Gemini non accetta. */
-function geminiSchema(schema: unknown): unknown {
-  if (Array.isArray(schema)) return schema.map(geminiSchema);
-  if (!schema || typeof schema !== 'object') return schema;
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(schema)) {
-    if (k === '$schema' || k === '$id') continue;
-    out[k] = geminiSchema(v);
-  }
-  return out;
-}
-
 interface GeminiResponse {
   candidates?: {
     content?: { parts?: { text?: string; thought?: boolean }[] };
@@ -174,13 +162,17 @@ async function completeGemini(req: CompletionRequest): Promise<CompletionResult>
       if (!(err instanceof AiError)) throw err;
       lastError = err;
       // Chiave non valida: inutile provare altri modelli.
-      if (err.message === 'AI_INVALID_KEY') throw err;
+      if (err.message.startsWith('AI_INVALID_KEY')) throw err;
     }
   }
   throw lastError ?? new AiError('AI_PROVIDER_ERROR');
 }
 
-async function callGemini(req: CompletionRequest, model: string): Promise<CompletionResult> {
+async function callGemini(
+  req: CompletionRequest,
+  model: string,
+  jsonOutput = true,
+): Promise<CompletionResult> {
   // I modelli Gemma non hanno istruzioni di sistema né output JSON vincolato.
   const gemma = model.startsWith('gemma');
   const system = req.messages
@@ -194,19 +186,15 @@ async function callGemini(req: CompletionRequest, model: string): Promise<Comple
       parts: toGeminiParts(m.content),
     }));
   if (gemma && system && contents[0]) contents[0].parts.unshift({ text: system });
-  // La ricerca Google non si combina con l'output JSON vincolato: in quel caso il JSON si
-  // chiede nel prompt e si estrae dalla risposta.
-  const jsonMode = !!req.jsonSchema && !req.web && !gemma;
+  // Lo schema della risposta è già nel prompt e la risposta viene validata (e corretta) dopo:
+  // a Gemini si chiede solo "JSON", senza responseJsonSchema, che rifiuta gli schemi grandi
+  // come quello del viaggio. La ricerca Google non si combina con l'output JSON.
+  const jsonMode = jsonOutput && !!req.jsonSchema && !req.web && !gemma;
   const body = {
     ...(system && !gemma ? { systemInstruction: { parts: [{ text: system }] } } : {}),
     contents,
     generationConfig: {
-      ...(jsonMode
-        ? {
-            responseMimeType: 'application/json',
-            responseJsonSchema: geminiSchema(req.jsonSchema!.schema),
-          }
-        : {}),
+      ...(jsonMode ? { responseMimeType: 'application/json' } : {}),
     },
     ...(req.web ? { tools: [{ google_search: {} }] } : {}),
   };
@@ -223,8 +211,10 @@ async function callGemini(req: CompletionRequest, model: string): Promise<Comple
   if (!res.ok || !json || json.error) {
     const message = json?.error?.message ?? `HTTP ${res.status}`;
     if (res.status === 401 || res.status === 403 || /API key/i.test(message))
-      throw new AiError('AI_INVALID_KEY', res.status);
-    if (res.status === 429) throw new AiError('AI_RATE_LIMITED', 429);
+      throw new AiError(`AI_INVALID_KEY: ${message}`.slice(0, 500), res.status);
+    if (res.status === 429) throw new AiError(`AI_RATE_LIMITED: ${message}`.slice(0, 500), 429);
+    // Alcuni modelli non accettano l'output JSON: si riprova chiedendolo solo nel prompt.
+    if (res.status === 400 && jsonMode) return callGemini(req, model, false);
     throw new AiError(`AI_PROVIDER_ERROR: ${message}`.slice(0, 500), res.status);
   }
   if (json.promptFeedback?.blockReason) throw new AiError('AI_BLOCKED');
@@ -233,7 +223,8 @@ async function callGemini(req: CompletionRequest, model: string): Promise<Comple
     .filter((p) => !p.thought && typeof p.text === 'string')
     .map((p) => p.text)
     .join('');
-  if (!content.trim()) throw new AiError('AI_EMPTY_RESPONSE');
+  if (!content.trim())
+    throw new AiError(`AI_EMPTY_RESPONSE: ${candidate?.finishReason ?? 'no candidates'}`);
   const usage = json.usageMetadata;
   const citations = (candidate?.groundingMetadata?.groundingChunks ?? [])
     .map((c) => c.web)

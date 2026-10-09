@@ -167,7 +167,12 @@ export const AiInputSchema = z.discriminatedUnion('kind', [
       .optional(),
     style: z.array(z.string().max(40)).max(12).optional(),
   }),
-  z.object({ kind: z.literal('chat'), message: z.string().min(1).max(3000) }),
+  z.object({
+    kind: z.literal('chat'),
+    message: z.string().min(1).max(3000),
+    /** Conversazione a cui appartiene il messaggio (la crea l'API se manca). */
+    conversationId: z.uuid().optional(),
+  }),
   z.object({ kind: z.literal('verify'), placeId: z.string().max(64) }),
   z.object({ kind: z.literal('packing') }),
 ]);

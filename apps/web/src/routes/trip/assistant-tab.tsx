@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Loader2, Plus, Send, Sparkles, Trash2 } from 'lucide-react';
+import { Check, Loader2, MessageSquarePlus, Plus, Send, Sparkles, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -12,6 +12,7 @@ import {
 } from '@tripshare/shared';
 import type { PlanOp } from '@tripshare/shared/trip-format';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/input';
 import { useAiStatus, useAiTask } from '@/lib/ai';
 import { money, shortDate } from '@/lib/format';
 import { usePlanOps } from '@/lib/plan';
@@ -20,6 +21,7 @@ import type { TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ExpenseDialog, type ExpensePreset } from './expense-dialog';
 import { useOnAdd } from '@/lib/fab';
+import { useKeyboard } from '@/lib/keyboard';
 
 /** Descrizione breve di una modifica proposta dall'assistente. */
 function describeOp(op: PlanOp, t: TFunction): string {
@@ -98,32 +100,78 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
   const status = useAiStatus();
   const { run, running } = useAiTask();
   const { apply, pending: applying } = usePlanOps(trip.id);
-  const historyKey = trpc.ai.chat.history.queryKey({ tripId: trip.id });
-  const { data: history } = useQuery(trpc.ai.chat.history.queryOptions({ tripId: trip.id }));
+  const keyboard = useKeyboard();
+  const conversationsKey = trpc.ai.chat.conversations.queryKey({ tripId: trip.id });
+  const { data: conversations } = useQuery(
+    trpc.ai.chat.conversations.queryOptions({ tripId: trip.id }),
+  );
+  // undefined = ancora da scegliere (si apre la più recente), null = nuova chat.
+  const [conversationId, setConversationId] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (conversationId === undefined && conversations)
+      setConversationId(conversations[0]?.id ?? null);
+  }, [conversations, conversationId]);
+  const { data: history } = useQuery({
+    ...trpc.ai.chat.history.queryOptions({ tripId: trip.id, conversationId: conversationId ?? '' }),
+    enabled: !!conversationId,
+  });
   const markApplied = useMutation(trpc.ai.chat.markApplied.mutationOptions());
-  const clear = useMutation(
-    trpc.ai.chat.clear.mutationOptions({
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: historyKey }),
+  const removeChat = useMutation(
+    trpc.ai.chat.remove.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: conversationsKey });
+        setConversationId(undefined);
+      },
     }),
   );
   const [message, setMessage] = useState('');
   const [sent, setSent] = useState<string | null>(null);
   const [expense, setExpense] = useState<ExpensePreset | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
-  useOnAdd('assistant', () => document.getElementById('assistant-input')?.focus());
+  const input = useRef<HTMLTextAreaElement>(null);
+  useOnAdd('assistant', () => input.current?.focus());
   const canEdit = trip.role !== 'viewer';
 
+  const scrollToEnd = () => bottom.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  useEffect(scrollToEnd, [history?.length, sent, conversationId]);
+  // Con la tastiera aperta l'ultimo messaggio resta visibile sopra la casella di testo.
   useEffect(() => {
-    bottom.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [history?.length, sent]);
+    if (keyboard.open) scrollToEnd();
+  }, [keyboard.open, keyboard.inset]);
+
+  /** La casella cresce con il testo (fino a circa 6 righe). */
+  const autosize = () => {
+    const el = input.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  };
+  useEffect(autosize, [message]);
 
   const send = async (text: string) => {
     const msg = text.trim();
     if (!msg || running) return;
     setMessage('');
     setSent(msg);
-    await run(trip.id, { kind: 'chat', message: msg });
-    await queryClient.invalidateQueries({ queryKey: historyKey });
+    let target = conversationId ?? null;
+    await run(
+      trip.id,
+      { kind: 'chat', message: msg, ...(target ? { conversationId: target } : {}) },
+      {
+        onStarted: ({ conversationId: started }) => {
+          if (started && started !== target) {
+            target = started;
+            setConversationId(started);
+          }
+          void queryClient.invalidateQueries({ queryKey: conversationsKey });
+        },
+      },
+    );
+    if (target)
+      await queryClient.invalidateQueries({
+        queryKey: trpc.ai.chat.history.queryKey({ tripId: trip.id, conversationId: target }),
+      });
+    await queryClient.invalidateQueries({ queryKey: conversationsKey });
     setSent(null);
   };
 
@@ -140,11 +188,59 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
     );
   }
 
-  const messages = history ?? [];
+  const messages = conversationId ? (history ?? []) : [];
   const suggestions = [t('ai.chat.s1'), t('ai.chat.s2'), t('ai.chat.s3'), t('ai.chat.s4')];
 
   return (
     <div className="grid grid-cols-1 gap-4 pb-40">
+      {conversations && conversations.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Select
+            className="h-10 min-w-0 flex-1 text-sm"
+            value={conversationId ?? ''}
+            onChange={(e) => setConversationId(e.target.value || null)}
+            aria-label={t('ai.chat.conversations')}
+          >
+            {conversationId === null && <option value="">✨ {t('ai.chat.newChat')}</option>}
+            {conversations.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.title} · {shortDate(String(c.updatedAt).slice(0, 10))}
+              </option>
+            ))}
+          </Select>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10 shrink-0"
+            disabled={conversationId === null || running}
+            aria-label={t('ai.chat.newChat')}
+            title={t('ai.chat.newChat')}
+            onClick={() => {
+              setConversationId(null);
+              input.current?.focus();
+            }}
+          >
+            <MessageSquarePlus />
+            <span className="hidden sm:inline">{t('ai.chat.newChat')}</span>
+          </Button>
+          {conversationId && (
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="size-10 shrink-0 text-muted-foreground"
+              aria-label={t('ai.chat.clear')}
+              title={t('ai.chat.clear')}
+              onClick={() =>
+                confirm(t('ai.chat.confirmClear')) &&
+                removeChat.mutate({ tripId: trip.id, conversationId })
+              }
+            >
+              <Trash2 />
+            </Button>
+          )}
+        </div>
+      )}
       {messages.length === 0 && !sent && (
         <div className="grid place-items-center gap-3 rounded-xl border border-dashed px-6 py-10 text-center">
           <Sparkles className="size-8 text-accent" />
@@ -234,7 +330,12 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
                         onClick={async () => {
                           await apply(actions);
                           await markApplied.mutateAsync({ tripId: trip.id, messageId: m.id });
-                          await queryClient.invalidateQueries({ queryKey: historyKey });
+                          await queryClient.invalidateQueries({
+                            queryKey: trpc.ai.chat.history.queryKey({
+                              tripId: trip.id,
+                              conversationId: conversationId ?? '',
+                            }),
+                          });
                         }}
                       >
                         {applying ? <Loader2 className="animate-spin" /> : <Check />}
@@ -273,27 +374,15 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
 
       <form
         onSubmit={onSubmit}
+        style={keyboard.open ? { bottom: keyboard.inset + 8 } : undefined}
         className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 mx-auto flex max-w-4xl items-end gap-2 px-4 lg:bottom-6 lg:px-8"
       >
         <div className="flex flex-1 items-end gap-2 rounded-3xl border bg-card p-1.5 shadow-lg">
-          {messages.length > 0 && (
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="size-9 shrink-0 text-muted-foreground"
-              aria-label={t('ai.chat.clear')}
-              title={t('ai.chat.clear')}
-              onClick={() =>
-                confirm(t('ai.chat.confirmClear')) && clear.mutate({ tripId: trip.id })
-              }
-            >
-              <Trash2 />
-            </Button>
-          )}
           <textarea
             id="assistant-input"
+            ref={input}
             rows={1}
+            onFocus={() => setTimeout(scrollToEnd, 300)}
             maxLength={3000}
             value={message}
             placeholder={t('ai.chat.placeholder')}

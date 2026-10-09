@@ -71,6 +71,13 @@
       "when": 1791565453462,
       "tag": "0009_chat_expenses",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791565849268,
+      "tag": "0010_ai_conversations",
+      "breakpoints": true
     }
   ]
 }

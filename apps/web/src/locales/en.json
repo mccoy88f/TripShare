@@ -173,7 +173,8 @@
       "getKey": "How to get a key",
       "inUse": "In use",
       "use": "Use this one"
-    }
+    },
+    "goAdmin": "Go to the admin area"
   },
   "admin": {
     "title": "Administration",
@@ -294,7 +295,11 @@
     "aiUsageEmpty": "No requests this month.",
     "aiUsageRow": "{{requests}} requests · {{errors}} errors · {{tokens}} tokens",
     "ownKey": "personal key",
-    "centralKey": "central key"
+    "centralKey": "central key",
+    "aiTest": "Test",
+    "aiTestOk": "Working · {{model}} · {{ms}} ms · answer: {{content}}",
+    "aiTestError": "Error with {{model}}: {{error}}",
+    "aiErrors": "Latest errors"
   },
   "legal": {
     "privacyTitle": "Privacy policy",
@@ -896,8 +901,8 @@
       "placeholder": "Write to the assistant…",
       "send": "Send",
       "thinking": "Thinking…",
-      "clear": "Clear conversation",
-      "confirmClear": "Clear the conversation with the assistant?",
+      "clear": "Delete conversation",
+      "confirmClear": "Delete this conversation?",
       "proposed_one": "{{count}} proposed change",
       "proposed_other": "{{count}} proposed changes",
       "apply": "Apply to plan",
@@ -916,7 +921,9 @@
         "deleteAlternative": "Remove alternative",
         "setExchangeRates": "Exchange rates"
       },
-      "addExpense": "Add"
+      "addExpense": "Add",
+      "newChat": "New chat",
+      "conversations": "Conversations"
     },
     "verify": {
       "button": "Verify",

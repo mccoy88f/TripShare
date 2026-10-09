@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { signOut } from '@/lib/auth-client';
 import { useCurrentFab } from '@/lib/fab';
+import { useKeyboard } from '@/lib/keyboard';
 import { applyTheme, type Theme } from '@/lib/theme';
 import { useTRPC } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
@@ -40,6 +41,7 @@ export function AppLayout() {
     { to: '/app/profile', label: t('nav.profile'), icon: UserRound },
   ];
   const fab = useCurrentFab();
+  const keyboard = useKeyboard();
   const isActive = (item: NavItem) =>
     item.exact
       ? pathname === item.to || pathname.startsWith('/app/trips/')
@@ -99,7 +101,13 @@ export function AppLayout() {
         </main>
 
         {/* Navigazione in basso (mobile) */}
-        <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
+        {/* Con la tastiera aperta la barra si nasconde, così resta spazio per scrivere. */}
+        <nav
+          className={cn(
+            'fixed inset-x-0 bottom-0 z-30 border-t bg-background/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden',
+            keyboard.open && 'hidden',
+          )}
+        >
           <div className="mx-auto grid h-16 max-w-md grid-cols-3 items-center px-2">
             <BottomLink item={items[0]!} active={isActive(items[0]!)} />
             <div className="flex justify-center">

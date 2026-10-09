@@ -2,6 +2,7 @@ import { count, desc, eq, gte, ilike, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { aiJob, auditLog, user } from '@tripshare/db';
 import { TRPCError } from '@trpc/server';
+import { complete } from '../ai/client.js';
 import { checkGeminiKey, clearGeminiCache, listGeminiModels } from '../gemini.js';
 import { checkKey, clearModelsCache, listModels } from '../openrouter.js';
 import { SETTINGS, isSettingKey, type SettingKey } from '../settings.js';
@@ -97,6 +98,67 @@ export const adminRouter = router({
       }
     }),
   }),
+
+  /** Prova reale del provider con la chiave centrale: una piccola richiesta JSON. */
+  aiTest: superadminProcedure
+    .input(z.object({ provider: z.enum(['openrouter', 'gemini']) }))
+    .mutation(async ({ ctx, input }) => {
+      const gemini = input.provider === 'gemini';
+      const apiKey = await ctx.settings.get(gemini ? 'gemini.apiKey' : 'openrouter.apiKey');
+      if (!apiKey) throw new TRPCError({ code: 'BAD_REQUEST', message: 'AI_NOT_CONFIGURED' });
+      const models = await ctx.settings.get(gemini ? 'gemini.models' : 'openrouter.models');
+      const start = performance.now();
+      try {
+        const res = await complete({
+          provider: input.provider,
+          apiKey,
+          model: models.chat,
+          fallbacks: [],
+          messages: [
+            {
+              role: 'system',
+              content: 'Rispondi solo con JSON: {"ok": true, "saluto": "<una parola>"}',
+            },
+            { role: 'user', content: 'Prova di connessione da TripShare.' },
+          ],
+          jsonSchema: { name: 'tripshare_test', schema: { type: 'object' } },
+          appUrl: ctx.env.APP_URL,
+          appName: ctx.env.APP_NAME,
+          fetchImpl: ctx.httpFetch,
+          timeoutMs: 60_000,
+        });
+        return {
+          ok: true as const,
+          model: res.model,
+          ms: Math.round(performance.now() - start),
+          content: res.content.slice(0, 300),
+        };
+      } catch (err) {
+        return {
+          ok: false as const,
+          model: models.chat,
+          ms: Math.round(performance.now() - start),
+          error: err instanceof Error ? err.message : String(err),
+        };
+      }
+    }),
+
+  /** Ultimi errori dei lavori AI, per capire cosa non va. */
+  aiErrors: superadminProcedure.query(async ({ ctx }) =>
+    ctx.db
+      .select({
+        id: aiJob.id,
+        kind: aiJob.kind,
+        provider: aiJob.provider,
+        model: aiJob.model,
+        error: aiJob.error,
+        createdAt: aiJob.createdAt,
+      })
+      .from(aiJob)
+      .where(eq(aiJob.status, 'error'))
+      .orderBy(desc(aiJob.createdAt))
+      .limit(10),
+  ),
 
   /** Uso dell'AI nel mese corrente, per utente e per provider. */
   aiUsage: superadminProcedure.query(async ({ ctx }) => {

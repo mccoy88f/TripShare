@@ -46,10 +46,15 @@ export function useAiTask() {
   const [running, setRunning] = useState(false);
 
   const run = useCallback(
-    async <T>(tripId: string | null, input: AiInput): Promise<T | null> => {
+    async <T>(
+      tripId: string | null,
+      input: AiInput,
+      options: { onStarted?: (started: { conversationId: string | null }) => void } = {},
+    ): Promise<T | null> => {
       setRunning(true);
       try {
-        const { id } = await start.mutateAsync({ tripId, input });
+        const { id, conversationId } = await start.mutateAsync({ tripId, input });
+        options.onStarted?.({ conversationId });
         const deadline = Date.now() + 5 * 60_000;
         for (let delay = 800; Date.now() < deadline; delay = Math.min(delay * 1.3, 3000)) {
           const job = await queryClient.fetchQuery({
@@ -65,8 +70,13 @@ export function useAiTask() {
         }
         throw new Error('AI_TIMEOUT');
       } catch (err) {
-        const code = (err instanceof Error ? err.message : 'AI_FAILED').split(':')[0]!;
-        toast.error(t(`ai.errors.${code}`, { defaultValue: t('ai.errors.AI_FAILED') }));
+        // Gli errori arrivano come "CODICE: dettaglio del provider".
+        const message = err instanceof Error ? err.message : 'AI_FAILED';
+        const [code, ...rest] = message.split(':');
+        const detail = rest.join(':').trim();
+        toast.error(t(`ai.errors.${code}`, { defaultValue: t('ai.errors.AI_FAILED') }), {
+          description: detail ? detail.slice(0, 240) : undefined,
+        });
         return null;
       } finally {
         setRunning(false);

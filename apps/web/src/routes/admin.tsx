@@ -13,6 +13,7 @@ import { Field, Input, Select } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTRPC } from '@/lib/trpc';
+import { cn } from '@/lib/utils';
 
 type SettingsMap = Record<
   string,
@@ -401,6 +402,7 @@ function KeyStatus({ hasKey, provider }: { hasKey: boolean; provider: Provider }
   const trpc = useTRPC();
   const checkOr = useMutation(trpc.admin.openrouter.checkKey.mutationOptions());
   const checkGemini = useMutation(trpc.admin.gemini.checkKey.mutationOptions());
+  const test = useMutation(trpc.admin.aiTest.mutationOptions());
   if (!hasKey) return null;
   const check = provider === 'gemini' ? checkGemini : checkOr;
   const usd = (n: number | null) => (n === null ? '∞' : `$${n.toFixed(2)}`);
@@ -436,6 +438,32 @@ function KeyStatus({ hasKey, provider }: { hasKey: boolean; provider: Provider }
           {t(`admin.openrouterErrors.${check.error.message}`, {
             defaultValue: check.error.message,
           })}
+        </span>
+      )}
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        disabled={test.isPending}
+        onClick={() => test.mutate({ provider })}
+      >
+        {test.isPending ? <Loader2 className="animate-spin" /> : <Send />}
+        {t('admin.aiTest')}
+      </Button>
+      {test.data && (
+        <span
+          className={cn(
+            'w-full text-xs break-words',
+            test.data.ok ? 'text-success' : 'text-destructive',
+          )}
+        >
+          {test.data.ok
+            ? t('admin.aiTestOk', {
+                model: test.data.model,
+                ms: test.data.ms,
+                content: test.data.content,
+              })
+            : t('admin.aiTestError', { model: test.data.model, error: test.data.error })}
         </span>
       )}
     </div>
@@ -739,6 +767,7 @@ function AiUsage() {
   const { t } = useTranslation();
   const trpc = useTRPC();
   const { data } = useQuery(trpc.admin.aiUsage.queryOptions());
+  const errors = useQuery(trpc.admin.aiErrors.queryOptions());
   if (!data) return null;
   const total = data.reduce(
     (a, r) => ({
@@ -786,6 +815,21 @@ function AiUsage() {
                   })}
                   {r.cost > 0 && ` · $${r.cost.toFixed(3)}`}
                 </span>
+              </div>
+            ))}
+          </div>
+        )}
+        {errors.data && errors.data.length > 0 && (
+          <div className="mt-5 grid grid-cols-1 gap-2">
+            <p className="text-sm font-semibold">{t('admin.aiErrors')}</p>
+            {errors.data.map((e) => (
+              <div key={e.id} className="rounded-lg bg-destructive/10 px-3 py-2 text-xs">
+                <span className="font-semibold">
+                  {new Date(e.createdAt).toLocaleString()} · {e.kind} ·{' '}
+                  {e.provider === 'gemini' ? 'Gemini' : 'OpenRouter'}
+                  {e.model && ` · ${e.model}`}
+                </span>
+                <span className="block break-words text-destructive">{e.error}</span>
               </div>
             ))}
           </div>

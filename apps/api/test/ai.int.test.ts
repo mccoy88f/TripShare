@@ -143,7 +143,7 @@ run('AI jobs (integration)', () => {
     const { marco, tripId } = await setup();
     replies.tripshare_receipt = ['non è JSON', RECEIPT];
     const file = await uploadReceipt(marco, tripId);
-    const started = await t.trpc<{ id: string }>('ai.start', marco, {
+    const started = await t.trpc<{ id: string; conversationId: string }>('ai.start', marco, {
       tripId,
       input: { kind: 'receipt', file: file.file, mime: file.mime, tripCurrency: 'EUR' },
     });
@@ -189,7 +189,7 @@ run('AI jobs (integration)', () => {
     await t.settings.set('ai.monthlyRequests', 1);
     const { marco, tripId } = await setup();
     replies.tripshare_assistant = [{ reply: 'Ciao! Il programma è vuoto.', actions: [] }];
-    const started = await t.trpc<{ id: string }>('ai.start', marco, {
+    const started = await t.trpc<{ id: string; conversationId: string }>('ai.start', marco, {
       tripId,
       input: { kind: 'chat', message: 'Cosa facciamo?' },
     });
@@ -204,9 +204,26 @@ run('AI jobs (integration)', () => {
     expect(call.url).toContain('/models/gemini-flash-latest:generateContent');
     expect(call.auth).toBe('AIza-central-gemini-key');
     expect(call.body.generationConfig).toMatchObject({ responseMimeType: 'application/json' });
+    // Gemini rifiuta gli schemi grandi: lo schema va solo nel prompt.
+    expect(call.body.generationConfig).not.toHaveProperty('responseJsonSchema');
 
-    const history = await t.trpc<{ role: string }[]>('ai.chat.history', marco, { tripId }, 'query');
+    const conversationId = started.data.conversationId;
+    const history = await t.trpc<{ role: string }[]>(
+      'ai.chat.history',
+      marco,
+      { tripId, conversationId },
+      'query',
+    );
     expect(history.data.map((m) => m.role)).toEqual(['user', 'assistant']);
+    const list = await t.trpc<{ id: string; title: string }[]>(
+      'ai.chat.conversations',
+      marco,
+      { tripId },
+      'query',
+    );
+    expect(list.data).toEqual([
+      expect.objectContaining({ id: conversationId, title: 'Cosa facciamo?' }),
+    ]);
 
     const again = await t.trpc('ai.start', marco, {
       tripId,
@@ -259,7 +276,7 @@ run('AI jobs (integration)', () => {
         ],
       },
     ];
-    const started = await t.trpc<{ id: string }>('ai.start', marco, {
+    const started = await t.trpc<{ id: string; conversationId: string }>('ai.start', marco, {
       tripId,
       input: { kind: 'chat', message: 'Aggiungi il castello il primo giorno' },
     });
@@ -307,7 +324,7 @@ run('AI jobs (integration)', () => {
         ],
       },
     ];
-    const started = await t.trpc<{ id: string }>('ai.start', marco, {
+    const started = await t.trpc<{ id: string; conversationId: string }>('ai.start', marco, {
       tripId,
       input: {
         kind: 'chat',
@@ -336,9 +353,39 @@ run('AI jobs (integration)', () => {
     const history = await t.trpc<{ expenses: unknown[] | null }[]>(
       'ai.chat.history',
       marco,
-      { tripId },
+      { tripId, conversationId: started.data.conversationId },
       'query',
     );
     expect(history.data[1]!.expenses).toHaveLength(1);
+  });
+
+  it('keeps separate conversations with their own history', async () => {
+    await t.settings.set('openrouter.apiKey', 'sk-or-central-key-123');
+    const { marco, tripId } = await setup();
+    replies.tripshare_assistant = [{ reply: 'ok', actions: [] }];
+    const first = await t.trpc<{ conversationId: string }>('ai.start', marco, {
+      tripId,
+      input: { kind: 'chat', message: 'Ristoranti a Edimburgo' },
+    });
+    await t.trpc('ai.start', marco, {
+      tripId,
+      input: { kind: 'chat', message: 'E per pranzo?', conversationId: first.data.conversationId },
+    });
+    const second = await t.trpc<{ conversationId: string }>('ai.start', marco, {
+      tripId,
+      input: { kind: 'chat', message: 'Meteo a Skye' },
+    });
+    expect(second.data.conversationId).not.toBe(first.data.conversationId);
+    // Il secondo messaggio della prima chat arriva al modello con la cronologia della prima chat.
+    const lastCall = calls.filter((c) => c.url.endsWith('/chat/completions'))[1]!;
+    expect(JSON.stringify(lastCall.body.messages)).toContain('Ristoranti a Edimburgo');
+    const thirdCall = calls.filter((c) => c.url.endsWith('/chat/completions'))[2]!;
+    expect(JSON.stringify(thirdCall.body.messages)).not.toContain('Ristoranti a Edimburgo');
+
+    const list = await t.trpc<unknown[]>('ai.chat.conversations', marco, { tripId }, 'query');
+    expect(list.data).toHaveLength(2);
+    await t.trpc('ai.chat.remove', marco, { tripId, conversationId: first.data.conversationId });
+    const after = await t.trpc<unknown[]>('ai.chat.conversations', marco, { tripId }, 'query');
+    expect(after.data).toHaveLength(1);
   });
 });
