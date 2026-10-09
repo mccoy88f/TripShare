@@ -44,19 +44,28 @@ export function computeShares(total: number, split: SplitInput): Record<MemberId
   switch (split.method) {
     case 'equal': {
       if (split.members.length === 0) throw new Error('no members');
-      const parts = allocate(total, split.members.map(() => 1));
+      const parts = allocate(
+        total,
+        split.members.map(() => 1),
+      );
       return Object.fromEntries(split.members.map((m, i) => [m, parts[i]!]));
     }
     case 'shares': {
       const ids = Object.keys(split.shares);
-      const parts = allocate(total, ids.map((id) => split.shares[id]!));
+      const parts = allocate(
+        total,
+        ids.map((id) => split.shares[id]!),
+      );
       return Object.fromEntries(ids.map((m, i) => [m, parts[i]!]));
     }
     case 'percent': {
       const ids = Object.keys(split.percents);
       const sum = ids.reduce((a, id) => a + split.percents[id]!, 0);
       if (Math.abs(sum - 100) > 1e-6) throw new Error('percentages must sum to 100');
-      const parts = allocate(total, ids.map((id) => split.percents[id]!));
+      const parts = allocate(
+        total,
+        ids.map((id) => split.percents[id]!),
+      );
       return Object.fromEntries(ids.map((m, i) => [m, parts[i]!]));
     }
     case 'exact': {

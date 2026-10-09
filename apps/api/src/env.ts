@@ -49,7 +49,9 @@ const EnvSchema = z
       },
       trustedOrigins: [
         appUrl.origin,
-        ...(env.TRUSTED_ORIGINS?.split(',').map((o) => o.trim()).filter(Boolean) ?? []),
+        ...(env.TRUSTED_ORIGINS?.split(',')
+          .map((o) => o.trim())
+          .filter(Boolean) ?? []),
       ],
     };
   });

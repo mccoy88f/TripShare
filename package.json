@@ -8,7 +8,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "pnpm -r --parallel --filter ./apps/* dev",
+    "dev": "pnpm -r --parallel --filter \"./apps/*\" run \"/^dev/\"",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
@@ -17,6 +17,17 @@
     "format:check": "prettier --check .",
     "db:generate": "pnpm --filter @tripshare/db generate",
     "db:migrate": "pnpm --filter @tripshare/db migrate",
-    "schema:trip": "pnpm --filter @tripshare/shared schema:trip"
-  }
+    "schema:trip": "pnpm --filter @tripshare/shared schema:trip",
+    "dev:services": "docker compose -f docker-compose.dev.yml up -d"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.71.1"
+  },
+  "type": "module"
 }

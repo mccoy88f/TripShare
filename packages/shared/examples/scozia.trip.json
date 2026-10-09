@@ -82,7 +82,12 @@
       "kind": "nature",
       "mapsQuery": "Glencoe Visitor Centre",
       "openingHours": "Centro visitatori dal 5 al 25 ottobre 9:30–17:00. Caffè 9:30–16:00.",
-      "price": { "amount": 4, "currency": "GBP", "basis": "per_vehicle", "note": "Parcheggio, incluso l'ingresso al centro" },
+      "price": {
+        "amount": 4,
+        "currency": "GBP",
+        "basis": "per_vehicle",
+        "note": "Parcheggio, incluso l'ingresso al centro"
+      },
       "verification": {
         "status": "verified",
         "checkedAt": "2026-10-08",
@@ -110,7 +115,9 @@
       "verification": {
         "status": "verified",
         "checkedAt": "2026-10-08",
-        "sources": [{ "title": "Orari del Jacobite", "url": "https://jacobitetrail.co.uk/jacobite-train" }]
+        "sources": [
+          { "title": "Orari del Jacobite", "url": "https://jacobitetrail.co.uk/jacobite-train" }
+        ]
       }
     },
     {
@@ -144,7 +151,12 @@
       "kind": "sight",
       "mapsQuery": "Urquhart Castle, Drumnadrochit",
       "openingHours": "Tutti i giorni 9:30–17:00, ultimo ingresso alle 16:00.",
-      "price": { "amount": 14, "currency": "GBP", "basis": "per_person", "note": "14 £ online, 16 £ in loco" },
+      "price": {
+        "amount": 14,
+        "currency": "GBP",
+        "basis": "per_person",
+        "note": "14 £ online, 16 £ in loco"
+      },
       "verification": {
         "status": "verified",
         "checkedAt": "2026-10-08",
@@ -176,7 +188,12 @@
       "kind": "sight",
       "mapsQuery": "Edinburgh Castle",
       "openingHours": "Dal 1 ottobre 9:30–17:00, ultimo ingresso alle 16:00.",
-      "price": { "amount": 23.5, "currency": "GBP", "basis": "per_person", "note": "23,50 £ online, 26 £ in loco" },
+      "price": {
+        "amount": 23.5,
+        "currency": "GBP",
+        "basis": "per_person",
+        "note": "23,50 £ online, 26 £ in loco"
+      },
       "verification": {
         "status": "verified",
         "checkedAt": "2026-10-08",
@@ -198,7 +215,9 @@
       "verification": {
         "status": "verified",
         "checkedAt": "2026-10-08",
-        "sources": [{ "title": "Sito ufficiale", "url": "https://www.stgilescathedral.org.uk/visit/" }]
+        "sources": [
+          { "title": "Sito ufficiale", "url": "https://www.stgilescathedral.org.uk/visit/" }
+        ]
       }
     },
     {
@@ -217,7 +236,9 @@
       "verification": {
         "status": "verified",
         "checkedAt": "2026-10-08",
-        "sources": [{ "title": "Sito ufficiale", "url": "https://www.nms.ac.uk/national-museum-of-scotland/" }]
+        "sources": [
+          { "title": "Sito ufficiale", "url": "https://www.nms.ac.uk/national-museum-of-scotland/" }
+        ]
       }
     }
   ],
@@ -334,7 +355,12 @@
             "durationMinutes": 120,
             "distanceKm": 130,
             "route": "A1 e GRA",
-            "cost": { "amount": 25, "currency": "EUR", "approximate": true, "note": "Pedaggi e benzina" }
+            "cost": {
+              "amount": 25,
+              "currency": "EUR",
+              "approximate": true,
+              "note": "Pedaggi e benzina"
+            }
           }
         },
         {
@@ -488,7 +514,12 @@
           "time": "12:15",
           "type": "travel",
           "title": "Da Glenfinnan a Fort Augustus",
-          "transport": { "mode": "car", "durationMinutes": 80, "distanceKm": 85, "route": "A830 / A82" }
+          "transport": {
+            "mode": "car",
+            "durationMinutes": 80,
+            "distanceKm": 85,
+            "route": "A830 / A82"
+          }
         },
         {
           "id": "d3-lunch",
@@ -507,7 +538,10 @@
           "placeIds": ["urquhart-castle"],
           "bookingId": "ticket-urquhart",
           "cost": { "amount": 14, "currency": "GBP", "basis": "per_person" },
-          "warnings": ["Ultimo ingresso alle 16:00.", "Prenotate online: costa meno e i posti si esauriscono."]
+          "warnings": [
+            "Ultimo ingresso alle 16:00.",
+            "Prenotate online: costa meno e i posti si esauriscono."
+          ]
         },
         {
           "id": "d3-back",
@@ -519,7 +553,12 @@
             "durationMinutes": 90,
             "distanceKm": 90,
             "route": "A82",
-            "cost": { "amount": 30, "currency": "EUR", "approximate": true, "note": "Carburante della giornata" }
+            "cost": {
+              "amount": 30,
+              "currency": "EUR",
+              "approximate": true,
+              "note": "Carburante della giornata"
+            }
           },
           "warnings": ["Il sole tramonta verso le 17:55: si guida al crepuscolo."]
         }
@@ -659,7 +698,11 @@
             "durationMinutes": 35,
             "cost": { "amount": 8, "currency": "GBP", "basis": "per_person", "approximate": true },
             "alternatives": [
-              { "mode": "rideshare", "durationMinutes": 30, "cost": { "amount": 30, "currency": "GBP", "approximate": true } }
+              {
+                "mode": "rideshare",
+                "durationMinutes": 30,
+                "cost": { "amount": 30, "currency": "GBP", "approximate": true }
+              }
             ]
           }
         },
@@ -681,7 +724,12 @@
           "transport": {
             "mode": "car",
             "durationMinutes": 120,
-            "cost": { "amount": 25, "currency": "EUR", "approximate": true, "note": "Pedaggi e benzina" }
+            "cost": {
+              "amount": 25,
+              "currency": "EUR",
+              "approximate": true,
+              "note": "Pedaggi e benzina"
+            }
           },
           "warnings": ["Uscita dal parcheggio dopo le 00:00: supplemento di 10 €."]
         }
@@ -689,27 +737,137 @@
     }
   ],
   "budget": [
-    { "id": "b-spires", "title": "The Spires Serviced Apartments", "category": "lodging", "status": "booked", "amount": { "amount": 203, "currency": "EUR" }, "bookingId": "stay-spires" },
-    { "id": "b-waterfront", "title": "Waterfront Lodge", "category": "lodging", "status": "booked", "amount": { "amount": 510, "currency": "EUR" }, "bookingId": "stay-waterfront" },
-    { "id": "b-viewcraig", "title": "Viewcraig apartment", "category": "lodging", "status": "booked", "amount": { "amount": 260, "currency": "EUR" }, "bookingId": "stay-viewcraig" },
-    { "id": "b-parking", "title": "Best Parking Ciampino", "category": "parking", "status": "booked", "amount": { "amount": 34, "currency": "EUR" }, "bookingId": "parking-ciampino" },
-    { "id": "b-flights", "title": "Voli Ryanair andata e ritorno", "category": "flights", "status": "pending", "bookingId": "flight-out" },
-    { "id": "b-car", "title": "Noleggio auto Waverley", "category": "car", "status": "pending", "bookingId": "car-rental" },
-    { "id": "b-eta", "title": "ETA Regno Unito", "category": "fees", "status": "estimate", "amount": { "amount": 20, "currency": "GBP", "basis": "per_person" } },
-    { "id": "b-meals", "title": "Pasti in Scozia", "category": "food", "status": "estimate", "amount": { "amount": 156, "currency": "GBP", "basis": "per_person", "approximate": true, "note": "8 £ colazione, 12 £ pranzo, 18–20 £ cena a testa" } },
-    { "id": "b-car-italy", "title": "Auto Pontecorvo–Ciampino A/R", "category": "fuel", "status": "estimate", "amount": { "amount": 50, "currency": "EUR", "approximate": true } },
-    { "id": "b-airport", "title": "Aeroporto ↔ centro, due tratte", "category": "transport", "status": "estimate", "amount": { "amount": 60, "currency": "GBP", "approximate": true } },
-    { "id": "b-fuel", "title": "Carburante in Scozia", "category": "fuel", "status": "estimate", "amount": { "amount": 80, "currency": "EUR", "approximate": true, "note": "Circa 680 km" } },
-    { "id": "b-urquhart", "title": "Urquhart Castle", "category": "tickets", "status": "estimate", "amount": { "amount": 14, "currency": "GBP", "basis": "per_person" }, "bookingId": "ticket-urquhart" },
-    { "id": "b-castle", "title": "Edinburgh Castle", "category": "tickets", "status": "estimate", "amount": { "amount": 23.5, "currency": "GBP", "basis": "per_person" }, "included": false, "bookingId": "ticket-edinburgh-castle" }
+    {
+      "id": "b-spires",
+      "title": "The Spires Serviced Apartments",
+      "category": "lodging",
+      "status": "booked",
+      "amount": { "amount": 203, "currency": "EUR" },
+      "bookingId": "stay-spires"
+    },
+    {
+      "id": "b-waterfront",
+      "title": "Waterfront Lodge",
+      "category": "lodging",
+      "status": "booked",
+      "amount": { "amount": 510, "currency": "EUR" },
+      "bookingId": "stay-waterfront"
+    },
+    {
+      "id": "b-viewcraig",
+      "title": "Viewcraig apartment",
+      "category": "lodging",
+      "status": "booked",
+      "amount": { "amount": 260, "currency": "EUR" },
+      "bookingId": "stay-viewcraig"
+    },
+    {
+      "id": "b-parking",
+      "title": "Best Parking Ciampino",
+      "category": "parking",
+      "status": "booked",
+      "amount": { "amount": 34, "currency": "EUR" },
+      "bookingId": "parking-ciampino"
+    },
+    {
+      "id": "b-flights",
+      "title": "Voli Ryanair andata e ritorno",
+      "category": "flights",
+      "status": "pending",
+      "bookingId": "flight-out"
+    },
+    {
+      "id": "b-car",
+      "title": "Noleggio auto Waverley",
+      "category": "car",
+      "status": "pending",
+      "bookingId": "car-rental"
+    },
+    {
+      "id": "b-eta",
+      "title": "ETA Regno Unito",
+      "category": "fees",
+      "status": "estimate",
+      "amount": { "amount": 20, "currency": "GBP", "basis": "per_person" }
+    },
+    {
+      "id": "b-meals",
+      "title": "Pasti in Scozia",
+      "category": "food",
+      "status": "estimate",
+      "amount": {
+        "amount": 156,
+        "currency": "GBP",
+        "basis": "per_person",
+        "approximate": true,
+        "note": "8 £ colazione, 12 £ pranzo, 18–20 £ cena a testa"
+      }
+    },
+    {
+      "id": "b-car-italy",
+      "title": "Auto Pontecorvo–Ciampino A/R",
+      "category": "fuel",
+      "status": "estimate",
+      "amount": { "amount": 50, "currency": "EUR", "approximate": true }
+    },
+    {
+      "id": "b-airport",
+      "title": "Aeroporto ↔ centro, due tratte",
+      "category": "transport",
+      "status": "estimate",
+      "amount": { "amount": 60, "currency": "GBP", "approximate": true }
+    },
+    {
+      "id": "b-fuel",
+      "title": "Carburante in Scozia",
+      "category": "fuel",
+      "status": "estimate",
+      "amount": { "amount": 80, "currency": "EUR", "approximate": true, "note": "Circa 680 km" }
+    },
+    {
+      "id": "b-urquhart",
+      "title": "Urquhart Castle",
+      "category": "tickets",
+      "status": "estimate",
+      "amount": { "amount": 14, "currency": "GBP", "basis": "per_person" },
+      "bookingId": "ticket-urquhart"
+    },
+    {
+      "id": "b-castle",
+      "title": "Edinburgh Castle",
+      "category": "tickets",
+      "status": "estimate",
+      "amount": { "amount": 23.5, "currency": "GBP", "basis": "per_person" },
+      "included": false,
+      "bookingId": "ticket-edinburgh-castle"
+    }
   ],
   "packing": [
-    { "item": "Passaporto valido", "group": "documents", "perPerson": true, "reason": "Per il Regno Unito la carta d'identità non basta." },
-    { "item": "ETA Regno Unito", "group": "documents", "perPerson": true, "reason": "Si chiede online, arriva di solito entro un giorno." },
+    {
+      "item": "Passaporto valido",
+      "group": "documents",
+      "perPerson": true,
+      "reason": "Per il Regno Unito la carta d'identità non basta."
+    },
+    {
+      "item": "ETA Regno Unito",
+      "group": "documents",
+      "perPerson": true,
+      "reason": "Si chiede online, arriva di solito entro un giorno."
+    },
     { "item": "Check-in online Ryanair andata e ritorno", "group": "documents" },
-    { "item": "Patente e carta di credito del conducente", "group": "documents", "reason": "La carta serve per il deposito del noleggio." },
+    {
+      "item": "Patente e carta di credito del conducente",
+      "group": "documents",
+      "reason": "La carta serve per il deposito del noleggio."
+    },
     { "item": "Assicurazione sanitaria di viaggio", "group": "documents", "perPerson": true },
-    { "item": "Giacca impermeabile con cappuccio", "group": "clothing", "perPerson": true, "reason": "Nelle Highlands piove spesso, 5–12 °C." },
+    {
+      "item": "Giacca impermeabile con cappuccio",
+      "group": "clothing",
+      "perPerson": true,
+      "reason": "Nelle Highlands piove spesso, 5–12 °C."
+    },
     { "item": "Scarpe impermeabili con buona suola", "group": "clothing", "perPerson": true },
     { "item": "Vestiti a strati, cappello e guanti", "group": "clothing", "perPerson": true },
     { "item": "Adattatore per prese britanniche (tipo G)", "group": "electronics" },
@@ -721,11 +879,26 @@
   ],
   "tips": [
     { "title": "Un'ora indietro", "text": "In Scozia l'orologio è un'ora prima dell'Italia." },
-    { "title": "Guida a sinistra", "text": "Le rotatorie si fanno in senso orario, dando la precedenza a chi arriva da destra. Limiti in miglia orarie." },
-    { "title": "Strade strette", "text": "Lungo la A830 ci sono corsie singole con piazzole: fermatevi nelle piazzole per far passare." },
-    { "title": "Carburante", "text": "I distributori si diradano dopo Fort William e Fort Augustus: fate il pieno prima delle tratte lunghe." },
-    { "title": "Mappe offline", "text": "Il segnale è debole in Glencoe e sulla Rannoch Moor: scaricate le mappe prima di partire." },
-    { "title": "Pagamenti", "text": "Quasi ovunque si paga con carta contactless. Qualche sterlina serve per i parcheggi." }
+    {
+      "title": "Guida a sinistra",
+      "text": "Le rotatorie si fanno in senso orario, dando la precedenza a chi arriva da destra. Limiti in miglia orarie."
+    },
+    {
+      "title": "Strade strette",
+      "text": "Lungo la A830 ci sono corsie singole con piazzole: fermatevi nelle piazzole per far passare."
+    },
+    {
+      "title": "Carburante",
+      "text": "I distributori si diradano dopo Fort William e Fort Augustus: fate il pieno prima delle tratte lunghe."
+    },
+    {
+      "title": "Mappe offline",
+      "text": "Il segnale è debole in Glencoe e sulla Rannoch Moor: scaricate le mappe prima di partire."
+    },
+    {
+      "title": "Pagamenti",
+      "text": "Quasi ovunque si paga con carta contactless. Qualche sterlina serve per i parcheggi."
+    }
   ],
   "exchangeRates": { "GBP": 1.16 },
   "disclaimer": "Orari, prezzi e durate di guida sono indicativi e vanno riconfermati poco prima della partenza."

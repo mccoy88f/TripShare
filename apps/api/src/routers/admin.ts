@@ -6,7 +6,12 @@ import { SETTINGS, isSettingKey, type SettingKey } from '../settings.js';
 import { router, superadminProcedure } from '../trpc/init.js';
 import type { Context } from '../trpc/init.js';
 
-async function audit(ctx: Context, action: string, data?: Record<string, unknown>, target?: { type: string; id: string }) {
+async function audit(
+  ctx: Context,
+  action: string,
+  data?: Record<string, unknown>,
+  target?: { type: string; id: string },
+) {
   await ctx.db.insert(auditLog).values({
     actorId: ctx.session?.user.id ?? null,
     action,
@@ -17,13 +22,19 @@ async function audit(ctx: Context, action: string, data?: Record<string, unknown
   });
 }
 
-async function check(fn: () => Promise<unknown>): Promise<{ ok: boolean; error?: string; ms: number }> {
+async function check(
+  fn: () => Promise<unknown>,
+): Promise<{ ok: boolean; error?: string; ms: number }> {
   const start = performance.now();
   try {
     await fn();
     return { ok: true, ms: Math.round(performance.now() - start) };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err), ms: Math.round(performance.now() - start) };
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+      ms: Math.round(performance.now() - start),
+    };
   }
 }
 
@@ -34,14 +45,21 @@ export const adminRouter = router({
     update: superadminProcedure
       .input(z.object({ key: z.string(), value: z.unknown() }))
       .mutation(async ({ ctx, input }) => {
-        if (!isSettingKey(input.key)) throw new TRPCError({ code: 'BAD_REQUEST', message: 'UNKNOWN_SETTING' });
+        if (!isSettingKey(input.key))
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'UNKNOWN_SETTING' });
         const key: SettingKey = input.key;
         const parsed = SETTINGS[key].schema.safeParse(input.value);
         if (!parsed.success) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: parsed.error.issues[0]?.message ?? 'INVALID_VALUE' });
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: parsed.error.issues[0]?.message ?? 'INVALID_VALUE',
+          });
         }
         await ctx.settings.set(key, parsed.data as never, ctx.session!.user.id);
-        await audit(ctx, 'settings.update', { key, value: SETTINGS[key].secret ? '[secret]' : parsed.data });
+        await audit(ctx, 'settings.update', {
+          key,
+          value: SETTINGS[key].secret ? '[secret]' : parsed.data,
+        });
         return { ok: true };
       }),
   }),
@@ -97,7 +115,9 @@ export const adminRouter = router({
           await ctx.verifySmtp();
         }),
       ]);
-      const emailQueue = ctx.emailQueue ? await ctx.emailQueue.getJobCounts('waiting', 'active', 'failed', 'delayed') : null;
+      const emailQueue = ctx.emailQueue
+        ? await ctx.emailQueue.getJobCounts('waiting', 'active', 'failed', 'delayed')
+        : null;
       const [users] = await ctx.db.select({ value: count() }).from(user);
       return {
         services: { database, redis, smtp },
@@ -119,12 +139,19 @@ export const adminRouter = router({
       .input(z.object({ to: z.email().optional() }))
       .mutation(async ({ ctx, input }) => {
         const to = input.to ?? ctx.session!.user.email;
-        const job = { to, locale: ctx.session!.user.locale === 'en' ? 'en' : 'it', template: { kind: 'test' } } as const;
+        const job = {
+          to,
+          locale: ctx.session!.user.locale === 'en' ? 'en' : 'it',
+          template: { kind: 'test' },
+        } as const;
         try {
           if (ctx.sendDirect) await ctx.sendDirect(job);
           else await ctx.email.send(job);
         } catch (err) {
-          throw new TRPCError({ code: 'BAD_GATEWAY', message: err instanceof Error ? err.message : 'SMTP_ERROR' });
+          throw new TRPCError({
+            code: 'BAD_GATEWAY',
+            message: err instanceof Error ? err.message : 'SMTP_ERROR',
+          });
         }
         await audit(ctx, 'email.test', { to });
         return { ok: true, to };

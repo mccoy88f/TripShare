@@ -10,8 +10,7 @@ export interface TripFormatIssue {
 }
 
 export type TripParseResult =
-  | { success: true; data: TripDocument }
-  | { success: false; issues: TripFormatIssue[] };
+  { success: true; data: TripDocument } | { success: false; issues: TripFormatIssue[] };
 
 /** Valida un documento (già decodificato da JSON) e applica i valori predefiniti. */
 export function parseTripDocument(input: unknown): TripParseResult {

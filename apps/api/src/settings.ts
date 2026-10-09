@@ -26,7 +26,11 @@ export const SETTINGS = {
     default: 'central' as const,
     secret: false,
   },
-  'openrouter.apiKey': { schema: z.string().min(10).max(300).nullable(), default: null, secret: true },
+  'openrouter.apiKey': {
+    schema: z.string().min(10).max(300).nullable(),
+    default: null,
+    secret: true,
+  },
   'openrouter.models': {
     schema: z.object({
       vision: MODEL_ID,
@@ -46,11 +50,19 @@ export const SETTINGS = {
     },
     secret: false,
   },
-  'openrouter.monthlyQuotaUsd': { schema: z.number().min(0).max(10_000), default: 2, secret: false },
+  'openrouter.monthlyQuotaUsd': {
+    schema: z.number().min(0).max(10_000),
+    default: 2,
+    secret: false,
+  },
   'openrouter.denyDataCollection': { schema: z.boolean(), default: true, secret: false },
   'payments.paypalEnabled': { schema: z.boolean(), default: true, secret: false },
   'uploads.maxMb': { schema: z.number().int().min(1).max(50), default: 10, secret: false },
-  'unsplash.accessKey': { schema: z.string().min(10).max(200).nullable(), default: null, secret: true },
+  'unsplash.accessKey': {
+    schema: z.string().min(10).max(200).nullable(),
+    default: null,
+    secret: true,
+  },
 } as const;
 
 export type SettingKey = keyof typeof SETTINGS;
@@ -75,7 +87,9 @@ export class SettingsService {
     const [row] = await this.db.select().from(appSetting).where(eq(appSetting.key, key));
     let value: unknown = def.default;
     if (row) {
-      const raw = row.encrypted ? JSON.parse(decrypt(row.value as EncryptedValue, this.encryptionKey)) : row.value;
+      const raw = row.encrypted
+        ? JSON.parse(decrypt(row.value as EncryptedValue, this.encryptionKey))
+        : row.value;
       const parsed = def.schema.safeParse(raw);
       if (parsed.success) value = parsed.data;
     }
@@ -86,21 +100,30 @@ export class SettingsService {
   async set<K extends SettingKey>(key: K, value: SettingValue<K>, actorId?: string): Promise<void> {
     const def = SETTINGS[key];
     const parsed = def.schema.parse(value);
-    const stored = def.secret && parsed !== null ? encrypt(JSON.stringify(parsed), this.encryptionKey) : parsed;
+    const stored =
+      def.secret && parsed !== null ? encrypt(JSON.stringify(parsed), this.encryptionKey) : parsed;
     const encrypted = def.secret && parsed !== null;
     await this.db
       .insert(appSetting)
       .values({ key, value: stored as object, encrypted, updatedBy: actorId ?? null })
       .onConflictDoUpdate({
         target: appSetting.key,
-        set: { value: stored as object, encrypted, updatedBy: actorId ?? null, updatedAt: new Date() },
+        set: {
+          value: stored as object,
+          encrypted,
+          updatedBy: actorId ?? null,
+          updatedAt: new Date(),
+        },
       });
     this.cache.set(key, parsed);
   }
 
   /** Imposta un valore solo se non è mai stato salvato (valori iniziali dalle variabili d'ambiente). */
   async seed<K extends SettingKey>(key: K, value: SettingValue<K>): Promise<void> {
-    const [row] = await this.db.select({ key: appSetting.key }).from(appSetting).where(eq(appSetting.key, key));
+    const [row] = await this.db
+      .select({ key: appSetting.key })
+      .from(appSetting)
+      .where(eq(appSetting.key, key));
     if (!row) await this.set(key, value);
   }
 
@@ -110,7 +133,14 @@ export class SettingsService {
       SETTING_KEYS.map(async (key) => {
         const value = await this.get(key);
         if (SETTINGS[key].secret) {
-          return [key, { secret: true, set: value !== null, preview: typeof value === 'string' ? maskSecret(value) : null }] as const;
+          return [
+            key,
+            {
+              secret: true,
+              set: value !== null,
+              preview: typeof value === 'string' ? maskSecret(value) : null,
+            },
+          ] as const;
         }
         return [key, { secret: false, value }] as const;
       }),

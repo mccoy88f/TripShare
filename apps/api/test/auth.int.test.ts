@@ -40,13 +40,24 @@ run('auth and profile (integration)', () => {
   const trpc = (path: string, cookie: string, input?: unknown) =>
     input === undefined
       ? app.inject({ method: 'GET', url: `/api/trpc/${path}`, headers: { cookie } })
-      : app.inject({ method: 'POST', url: `/api/trpc/${path}`, ...json(input), headers: { ...json(input).headers, cookie } });
+      : app.inject({
+          method: 'POST',
+          url: `/api/trpc/${path}`,
+          ...json(input),
+          headers: { ...json(input).headers, cookie },
+        });
 
   async function signUpAndVerify(address: string, locale = 'it') {
     const res = await app.inject({
       method: 'POST',
       url: '/api/auth/sign-up/email',
-      ...json({ email: address, password: 'password-123', name: 'Luca', locale, defaultCurrency: 'GBP' }),
+      ...json({
+        email: address,
+        password: 'password-123',
+        name: 'Luca',
+        locale,
+        defaultCurrency: 'GBP',
+      }),
     });
     expect(res.statusCode).toBe(200);
     const mail = sent.find((m) => m.to === address && m.template.kind === 'verify-email');
@@ -79,32 +90,61 @@ run('auth and profile (integration)', () => {
 
     const me = await trpc('me.get', cookie);
     expect(me.statusCode).toBe(200);
-    expect(me.json().result.data).toMatchObject({ email: 'luca@example.com', role: 'user', locale: 'en', defaultCurrency: 'GBP' });
+    expect(me.json().result.data).toMatchObject({
+      email: 'luca@example.com',
+      role: 'user',
+      locale: 'en',
+      defaultCurrency: 'GBP',
+    });
 
-    const update = await trpc('me.update', cookie, { avatarEmoji: '🦊', paypalMe: 'https://paypal.me/Luca88', theme: 'dark' });
+    const update = await trpc('me.update', cookie, {
+      avatarEmoji: '🦊',
+      paypalMe: 'https://paypal.me/Luca88',
+      theme: 'dark',
+    });
     expect(update.statusCode).toBe(200);
     const after = await trpc('me.get', cookie);
-    expect(after.json().result.data).toMatchObject({ avatarEmoji: '🦊', paypalMe: 'Luca88', theme: 'dark' });
+    expect(after.json().result.data).toMatchObject({
+      avatarEmoji: '🦊',
+      paypalMe: 'Luca88',
+      theme: 'dark',
+    });
 
     const forbidden = await trpc('admin.settings.list', cookie);
     expect(forbidden.statusCode).toBe(403);
   });
 
   it('blocks sign in before email verification', async () => {
-    await app.inject({ method: 'POST', url: '/api/auth/sign-up/email', ...json({ email: 'a@example.com', password: 'password-123', name: 'A' }) });
-    const res = await app.inject({ method: 'POST', url: '/api/auth/sign-in/email', ...json({ email: 'a@example.com', password: 'password-123' }) });
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      ...json({ email: 'a@example.com', password: 'password-123', name: 'A' }),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-in/email',
+      ...json({ email: 'a@example.com', password: 'password-123' }),
+    });
     expect(res.statusCode).toBe(403);
   });
 
   it('respects the registration mode and allowed domains', async () => {
     await settings.set('registration.mode', 'closed');
-    const closed = await app.inject({ method: 'POST', url: '/api/auth/sign-up/email', ...json({ email: 'b@example.com', password: 'password-123', name: 'B' }) });
+    const closed = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      ...json({ email: 'b@example.com', password: 'password-123', name: 'B' }),
+    });
     expect(closed.statusCode).toBe(400);
     expect(closed.json().code).toBe('REGISTRATION_CLOSED');
 
     await settings.set('registration.mode', 'open');
     await settings.set('registration.allowedDomains', ['company.com']);
-    const wrongDomain = await app.inject({ method: 'POST', url: '/api/auth/sign-up/email', ...json({ email: 'b@example.com', password: 'password-123', name: 'B' }) });
+    const wrongDomain = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      ...json({ email: 'b@example.com', password: 'password-123', name: 'B' }),
+    });
     expect(wrongDomain.json().code).toBe('EMAIL_DOMAIN_NOT_ALLOWED');
   });
 
@@ -118,24 +158,45 @@ run('auth and profile (integration)', () => {
     const location = new URL(redirect.headers.location as string);
     const token = location.searchParams.get('token');
     expect(token).toBeTruthy();
-    const reset = await app.inject({ method: 'POST', url: '/api/auth/reset-password', ...json({ token, newPassword: 'admin-password-1' }) });
+    const reset = await app.inject({
+      method: 'POST',
+      url: '/api/auth/reset-password',
+      ...json({ token, newPassword: 'admin-password-1' }),
+    });
     expect(reset.statusCode).toBe(200);
 
-    const signIn = await app.inject({ method: 'POST', url: '/api/auth/sign-in/email', ...json({ email: 'admin@example.com', password: 'admin-password-1' }) });
+    const signIn = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-in/email',
+      ...json({ email: 'admin@example.com', password: 'admin-password-1' }),
+    });
     expect(signIn.statusCode).toBe(200);
     const cookie = cookieOf(signIn);
 
-    const update = await trpc('admin.settings.update', cookie, { key: 'openrouter.apiKey', value: 'sk-or-v1-secret-value-1234' });
+    const update = await trpc('admin.settings.update', cookie, {
+      key: 'openrouter.apiKey',
+      value: 'sk-or-v1-secret-value-1234',
+    });
     expect(update.statusCode).toBe(200);
     const list = await trpc('admin.settings.list', cookie);
     const body = JSON.stringify(list.json());
     expect(body).not.toContain('secret-value');
-    expect(list.json().result.data['openrouter.apiKey']).toMatchObject({ secret: true, set: true, preview: 'sk-or-…1234' });
+    expect(list.json().result.data['openrouter.apiKey']).toMatchObject({
+      secret: true,
+      set: true,
+      preview: 'sk-or-…1234',
+    });
     expect(await settings.get('openrouter.apiKey')).toBe('sk-or-v1-secret-value-1234');
 
-    const bad = await trpc('admin.settings.update', cookie, { key: 'registration.mode', value: 'everyone' });
+    const bad = await trpc('admin.settings.update', cookie, {
+      key: 'registration.mode',
+      value: 'everyone',
+    });
     expect(bad.statusCode).toBe(400);
-    const users = await trpc(`admin.users.list?input=${encodeURIComponent(JSON.stringify({}))}`, cookie);
+    const users = await trpc(
+      `admin.users.list?input=${encodeURIComponent(JSON.stringify({}))}`,
+      cookie,
+    );
     expect(users.json().result.data.total).toBe(1);
   });
 

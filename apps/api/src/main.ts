@@ -3,7 +3,12 @@ import { Redis } from 'ioredis';
 import { createDb, runMigrations } from '@tripshare/db';
 import { createAuth } from './auth.js';
 import { bootstrap } from './bootstrap.js';
-import { EMAIL_QUEUE, createDirectEmailSender, createQueuedEmailSender, type EmailJob } from './email/index.js';
+import {
+  EMAIL_QUEUE,
+  createDirectEmailSender,
+  createQueuedEmailSender,
+  type EmailJob,
+} from './email/index.js';
 import { loadEnv } from './env.js';
 import { buildServer } from './server.js';
 import { SettingsService } from './settings.js';

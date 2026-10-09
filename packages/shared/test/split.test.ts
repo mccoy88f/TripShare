@@ -13,7 +13,9 @@ describe('allocate', () => {
     fc.assert(
       fc.property(
         fc.integer({ min: -1_000_000, max: 1_000_000 }),
-        fc.array(fc.integer({ min: 0, max: 100 }), { minLength: 1, maxLength: 12 }).filter((w) => w.some((x) => x > 0)),
+        fc
+          .array(fc.integer({ min: 0, max: 100 }), { minLength: 1, maxLength: 12 })
+          .filter((w) => w.some((x) => x > 0)),
         (total, weights) => {
           const parts = allocate(total, weights);
           expect(parts.reduce((a, b) => a + b, 0)).toBe(total);
@@ -28,10 +30,24 @@ describe('allocate', () => {
 
 describe('computeShares', () => {
   it('supports every split method', () => {
-    expect(computeShares(1000, { method: 'equal', members: ['a', 'b', 'c'] })).toEqual({ a: 334, b: 333, c: 333 });
-    expect(computeShares(1000, { method: 'shares', shares: { a: 2, b: 1, c: 1 } })).toEqual({ a: 500, b: 250, c: 250 });
-    expect(computeShares(1000, { method: 'percent', percents: { a: 50, b: 50 } })).toEqual({ a: 500, b: 500 });
-    expect(computeShares(1000, { method: 'exact', amounts: { a: 700, b: 300 } })).toEqual({ a: 700, b: 300 });
+    expect(computeShares(1000, { method: 'equal', members: ['a', 'b', 'c'] })).toEqual({
+      a: 334,
+      b: 333,
+      c: 333,
+    });
+    expect(computeShares(1000, { method: 'shares', shares: { a: 2, b: 1, c: 1 } })).toEqual({
+      a: 500,
+      b: 250,
+      c: 250,
+    });
+    expect(computeShares(1000, { method: 'percent', percents: { a: 50, b: 50 } })).toEqual({
+      a: 500,
+      b: 500,
+    });
+    expect(computeShares(1000, { method: 'exact', amounts: { a: 700, b: 300 } })).toEqual({
+      a: 700,
+      b: 300,
+    });
   });
 
   it('rejects inconsistent input', () => {
@@ -43,7 +59,10 @@ describe('computeShares', () => {
 describe('balances and simplification', () => {
   it('settles a simple trip', () => {
     const balances = computeBalances([
-      { paid: { a: 3000 }, owed: computeShares(3000, { method: 'equal', members: ['a', 'b', 'c'] }) },
+      {
+        paid: { a: 3000 },
+        owed: computeShares(3000, { method: 'equal', members: ['a', 'b', 'c'] }),
+      },
       { paid: { b: 600 }, owed: computeShares(600, { method: 'equal', members: ['a', 'b', 'c'] }) },
     ]);
     expect(balances).toEqual({ a: 1800, b: -600, c: -1200 });

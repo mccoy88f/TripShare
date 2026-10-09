@@ -71,7 +71,14 @@ function describeRequest(req: TripRequest, locale: Locale): string {
   add(['Partenza da', 'Departing from'], req.departureFrom);
   add(['Valuta del viaggio', 'Trip currency'], req.currency);
   if (req.budget) {
-    const basis = req.budget.basis === 'per_person' ? (it ? 'a persona' : 'per person') : it ? 'totale' : 'total';
+    const basis =
+      req.budget.basis === 'per_person'
+        ? it
+          ? 'a persona'
+          : 'per person'
+        : it
+          ? 'totale'
+          : 'total';
     add(['Budget', 'Budget'], `${req.budget.amount} ${req.budget.currency} ${basis}`);
   }
   if (req.style?.length) add(['Stile', 'Style'], req.style.join(', '));

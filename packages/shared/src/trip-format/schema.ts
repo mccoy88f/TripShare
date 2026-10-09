@@ -51,7 +51,9 @@ export const MoneySchema = z
     basis: z
       .enum(['total', 'per_person', 'per_night', 'per_vehicle', 'per_day'])
       .default('total')
-      .meta(d('A cosa si riferisce l\'importo. "per_person" viene moltiplicato per i viaggiatori.')),
+      .meta(
+        d('A cosa si riferisce l\'importo. "per_person" viene moltiplicato per i viaggiatori.'),
+      ),
     approximate: z
       .boolean()
       .default(false)
@@ -107,7 +109,11 @@ export const PlaceSchema = z
       .string()
       .max(400)
       .optional()
-      .meta(d('Orari in testo libero per le date del viaggio, es. "9:30–17:00, ultimo ingresso 16:00".')),
+      .meta(
+        d(
+          'Orari in testo libero per le date del viaggio, es. "9:30–17:00, ultimo ingresso 16:00".',
+        ),
+      ),
     price: MoneySchema.optional().meta(d('Prezzo di ingresso o costo tipico.')),
     priceLevel: z
       .number()
@@ -158,7 +164,9 @@ export const BookingSchema = z
       .object({ date: IsoDateSchema, time: LocalTimeSchema.optional() })
       .optional()
       .meta(d('Fine: arrivo, check-out, riconsegna.')),
-    placeId: RefSchema.optional().meta(d('Luogo principale (alloggio, parcheggio, punto di ritiro).')),
+    placeId: RefSchema.optional().meta(
+      d('Luogo principale (alloggio, parcheggio, punto di ritiro).'),
+    ),
     flight: z
       .object({
         number: z.string().max(12),
@@ -203,7 +211,7 @@ export const TransportSchema = TransportOptionSchema.extend({
     .array(TransportOptionSchema)
     .default([])
     .meta(d('Altri mezzi possibili per lo stesso spostamento, es. Uber al posto del tram.')),
-}).meta(d('Spostamento associato all\'attività.'));
+}).meta(d("Spostamento associato all'attività."));
 
 export const ACTIVITY_TYPES = [
   'travel',
@@ -232,7 +240,7 @@ export const ActivitySchema = z
     placeIds: RefListSchema.default([]).meta(d('Luoghi coinvolti, riferiti a places[].id.')),
     bookingId: RefSchema.optional().meta(d('Prenotazione collegata, riferita a bookings[].id.')),
     transport: TransportSchema.optional(),
-    cost: MoneySchema.optional().meta(d('Costo previsto dell\'attività.')),
+    cost: MoneySchema.optional().meta(d("Costo previsto dell'attività.")),
     warnings: z
       .array(z.string().max(300))
       .default([])
@@ -247,7 +255,9 @@ export const AlternativeSchema = z
     id: RefSchema,
     title: z.string().min(1).max(160).meta(d('Es. "Steall Falls al posto di Loch Ness".')),
     when: z.string().max(200).optional().meta(d('Quando conviene, es. "se piove forte".')),
-    replacesActivityIds: RefListSchema.meta(d('Attività del giorno che questa alternativa sostituisce.')),
+    replacesActivityIds: RefListSchema.meta(
+      d('Attività del giorno che questa alternativa sostituisce.'),
+    ),
     activities: z.array(ActivitySchema).min(1),
     tradeoffs: z.string().max(400).optional().meta(d('Cosa si perde e cosa si guadagna.')),
   })
@@ -261,7 +271,7 @@ export const DaySchema = z
       .array(z.string().max(80))
       .default([])
       .meta(d('Tappe principali nell\'ordine, es. ["Fort William", "Glenfinnan", "Loch Ness"].')),
-    stayBookingId: RefSchema.optional().meta(d('Prenotazione dell\'alloggio per la notte.')),
+    stayBookingId: RefSchema.optional().meta(d("Prenotazione dell'alloggio per la notte.")),
     summary: z.string().max(600).optional(),
     activities: z.array(ActivitySchema).default([]).meta(d('In ordine cronologico.')),
     alternatives: z.array(AlternativeSchema).default([]),
@@ -282,7 +292,10 @@ export const BudgetItemSchema = z
         ),
       ),
     amount: MoneySchema.optional().meta(d('Omettere solo per le voci "pending".')),
-    included: z.boolean().default(true).meta(d('false per le voci facoltative escluse dal totale.')),
+    included: z
+      .boolean()
+      .default(true)
+      .meta(d('false per le voci facoltative escluse dal totale.')),
     bookingId: RefSchema.optional(),
     notes: z.string().max(400).optional(),
   })
@@ -348,7 +361,9 @@ export const TripDocumentSchema = z
       .partialRecord(CurrencySchema, z.number().positive())
       .optional()
       .meta(
-        d('Tassi usati per le stime: quante unità della valuta del viaggio vale 1 unità della chiave.'),
+        d(
+          'Tassi usati per le stime: quante unità della valuta del viaggio vale 1 unità della chiave.',
+        ),
       ),
     disclaimer: z.string().max(400).optional(),
     generatedBy: z
@@ -398,7 +413,8 @@ export const TripDocumentSchema = z
     doc.days.forEach((day, di) => {
       if (seenDates.has(day.date)) issue(['days', di, 'date'], `duplicate day ${day.date}`);
       seenDates.add(day.date);
-      if (day.date < previousDate) issue(['days', di, 'date'], 'days must be in chronological order');
+      if (day.date < previousDate)
+        issue(['days', di, 'date'], 'days must be in chronological order');
       previousDate = day.date;
       if (day.date < doc.trip.startDate || day.date > doc.trip.endDate) {
         issue(['days', di, 'date'], 'day is outside the trip dates');
@@ -411,7 +427,10 @@ export const TripDocumentSchema = z
       day.alternatives.forEach((alt, li) => {
         alt.replacesActivityIds.forEach((id, i) => {
           if (!activityIds.has(id)) {
-            issue(['days', di, 'alternatives', li, 'replacesActivityIds', i], `unknown activity "${id}" in this day`);
+            issue(
+              ['days', di, 'alternatives', li, 'replacesActivityIds', i],
+              `unknown activity "${id}" in this day`,
+            );
           }
         });
         alt.activities.forEach((a, ai) =>
@@ -436,7 +455,8 @@ export const TripDocumentSchema = z
   })
   .meta({
     title: 'TripShare Trip Format v1',
-    description: 'Documento standard di un viaggio TripShare: programma, luoghi, prenotazioni, budget e lista.',
+    description:
+      'Documento standard di un viaggio TripShare: programma, luoghi, prenotazioni, budget e lista.',
   });
 
 export type TripDocument = z.infer<typeof TripDocumentSchema>;

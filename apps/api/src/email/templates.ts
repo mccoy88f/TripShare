@@ -23,9 +23,9 @@ function copy(t: EmailTemplate, locale: Locale, appName: string): Copy {
         ? {
             subject: `Conferma il tuo indirizzo email · ${appName}`,
             title: `Ciao ${t.name}, benvenuto su ${appName}!`,
-            body: 'Conferma il tuo indirizzo email per attivare l\'account e iniziare a organizzare i tuoi viaggi.',
+            body: "Conferma il tuo indirizzo email per attivare l'account e iniziare a organizzare i tuoi viaggi.",
             cta: 'Conferma email',
-            footer: 'Se non hai creato tu l\'account, ignora questa email.',
+            footer: "Se non hai creato tu l'account, ignora questa email.",
           }
         : {
             subject: `Confirm your email address · ${appName}`,
@@ -39,9 +39,9 @@ function copy(t: EmailTemplate, locale: Locale, appName: string): Copy {
         ? {
             subject: `Reimposta la password · ${appName}`,
             title: `Ciao ${t.name}`,
-            body: 'Abbiamo ricevuto una richiesta per reimpostare la tua password. Il link scade tra un\'ora.',
+            body: "Abbiamo ricevuto una richiesta per reimpostare la tua password. Il link scade tra un'ora.",
             cta: 'Reimposta password',
-            footer: 'Se non l\'hai chiesto tu, ignora questa email: la password resta invariata.',
+            footer: "Se non l'hai chiesto tu, ignora questa email: la password resta invariata.",
           }
         : {
             subject: `Reset your password · ${appName}`,
@@ -71,7 +71,7 @@ function copy(t: EmailTemplate, locale: Locale, appName: string): Copy {
             title: 'Accedi con un clic',
             body: 'Usa questo link per accedere. Scade tra 5 minuti e funziona una sola volta.',
             cta: 'Accedi',
-            footer: 'Se non l\'hai chiesto tu, ignora questa email.',
+            footer: "Se non l'hai chiesto tu, ignora questa email.",
           }
         : {
             subject: `Your sign-in link · ${appName}`,
@@ -96,7 +96,10 @@ function copy(t: EmailTemplate, locale: Locale, appName: string): Copy {
 }
 
 const escape = (s: string) =>
-  s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+  s.replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+  );
 
 export function renderEmail(t: EmailTemplate, locale: Locale, appName: string): RenderedEmail {
   const c = copy(t, locale, appName);
@@ -116,7 +119,13 @@ export function renderEmail(t: EmailTemplate, locale: Locale, appName: string): 
 ${button}
 ${c.footer ? `<p style="font-size:13px;color:#64748b;margin:20px 0 0">${escape(c.footer)}</p>` : ''}
 </div></div></body></html>`;
-  const text = [c.title, '', c.body, url ? `\n${c.cta}: ${url}` : '', c.footer ? `\n${c.footer}` : '']
+  const text = [
+    c.title,
+    '',
+    c.body,
+    url ? `\n${c.cta}: ${url}` : '',
+    c.footer ? `\n${c.footer}` : '',
+  ]
     .join('\n')
     .trim();
   return { subject: c.subject, html, text };

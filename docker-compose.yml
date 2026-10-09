@@ -1,0 +1,83 @@
+# TripShare in produzione su un VPS.
+#   1. punta il record DNS di DOMAIN al server (porte 80 e 443 aperte)
+#   2. cp .env.example .env  e compila i valori
+#   3. docker compose up -d --build
+name: tripshare
+
+x-app-env: &app-env
+  APP_URL: https://${DOMAIN:?imposta DOMAIN nel file .env}
+  DATABASE_URL: postgres://tripshare:${POSTGRES_PASSWORD:?imposta POSTGRES_PASSWORD}@postgres:5432/tripshare
+  REDIS_URL: redis://redis:6379
+
+services:
+  caddy:
+    build: { context: ., target: web }
+    image: ${IMAGE_PREFIX:-tripshare}-web:${TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      DOMAIN: ${DOMAIN}
+      # Let's Encrypt usa l'email solo per gli avvisi di scadenza.
+      ACME_EMAIL: ${ACME_EMAIL:-admin@${DOMAIN}}
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      api: { condition: service_healthy }
+
+  api:
+    build: { context: ., target: api }
+    image: ${IMAGE_PREFIX:-tripshare}-api:${TAG:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment: *app-env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  worker:
+    build: { context: ., target: api }
+    image: ${IMAGE_PREFIX:-tripshare}-api:${TAG:-latest}
+    restart: unless-stopped
+    command: ['node', '--enable-source-maps', 'dist/worker.js']
+    env_file: .env
+    environment: *app-env
+    healthcheck: { disable: true }
+    depends_on:
+      api: { condition: service_healthy }
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tripshare
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: tripshare
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tripshare -d tripshare']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  caddy-data:
+  caddy-config:
+  postgres-data:
+  redis-data:

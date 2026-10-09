@@ -11,7 +11,11 @@ import { createDb } from './client.js';
 export function migrationsFolder(): string {
   if (process.env.MIGRATIONS_DIR) return resolve(process.env.MIGRATIONS_DIR);
   const here = dirname(fileURLToPath(import.meta.url));
-  const candidates = [resolve(here, '../drizzle'), resolve(here, 'drizzle'), resolve(process.cwd(), 'drizzle')];
+  const candidates = [
+    resolve(here, '../drizzle'),
+    resolve(here, 'drizzle'),
+    resolve(process.cwd(), 'drizzle'),
+  ];
   return candidates.find((dir) => existsSync(dir)) ?? candidates[0]!;
 }
 

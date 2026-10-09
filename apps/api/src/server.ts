@@ -17,7 +17,10 @@ function toHeaders(req: FastifyRequest): Headers {
   return headers;
 }
 
-export async function buildServer(services: AppServices, options: { logger?: boolean | object } = {}) {
+export async function buildServer(
+  services: AppServices,
+  options: { logger?: boolean | object } = {},
+) {
   const { env, auth } = services;
   const app = Fastify({
     logger: options.logger ?? false,
@@ -25,12 +28,15 @@ export async function buildServer(services: AppServices, options: { logger?: boo
     bodyLimit: 2 * 1024 * 1024,
   });
 
-  await app.register(helmet, { contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'same-site' } });
+  await app.register(helmet, {
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'same-site' },
+  });
   await app.register(rateLimit, { max: 300, timeWindow: '1 minute' });
   // In produzione web e API hanno la stessa origine dietro Caddy; CORS serve solo in sviluppo.
   await app.register(cors, { origin: env.trustedOrigins, credentials: true });
 
-  app.get('/api/health', async () => ({ status: 'ok' }));
+  app.get('/api/health', { logLevel: 'silent' }, async () => ({ status: 'ok' }));
 
   app.get('/api/trip-format/v1/schema.json', async (_req, reply) => {
     reply.header('cache-control', 'public, max-age=3600');
@@ -68,7 +74,8 @@ export async function buildServer(services: AppServices, options: { logger?: boo
         return { ...services, session, ip: req.ip };
       },
       onError({ error, path }) {
-        if (error.code === 'INTERNAL_SERVER_ERROR') app.log.error({ err: error, path }, 'tRPC error');
+        if (error.code === 'INTERNAL_SERVER_ERROR')
+          app.log.error({ err: error, path }, 'tRPC error');
       },
     } satisfies FastifyTRPCPluginOptions<AppRouter>['trpcOptions'],
   });

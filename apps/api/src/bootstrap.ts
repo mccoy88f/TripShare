@@ -15,7 +15,13 @@ interface Logger {
  * - crea il super admin indicato da SUPERADMIN_EMAIL e gli invia il link per impostare la password;
  * - salva la chiave OpenRouter delle variabili d'ambiente come valore iniziale.
  */
-export async function bootstrap(deps: { env: Env; db: Database; auth: Auth; settings: SettingsService; log: Logger }) {
+export async function bootstrap(deps: {
+  env: Env;
+  db: Database;
+  auth: Auth;
+  settings: SettingsService;
+  log: Logger;
+}) {
   const { env, db, auth, settings, log } = deps;
 
   if (env.OPENROUTER_API_KEY) await settings.seed('openrouter.apiKey', env.OPENROUTER_API_KEY);
@@ -28,7 +34,10 @@ export async function bootstrap(deps: { env: Env; db: Database; auth: Auth; sett
   const [existing] = await db.select().from(user).where(eq(user.email, email));
   if (existing) {
     if (existing.role !== 'superadmin') {
-      await db.update(user).set({ role: 'superadmin', updatedAt: new Date() }).where(eq(user.id, existing.id));
+      await db
+        .update(user)
+        .set({ role: 'superadmin', updatedAt: new Date() })
+        .where(eq(user.id, existing.id));
       log.info(`Utente ${email} promosso a super admin`);
     }
     return;

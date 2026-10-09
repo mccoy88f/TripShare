@@ -1,16 +1,17 @@
 # TripShare Trip Format v1
 
 TripShare usa un unico documento JSON per descrivere un viaggio. Lo usano:
+
 - l'**AI**, quando genera un viaggio: il prompt chiede questo formato;
 - l'**import** e l'**export** dei viaggi;
 - le **API**, per creare un viaggio completo in una sola chiamata.
 
-| File | Contenuto |
-|---|---|
-| `packages/shared/src/trip-format/schema.ts` | Schema Zod: la fonte di verità |
-| `packages/shared/schema/trip.v1.schema.json` | JSON Schema generato (draft 2020-12). Si rigenera con `pnpm schema:trip` |
-| `packages/shared/examples/scozia.trip.json` | Esempio completo: Scozia, 5 giorni in auto |
-| `packages/shared/src/trip-format/prompt.ts` | Prompt di sistema (italiano e inglese) e `response_format` per OpenRouter |
+| File                                         | Contenuto                                                                 |
+| -------------------------------------------- | ------------------------------------------------------------------------- |
+| `packages/shared/src/trip-format/schema.ts`  | Schema Zod: la fonte di verità                                            |
+| `packages/shared/schema/trip.v1.schema.json` | JSON Schema generato (draft 2020-12). Si rigenera con `pnpm schema:trip`  |
+| `packages/shared/examples/scozia.trip.json`  | Esempio completo: Scozia, 5 giorni in auto                                |
+| `packages/shared/src/trip-format/prompt.ts`  | Prompt di sistema (italiano e inglese) e `response_format` per OpenRouter |
 
 ## Regole generali
 
@@ -49,18 +50,24 @@ TripDocument
 ### Oggetto `Money`
 
 ```json
-{ "amount": 14, "currency": "GBP", "basis": "per_person", "approximate": false, "note": "14 £ online, 16 £ in loco" }
+{
+  "amount": 14,
+  "currency": "GBP",
+  "basis": "per_person",
+  "approximate": false,
+  "note": "14 £ online, 16 £ in loco"
+}
 ```
 
 `basis` indica a cosa si riferisce l'importo:
 
-| Valore | Significato |
-|---|---|
-| `total` | importo complessivo (predefinito) |
-| `per_person` | a persona: si moltiplica per `trip.travelers` |
-| `per_night` | a notte |
-| `per_vehicle` | per veicolo |
-| `per_day` | al giorno |
+| Valore        | Significato                                   |
+| ------------- | --------------------------------------------- |
+| `total`       | importo complessivo (predefinito)             |
+| `per_person`  | a persona: si moltiplica per `trip.travelers` |
+| `per_night`   | a notte                                       |
+| `per_vehicle` | per veicolo                                   |
+| `per_day`     | al giorno                                     |
 
 `approximate: true` segna le stime.
 
@@ -68,22 +75,23 @@ TripDocument
 
 `verification.status` vale `"verified"` solo se orari o prezzi sono stati letti su una fonte
 ufficiale, citata in `sources` insieme alla data del controllo (`checkedAt`). In tutti gli
-altri casi vale `"unverified"`. L'app mostra lo stato come badge *verificato* o
-*da controllare*.
+altri casi vale `"unverified"`. L'app mostra lo stato come badge _verificato_ o
+_da controllare_.
 
 ### Voci di budget
 
-| `status` | Significato | `amount` |
-|---|---|---|
-| `booked` | già prenotato, importo noto | obbligatorio |
-| `pending` | prenotato, importo da inserire dalla ricevuta | facoltativo |
-| `estimate` | stima | obbligatorio |
+| `status`   | Significato                                   | `amount`     |
+| ---------- | --------------------------------------------- | ------------ |
+| `booked`   | già prenotato, importo noto                   | obbligatorio |
+| `pending`  | prenotato, importo da inserire dalla ricevuta | facoltativo  |
+| `estimate` | stima                                         | obbligatorio |
 
 `included: false` esclude la voce dal totale (es. un ingresso facoltativo).
 
 ## Validazione
 
 `parseTripDocument(json)` applica i valori predefiniti e controlla, oltre alla struttura:
+
 - id duplicati;
 - riferimenti a luoghi, prenotazioni o attività che non esistono;
 - giorni duplicati, fuori ordine o fuori dalle date del viaggio;
@@ -101,8 +109,14 @@ import {
 } from '@tripshare/shared/trip-format';
 
 const { messages, response_format } = buildTripGenerationRequest(
-  { prompt: 'Scozia in auto, Harry Potter e Loch Ness', travelers: 4, currency: 'EUR',
-    startDate: '2026-10-12', endDate: '2026-10-16', today: '2026-10-09' },
+  {
+    prompt: 'Scozia in auto, Harry Potter e Loch Ness',
+    travelers: 4,
+    currency: 'EUR',
+    startDate: '2026-10-12',
+    endDate: '2026-10-16',
+    today: '2026-10-09',
+  },
   'it',
 );
 // POST https://openrouter.ai/api/v1/chat/completions { model, messages, response_format }

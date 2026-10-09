@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=../../.env src/main.ts",
+    "dev:worker": "tsx watch --env-file-if-exists=../../.env src/worker.ts",
     "build": "tsup",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
@@ -33,5 +34,8 @@
     "tsx": "^4.23.15",
     "typescript": "~5.9.3",
     "vitest": "^5.0.3"
+  },
+  "exports": {
+    "./router": "./src/routers/index.ts"
   }
 }

@@ -18,9 +18,13 @@ const emailWorker = new Worker<EmailJob>(
   { connection, concurrency: 4 },
 );
 
-emailWorker.on('completed', (job) => console.log(`[email] inviata ${job.data.template.kind} a ${job.data.to}`));
+emailWorker.on('completed', (job) =>
+  console.log(`[email] inviata ${job.data.template.kind} a ${job.data.to}`),
+);
 emailWorker.on('failed', (job, err) =>
-  console.error(`[email] errore ${job?.data.template.kind} a ${job?.data.to} (tentativo ${job?.attemptsMade}): ${err.message}`),
+  console.error(
+    `[email] errore ${job?.data.template.kind} a ${job?.data.to} (tentativo ${job?.attemptsMade}): ${err.message}`,
+  ),
 );
 
 console.log(`Worker avviato, SMTP ${env.smtp.host}:${env.smtp.port}`);

@@ -5,7 +5,14 @@ import { createAccessControl } from 'better-auth/plugins/access';
 import { adminAc, defaultStatements, userAc } from 'better-auth/plugins/admin/access';
 import { and, eq } from 'drizzle-orm';
 import { account, schema, type Database } from '@tripshare/db';
-import { CURRENCY_CODES, DEFAULT_CURRENCY, LOCALES, isLocale, pickLocale, type Locale } from '@tripshare/shared';
+import {
+  CURRENCY_CODES,
+  DEFAULT_CURRENCY,
+  LOCALES,
+  isLocale,
+  pickLocale,
+  type Locale,
+} from '@tripshare/shared';
 import type { EmailSender } from './email/index.js';
 import type { Env } from './env.js';
 import type { SettingsService } from './settings.js';
@@ -41,17 +48,26 @@ export async function checkRegistration(deps: AuthDeps, email: string): Promise<
   if (mode === 'closed') {
     // 400 e non 403: con la verifica email obbligatoria Better Auth trasforma i 403 della
     // registrazione in una risposta generica di successo, per non rivelare gli indirizzi esistenti.
-    throw new APIError('BAD_REQUEST', { message: 'Registration is closed', code: 'REGISTRATION_CLOSED' });
+    throw new APIError('BAD_REQUEST', {
+      message: 'Registration is closed',
+      code: 'REGISTRATION_CLOSED',
+    });
   }
   if (mode === 'invite_only') {
     // Gli inviti ai viaggi arrivano nella fase 2: per ora la modalità blocca le registrazioni.
-    throw new APIError('BAD_REQUEST', { message: 'Registration requires an invitation', code: 'INVITATION_REQUIRED' });
+    throw new APIError('BAD_REQUEST', {
+      message: 'Registration requires an invitation',
+      code: 'INVITATION_REQUIRED',
+    });
   }
   const domains = await deps.settings.get('registration.allowedDomains');
   if (domains.length > 0) {
     const domain = normalized.split('@')[1] ?? '';
     if (!domains.some((d) => d.toLowerCase() === domain)) {
-      throw new APIError('BAD_REQUEST', { message: 'Email domain not allowed', code: 'EMAIL_DOMAIN_NOT_ALLOWED' });
+      throw new APIError('BAD_REQUEST', {
+        message: 'Email domain not allowed',
+        code: 'EMAIL_DOMAIN_NOT_ALLOWED',
+      });
     }
   }
 }
@@ -100,12 +116,22 @@ export function createAuth(deps: AuthDeps) {
     user: {
       additionalFields: {
         locale: { type: [...LOCALES], required: false, defaultValue: 'it', input: true },
-        defaultCurrency: { type: [...CURRENCY_CODES], required: false, defaultValue: DEFAULT_CURRENCY, input: true },
+        defaultCurrency: {
+          type: [...CURRENCY_CODES],
+          required: false,
+          defaultValue: DEFAULT_CURRENCY,
+          input: true,
+        },
         timezone: { type: 'string', required: false, input: true },
         avatarEmoji: { type: 'string', required: false, input: true },
         avatarColor: { type: 'string', required: false, input: true },
         paypalMe: { type: 'string', required: false, input: true },
-        theme: { type: ['system', 'light', 'dark'], required: false, defaultValue: 'system', input: true },
+        theme: {
+          type: ['system', 'light', 'dark'],
+          required: false,
+          defaultValue: 'system',
+          input: true,
+        },
       },
     },
     session: {
@@ -125,7 +151,11 @@ export function createAuth(deps: AuthDeps) {
         expiresIn: 5 * 60,
         async sendMagicLink({ email, url }, ctx) {
           const request = ctx?.request;
-          await deps.email.send({ to: email, locale: pickLocale(request?.headers.get('accept-language')), template: { kind: 'magic-link', url } });
+          await deps.email.send({
+            to: email,
+            locale: pickLocale(request?.headers.get('accept-language')),
+            template: { kind: 'magic-link', url },
+          });
         },
       }),
     ],
@@ -135,7 +165,8 @@ export function createAuth(deps: AuthDeps) {
           async before(user) {
             await checkRegistration(deps, user.email);
             const isSuperadmin =
-              !!env.SUPERADMIN_EMAIL && user.email.toLowerCase() === env.SUPERADMIN_EMAIL.toLowerCase();
+              !!env.SUPERADMIN_EMAIL &&
+              user.email.toLowerCase() === env.SUPERADMIN_EMAIL.toLowerCase();
             return { data: { ...user, role: isSuperadmin ? 'superadmin' : 'user' } };
           },
         },

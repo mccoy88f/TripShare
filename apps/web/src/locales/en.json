@@ -1,0 +1,249 @@
+{
+  "common": {
+    "appName": "TripShare",
+    "save": "Save",
+    "saved": "Saved",
+    "cancel": "Cancel",
+    "loading": "Loading…",
+    "error": "Something went wrong. Please try again.",
+    "back": "Back",
+    "soon": "Coming soon",
+    "optional": "optional",
+    "language": "Language",
+    "theme": "Theme",
+    "themes": {
+      "system": "Automatic",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "or": "or"
+  },
+  "nav": {
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signOut": "Sign out",
+    "openApp": "Open the app",
+    "trips": "Trips",
+    "expenses": "Expenses",
+    "balances": "Balances",
+    "profile": "Profile",
+    "admin": "Admin",
+    "privacy": "Privacy",
+    "terms": "Terms"
+  },
+  "landing": {
+    "badge": "Group trips, no spreadsheets",
+    "title": "Plan the trip. <1>Split the costs.</1>",
+    "subtitle": "TripShare brings together the itinerary, places, bookings and the group's expenses. AI drafts the plan, reads receipts and tells you who owes whom.",
+    "ctaPrimary": "Create your account",
+    "ctaSecondary": "I already have an account",
+    "features": {
+      "plan": {
+        "title": "Day-by-day plan",
+        "text": "Times, transfers, places with maps and links, rainy-day backups."
+      },
+      "split": {
+        "title": "Splitwise-style expenses",
+        "text": "Equal parts, shares, percentages or per item. In multiple currencies."
+      },
+      "ai": {
+        "title": "AI that works for you",
+        "text": "Drafts the itinerary, checks opening hours and turns receipts and screenshots into expenses."
+      },
+      "settle": {
+        "title": "Settle up in a few steps",
+        "text": "The fewest possible transfers, with prefilled PayPal links."
+      },
+      "offline": {
+        "title": "Works offline",
+        "text": "Install it on your phone: plan and expenses always at hand, even without signal."
+      },
+      "together": {
+        "title": "Everyone in the same trip",
+        "text": "Invite friends with a link: they sign up and join the trip right away."
+      }
+    },
+    "how": {
+      "title": "How it works",
+      "steps": [
+        {
+          "title": "Create the trip",
+          "text": "Pick dates, currency and a cover photo, or let the AI draft it."
+        },
+        {
+          "title": "Invite the group",
+          "text": "Share the link: whoever opens it signs up and is in."
+        },
+        {
+          "title": "Log expenses",
+          "text": "Snap the receipt, the AI fills in the expense with emoji and category."
+        },
+        {
+          "title": "Settle up",
+          "text": "TripShare works out who owes whom, with the fewest payments."
+        }
+      ]
+    },
+    "finalTitle": "Your next trip starts here",
+    "finalText": "Free, in English and Italian, on your own server.",
+    "previewReceive": "You get back"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "newPassword": "New password",
+    "passwordHint": "At least 8 characters",
+    "signInTitle": "Welcome back",
+    "signInSubtitle": "Sign in to get back to your trips.",
+    "signInButton": "Sign in",
+    "magicLink": "Email me a sign-in link",
+    "magicLinkSent": "If the address is registered, we sent you a sign-in link. It expires in 5 minutes.",
+    "usePassword": "Sign in with password",
+    "forgot": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "signUpTitle": "Create your account",
+    "signUpSubtitle": "All you need is an email. Language and currency can be changed later.",
+    "signUpButton": "Create account",
+    "defaultCurrency": "Default currency",
+    "checkEmailTitle": "Check your email",
+    "checkEmailText": "We sent a link to {{email}} to confirm the address. Once confirmed, you go straight into the app.",
+    "forgotTitle": "Forgot password",
+    "forgotSubtitle": "Enter your account email: we'll send you a link to choose a new password.",
+    "forgotButton": "Send link",
+    "forgotSent": "If the address is registered, you'll get an email with the link. It expires in one hour.",
+    "resetTitle": "Choose a password",
+    "resetButton": "Save password",
+    "resetDone": "Password saved. You can now sign in.",
+    "resetInvalid": "The link is invalid or has expired. Request a new one.",
+    "verified": "Email confirmed, welcome!",
+    "errors": {
+      "INVALID_EMAIL_OR_PASSWORD": "Wrong email or password.",
+      "EMAIL_NOT_VERIFIED": "Please confirm your email first: we sent you a new link.",
+      "USER_ALREADY_EXISTS": "An account with this email already exists.",
+      "REGISTRATION_CLOSED": "Registration is closed.",
+      "INVITATION_REQUIRED": "You need an invitation to sign up.",
+      "EMAIL_DOMAIN_NOT_ALLOWED": "This email domain is not allowed.",
+      "PASSWORD_TOO_SHORT": "The password is too short.",
+      "TOO_MANY_REQUESTS": "Too many attempts. Try again in a minute."
+    }
+  },
+  "app": {
+    "hello": "Hi {{name}}",
+    "tripsTitle": "Your trips",
+    "noTrips": "No trips yet",
+    "noTripsText": "Soon you'll be able to create a trip, invite the group and start logging expenses.",
+    "newTrip": "New trip",
+    "installTitle": "Install TripShare",
+    "installText": "Add it to your home screen to use it like an app, even offline.",
+    "install": "Install",
+    "updateAvailable": "A new version is available.",
+    "reload": "Update",
+    "offlineReady": "TripShare is ready to work offline."
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "How others see you and your preferences.",
+    "avatar": "Avatar",
+    "avatarHint": "Pick an emoji and a color. Photo upload comes with file storage.",
+    "chooseEmoji": "Choose emoji",
+    "searchEmoji": "Search emoji…",
+    "removeEmoji": "Use initials",
+    "color": "Color",
+    "preferences": "Preferences",
+    "currencyHint": "Suggested as the currency for new trips.",
+    "payments": "Repayments",
+    "paypalMe": "PayPal.me username",
+    "paypalHint": "People who owe you money will see a \"Pay with PayPal\" button with the amount prefilled.",
+    "paypalInvalid": "Invalid PayPal.me username."
+  },
+  "admin": {
+    "title": "Administration",
+    "tabs": {
+      "overview": "Overview",
+      "settings": "Settings",
+      "ai": "OpenRouter",
+      "users": "Users",
+      "audit": "Audit log"
+    },
+    "status": "Service status",
+    "database": "Database",
+    "redis": "Redis",
+    "smtp": "SMTP",
+    "ok": "OK",
+    "down": "Error",
+    "usersCount": "Registered users",
+    "emailQueue": "Email queue",
+    "queue": {
+      "waiting": "waiting",
+      "active": "sending",
+      "failed": "failed",
+      "delayed": "retrying"
+    },
+    "smtpConfig": "SMTP configuration",
+    "smtpFrom": "Sender",
+    "smtpFromDefault": "default, SMTP_FROM not set",
+    "smtpEnvNote": "Configured through the SMTP_* environment variables.",
+    "testEmail": "Send test email",
+    "testEmailTo": "Recipient",
+    "testEmailSent": "Test email sent to {{to}}.",
+    "registration": "Registration",
+    "registrationMode": "Who can sign up",
+    "modes": {
+      "open": "Everyone",
+      "invite_only": "Invitation only",
+      "closed": "Nobody"
+    },
+    "allowedDomains": "Allowed email domains",
+    "allowedDomainsHint": "Comma separated. Empty = all.",
+    "appName": "Instance name",
+    "appNameHint": "Empty = APP_NAME value.",
+    "payments": "Repayments",
+    "paypalEnabled": "Show PayPal.me links",
+    "uploads": "Maximum file size (MB)",
+    "unsplash": "Unsplash key (covers)",
+    "aiMode": "Key mode",
+    "aiModes": {
+      "central": "Central: one key for everyone",
+      "per_user": "Per user: everyone uses their own",
+      "mixed": "Mixed: central, but anyone can use their own"
+    },
+    "apiKey": "OpenRouter API key",
+    "apiKeySet": "Set: {{preview}}",
+    "apiKeyNotSet": "Not set",
+    "apiKeyReplace": "Paste a new key to replace it",
+    "remove": "Remove",
+    "models": "Models per feature",
+    "modelHint": "OpenRouter model IDs, e.g. google/gemini-2.5-flash. \"openrouter/auto\" picks automatically.",
+    "modelNames": {
+      "vision": "Receipts and screenshots",
+      "planner": "Trip generator",
+      "chat": "Chat and tips",
+      "web": "Web search and checks",
+      "light": "Light tasks"
+    },
+    "fallbacks": "Fallback models",
+    "fallbacksHint": "Comma separated, used when the main model fails.",
+    "quota": "Monthly quota per user (USD)",
+    "denyDataCollection": "Only use providers that don't retain data",
+    "aiComing": "AI features arrive in phase 4: meanwhile, key and models are configured here.",
+    "search": "Search by name or email",
+    "role": "Role",
+    "verified": "Verified",
+    "notVerified": "Unverified",
+    "banned": "Suspended",
+    "joined": "Joined",
+    "auditEmpty": "No actions recorded.",
+    "forbidden": "This section is reserved to the super admin."
+  },
+  "legal": {
+    "privacyTitle": "Privacy policy",
+    "termsTitle": "Terms of service",
+    "placeholder": "The final text will be added by the instance operator from the admin panel."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "home": "Back to home"
+  }
+}

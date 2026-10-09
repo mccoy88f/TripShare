@@ -3,7 +3,7 @@
 Un'app per **organizzare viaggi di gruppo e dividere le spese** in stile Splitwise.
 È una **PWA installabile**, gira in **Docker**, usa **OpenRouter** per l'AI.
 
-La pagina *“Scozia 12-16 ottobre”* serve solo come **riferimento per il
+La pagina _“Scozia 12-16 ottobre”_ serve solo come **riferimento per il
 contenuto e la struttura** di un viaggio: un programma giorno per giorno con
 orari, i luoghi con link e orari verificati, i pasti, il meteo, i costi (già
 prenotati, da inserire, stime) e la lista delle cose da portare. Grafica e
@@ -12,18 +12,19 @@ viaggi con questa ricchezza di informazioni, in modo collaborativo e dinamico,
 e aggiungere la divisione delle spese.
 
 ### Decisioni prese
-| Tema | Scelta |
-|---|---|
-| Nome | **TripShare** |
-| Hosting | **VPS con dominio pubblico e HTTPS** (Let's Encrypt automatico con Caddy). Il dominio si imposta con `DOMAIN` |
-| Email | **SMTP configurato con variabili d'ambiente** |
-| Rimborsi | **Link PayPal.me** precompilato se chi riceve ha impostato il suo PayPal.me. Altrimenti il rimborso si registra soltanto |
-| Chiave OpenRouter | **Centralizzata**, gestita dal super admin. Si può passare alla **modalità per utente**, in cui ognuno usa la propria chiave |
-| Lingue | **Italiano e inglese dal primo rilascio** |
-| Valuta | **Predefinita scelta dall'utente** nel profilo, e **valuta del viaggio** scelta alla creazione |
-| Accesso | **Sito pubblico** con registrazione. Gli invitati a un viaggio si registrano dal link d'invito ed entrano direttamente nel viaggio |
-| Amministrazione | **Pannello super admin** per OpenRouter, utenti, registrazioni, email e impostazioni |
-| Grafica | Moderna, basata su una libreria di componenti. **Emoji** per spese e categorie, **profilo con foto** personalizzabile, **foto di copertina** per ogni viaggio |
+
+| Tema              | Scelta                                                                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Nome              | **TripShare**                                                                                                                                                 |
+| Hosting           | **VPS con dominio pubblico e HTTPS** (Let's Encrypt automatico con Caddy). Il dominio si imposta con `DOMAIN`                                                 |
+| Email             | **SMTP configurato con variabili d'ambiente**                                                                                                                 |
+| Rimborsi          | **Link PayPal.me** precompilato se chi riceve ha impostato il suo PayPal.me. Altrimenti il rimborso si registra soltanto                                      |
+| Chiave OpenRouter | **Centralizzata**, gestita dal super admin. Si può passare alla **modalità per utente**, in cui ognuno usa la propria chiave                                  |
+| Lingue            | **Italiano e inglese dal primo rilascio**                                                                                                                     |
+| Valuta            | **Predefinita scelta dall'utente** nel profilo, e **valuta del viaggio** scelta alla creazione                                                                |
+| Accesso           | **Sito pubblico** con registrazione. Gli invitati a un viaggio si registrano dal link d'invito ed entrano direttamente nel viaggio                            |
+| Amministrazione   | **Pannello super admin** per OpenRouter, utenti, registrazioni, email e impostazioni                                                                          |
+| Grafica           | Moderna, basata su una libreria di componenti. **Emoji** per spese e categorie, **profilo con foto** personalizzabile, **foto di copertina** per ogni viaggio |
 
 ---
 
@@ -49,27 +50,30 @@ e aggiungere la divisione delle spese.
 ## 2. Funzionalità
 
 ### 2.1 Viaggi e programma (struttura ricavata dall'esempio Scozia)
-| Elemento della pagina Scozia | Entità in TripShare |
-|---|---|
-| Intestazione (date, n. persone, descrizione) | `Trip` (titolo, emoji, date, valuta del viaggio, foto di copertina, membri) |
-| Striscia dei giorni (12 Edimburgo · The Spires…) | `Day` (data, titolo, percorso, pernottamento collegato) |
-| Voci orarie (08:00 Partenza…) | `Activity` (ora, titolo, note, tipo: trasporto, visita, pasto, check-in…) |
-| Etichette “IN AUTO · 2h”, “TRAM ~35 min” | `TransportLeg` (mezzo, durata, km, opzioni alternative con costo) |
-| Avvisi (“tramonto 18:00”, “prenotate online”) | `Activity.warnings[]` |
-| Blocco “Alternativa per il pomeriggio” | `ActivityAlternative` (sostituisce un gruppo di attività) |
-| Scheda Luoghi (orari, verificato / da controllare, link) | `Place` (query Maps, coordinate, orari, `verifiedAt`, fonti) |
-| Scheda Pasti | `Place` di tipo ristorante, con fascia di prezzo e pasto (colazione, pranzo, cena) |
-| Scheda Meteo | servizio Open-Meteo, salvato in cache per ogni giorno e località |
-| Scheda Costi (prenotato / da inserire / stime) | `BudgetItem` con stato `booked`, `pending` o `estimate`, più l'opzione “includi” |
-| Scheda Da portare | `PackingList` condivisa e per persona, con spunte |
+
+| Elemento della pagina Scozia                             | Entità in TripShare                                                                |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Intestazione (date, n. persone, descrizione)             | `Trip` (titolo, emoji, date, valuta del viaggio, foto di copertina, membri)        |
+| Striscia dei giorni (12 Edimburgo · The Spires…)         | `Day` (data, titolo, percorso, pernottamento collegato)                            |
+| Voci orarie (08:00 Partenza…)                            | `Activity` (ora, titolo, note, tipo: trasporto, visita, pasto, check-in…)          |
+| Etichette “IN AUTO · 2h”, “TRAM ~35 min”                 | `TransportLeg` (mezzo, durata, km, opzioni alternative con costo)                  |
+| Avvisi (“tramonto 18:00”, “prenotate online”)            | `Activity.warnings[]`                                                              |
+| Blocco “Alternativa per il pomeriggio”                   | `ActivityAlternative` (sostituisce un gruppo di attività)                          |
+| Scheda Luoghi (orari, verificato / da controllare, link) | `Place` (query Maps, coordinate, orari, `verifiedAt`, fonti)                       |
+| Scheda Pasti                                             | `Place` di tipo ristorante, con fascia di prezzo e pasto (colazione, pranzo, cena) |
+| Scheda Meteo                                             | servizio Open-Meteo, salvato in cache per ogni giorno e località                   |
+| Scheda Costi (prenotato / da inserire / stime)           | `BudgetItem` con stato `booked`, `pending` o `estimate`, più l'opzione “includi”   |
+| Scheda Da portare                                        | `PackingList` condivisa e per persona, con spunte                                  |
 
 Visualizzazioni:
+
 - **Timeline del giorno**;
 - **Mappa del viaggio**: Leaflet con OpenStreetMap, percorso e luoghi;
 - **Calendario**;
 - **Esportazione** in PDF, in `.ics` e come link pubblico in sola lettura.
 
 ### 2.2 Spese stile Splitwise
+
 - **Spesa**: **emoji**, titolo, importo, valuta, cambio del giorno, chi ha
   pagato (anche più persone), partecipanti, metodo di divisione, categoria,
   data, giorno e attività collegati, foto della ricevuta, note.
@@ -114,8 +118,10 @@ Visualizzazioni:
 - **Esportazione** in CSV e PDF del resoconto.
 
 ### 2.3 Formato standard del viaggio (TripShare Trip Format v1)
+
 Ogni viaggio generato dall'AI, importato o esportato usa lo stesso documento
 JSON. È definito con Zod in `packages/shared/src/trip-format/schema.ts` e ha:
+
 - un **JSON Schema** generato (`packages/shared/schema/trip.v1.schema.json`),
   che si passa a OpenRouter come `response_format` e si include nel prompt;
 - un **esempio completo**, `packages/shared/examples/scozia.trip.json`;
@@ -126,20 +132,22 @@ JSON. È definito con Zod in `packages/shared/src/trip-format/schema.ts` e ha:
 Documentazione del formato: `docs/TRIP_FORMAT.md`.
 
 ### 2.4 AI (OpenRouter)
+
 Tutte le chiamate passano **dal backend**: la chiave non arriva mai al client.
 I modelli si configurano per funzione, con un elenco di riserva (`models[]` di
 OpenRouter) se il primo non risponde.
 
-| Funzione | Input | Output (JSON validato con Zod) | Modello indicativo |
-|---|---|---|---|
-| **Generatore di viaggi** | destinazione, date, persone, stile, budget, vincoli (“in auto”, “Harry Potter”) | `Trip` completo: giorni, attività, luoghi, spostamenti, stime, lista bagagli | modello di ragionamento con output strutturato; variante `:online` per orari reali |
-| **Riempi e verifica** | un giorno o un luogo | orari aggiornati con **fonti**, flag verificato o da controllare | modello con ricerca web (plugin `web` di OpenRouter) |
-| **Consigli e chat** | domanda e contesto del viaggio (giorni, meteo, budget) | risposta e **azioni proposte** via tool calling: `addActivity`, `addExpense`, `swapAlternative` | modello conversazionale veloce |
-| **Scontrini e ricevute** | foto o PDF | esercente, data, totale, valuta, righe, IVA, categoria e confidenza per campo | modello vision |
-| **Screenshot di prenotazioni** | screenshot o PDF (Ryanair, Booking, noleggio auto) | prenotazione: voli, alloggi, noleggi come `Activity`, `BudgetItem` ed eventuale `Expense` | modello vision |
-| **Lista bagagli intelligente** | meteo, attività (trekking, castello) | voci da aggiungere alla lista | modello leggero |
+| Funzione                       | Input                                                                           | Output (JSON validato con Zod)                                                                  | Modello indicativo                                                                 |
+| ------------------------------ | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| **Generatore di viaggi**       | destinazione, date, persone, stile, budget, vincoli (“in auto”, “Harry Potter”) | `Trip` completo: giorni, attività, luoghi, spostamenti, stime, lista bagagli                    | modello di ragionamento con output strutturato; variante `:online` per orari reali |
+| **Riempi e verifica**          | un giorno o un luogo                                                            | orari aggiornati con **fonti**, flag verificato o da controllare                                | modello con ricerca web (plugin `web` di OpenRouter)                               |
+| **Consigli e chat**            | domanda e contesto del viaggio (giorni, meteo, budget)                          | risposta e **azioni proposte** via tool calling: `addActivity`, `addExpense`, `swapAlternative` | modello conversazionale veloce                                                     |
+| **Scontrini e ricevute**       | foto o PDF                                                                      | esercente, data, totale, valuta, righe, IVA, categoria e confidenza per campo                   | modello vision                                                                     |
+| **Screenshot di prenotazioni** | screenshot o PDF (Ryanair, Booking, noleggio auto)                              | prenotazione: voli, alloggi, noleggi come `Activity`, `BudgetItem` ed eventuale `Expense`       | modello vision                                                                     |
+| **Lista bagagli intelligente** | meteo, attività (trekking, castello)                                            | voci da aggiungere alla lista                                                                   | modello leggero                                                                    |
 
 Flusso per lo scontrino:
+
 1. Si scatta la foto (fotocamera della PWA) o si condivide l'immagine verso
    l'app (Web Share Target).
 2. Il client comprime l'immagine e la carica su MinIO. I dati EXIF di
@@ -152,11 +160,12 @@ Flusso per lo scontrino:
 Le risposte dell'AI sono nella lingua dell'utente (italiano o inglese).
 
 **Modalità della chiave**, scelta dal super admin:
-| Modalità | Funzionamento |
-|---|---|
-| **Centralizzata** (predefinita) | una sola chiave dell'istanza. Il super admin imposta quote mensili per utente (richieste o euro) |
-| **Per utente** | ogni utente inserisce la propria chiave OpenRouter nel profilo. Senza chiave le funzioni AI restano disattivate per lui |
-| **Mista** | si usa la chiave centrale, ma chi vuole può usare la propria e non consuma la quota |
+
+| Modalità                        | Funzionamento                                                                                                           |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Centralizzata** (predefinita) | una sola chiave dell'istanza. Il super admin imposta quote mensili per utente (richieste o euro)                        |
+| **Per utente**                  | ogni utente inserisce la propria chiave OpenRouter nel profilo. Senza chiave le funzioni AI restano disattivate per lui |
+| **Mista**                       | si usa la chiave centrale, ma chi vuole può usare la propria e non consuma la quota                                     |
 
 In tutte le modalità si registrano token e costo (dalla risposta di
 OpenRouter) per utente, per viaggio e per funzione. Le chiavi sono salvate
@@ -164,11 +173,12 @@ OpenRouter) per utente, per viaggio e per funzione. Le chiavi sono salvate
 variabile d'ambiente) e non vengono mai mostrate per intero.
 
 ### 2.5 Sito pubblico, account e inviti
+
 - **Sito pubblico**, semplice, in italiano e in inglese:
   - home con le funzioni principali e alcune schermate;
   - pagine di registrazione e accesso;
   - privacy, termini, cookie.
-  Le pagine sono pre-renderizzate per la SEO e sono servite dalla stessa app.
+    Le pagine sono pre-renderizzate per la SEO e sono servite dalla stessa app.
 - **Registrazione**: email e password con verifica dell'email, recupero della
   password, accesso con magic link e passkey; Google facoltativo. Il super
   admin sceglie se le registrazioni sono **aperte** o **solo su invito**.
@@ -196,8 +206,10 @@ variabile d'ambiente) e non vengono mai mostrate per intero.
 - Ruoli nel viaggio: `owner`, `editor`, `viewer`.
 
 ### 2.6 Pannello super admin
+
 Accessibile solo agli utenti con ruolo `superadmin`. Il primo superadmin si
 crea al primo avvio, da variabile d'ambiente o con un comando CLI.
+
 - **OpenRouter**:
   - chiave centrale, con un pulsante per testarla e la visualizzazione del
     credito residuo;
@@ -233,12 +245,14 @@ d'ambiente servono solo come valori iniziali e possono essere modificate dal
 pannello.
 
 ### 2.7 Collaborazione
+
 - Aggiornamenti in tempo reale via WebSocket: spese, spunte, modifiche.
 - Commenti e reazioni sulle attività; registro delle attività del viaggio.
 - **Notifiche Web Push**: “Marco ha aggiunto 34 € parcheggio”, “domani si parte
   alle 07:15”.
 
 ### 2.8 PWA e offline
+
 - Installabile (manifest, icone, splash), schermo intero, safe area.
 - Service worker (Workbox): l'interfaccia si carica dalla cache. Programma,
   luoghi e lista restano disponibili offline (dati in IndexedDB con Dexie).
@@ -263,6 +277,7 @@ pannello.
 ```
 
 ### Stack scelto
+
 - **Monorepo** con pnpm e Turborepo:
   - `apps/web`
   - `apps/api`
@@ -295,6 +310,7 @@ pannello.
   numeri a virgola mobile.
 
 ### Modello dati (essenziale)
+
 ```
 User (locale, defaultCurrency, avatar, avatarEmoji, role, paypalMe, openrouterKey cifrata)
  ─┬─< TripMember >── Trip (currency, coverImage, coverColor, emoji)
@@ -392,6 +408,7 @@ TripMember può essere un segnaposto (userId nullo) collegato all'account in seg
   La copertina appare grande nella scheda del viaggio, con titolo ed emoji
   sovrapposti. Dalla copertina si ricava il **colore d'accento** del viaggio
   (colore dominante), usato per pulsanti e grafici.
+
 - **Elenco viaggi** come card con copertina, date, avatar dei membri impilati
   e il tuo saldo (“ricevi 42 €” / “devi 18 €”).
 - **Emoji ovunque in modo coerente**: categorie e spese nell'elenco (emoji in
@@ -406,6 +423,7 @@ TripMember può essere un segnaposto (userId nullo) collegato all'account in seg
   `prefers-reduced-motion`.
 
 ## 6. Sicurezza e privacy
+
 - Chiave OpenRouter solo lato server. Rate limit per utente sugli endpoint AI.
 - Autorizzazione per viaggio su ogni query: il membro viene verificato nel
   middleware tRPC.
@@ -414,10 +432,11 @@ TripMember può essere un segnaposto (userId nullo) collegato all'account in seg
 - I dati personali delle ricevute restano sul proprio server: nessuna terza
   parte oltre al modello chiamato. Avviso chiaro all'utente e opzione per
   scegliere modelli con policy “no training” (filtro `provider.data_collection:
-  deny` di OpenRouter).
+deny` di OpenRouter).
 - Esportazione e cancellazione dei dati dell'utente (GDPR).
 
 ## 7. Test e qualità
+
 - **Vitest**:
   - logica di divisione e semplificazione dei debiti, con test property-based
     (fast-check): la somma dei saldi è sempre 0 e gli arrotondamenti dei
@@ -432,20 +451,45 @@ TripMember può essere un segnaposto (userId nullo) collegato all'account in seg
 
 ## 8. Roadmap
 
-| Fase | Contenuto | Risultato |
-|---|---|---|
-| **0. Fondamenta** (1,5 settimane) | monorepo, Docker Compose con Caddy e HTTPS su VPS, database con migrazioni, design system con shadcn/ui, i18n italiano e inglese, CI, shell PWA installabile | `docker compose up` sul VPS funziona e la PWA è installabile |
-| **1. Account e sito pubblico** (1,5 settimane) | home pubblica, registrazione con verifica email, accesso, recupero password, profilo con foto o emoji, lingua e valuta predefinita, email transazionali, base del pannello admin (utenti, registrazioni, SMTP) | ci si registra dal sito e si gestisce il profilo |
-| **2. Viaggi e spese, il cuore Splitwise** (2 settimane) | viaggi con copertina ed emoji, valuta del viaggio, inviti via email e link con registrazione, membri segnaposto, spese con emoji e tutti i metodi di divisione, multivaluta, saldi, semplificazione, rimborsi | uno Splitwise di viaggio utilizzabile con il gruppo |
-| **3. Pianificazione** (2 settimane) | giorni, timeline, attività, alternative, luoghi, mappa, prenotazioni, budget con stime, lista bagagli, meteo | la Scozia ricostruita a mano dentro l'app |
-| **4. AI** (2 settimane) | client OpenRouter, sezione OpenRouter del pannello admin (chiave, modalità centralizzata, per utente o mista, modelli, quote, consumi), coda AI, scontrini e screenshot verso spese e prenotazioni, generatore di viaggi, chat con azioni, verifica degli orari con fonti, controllo dei costi | “Fammi un viaggio in Scozia in 5 giorni in auto” produce un programma completo |
-| **5. Tempo reale e offline** (1 settimana) | WebSocket, coda di invio offline, Background Sync, Web Push, Share Target | uso in viaggio senza rete |
-| **6. Rifinitura** (1 settimana) | esportazione PDF e ICS, link pubblico, statistiche, colori dinamici dalle copertine, animazioni, accessibilità, pannello admin completo (audit, sistema, backup), documentazione | versione 1.0 |
-| Dopo la 1.0 | importazione da Splitwise e CSV, tracciamento dei prezzi dei voli, app nativa con Capacitor | |
+| Fase                                                    | Contenuto                                                                                                                                                                                                                                                                                      | Risultato                                                                      |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **0. Fondamenta** (1,5 settimane)                       | monorepo, Docker Compose con Caddy e HTTPS su VPS, database con migrazioni, design system con shadcn/ui, i18n italiano e inglese, CI, shell PWA installabile                                                                                                                                   | `docker compose up` sul VPS funziona e la PWA è installabile                   |
+| **1. Account e sito pubblico** (1,5 settimane)          | home pubblica, registrazione con verifica email, accesso, recupero password, profilo con foto o emoji, lingua e valuta predefinita, email transazionali, base del pannello admin (utenti, registrazioni, SMTP)                                                                                 | ci si registra dal sito e si gestisce il profilo                               |
+| **2. Viaggi e spese, il cuore Splitwise** (2 settimane) | viaggi con copertina ed emoji, valuta del viaggio, inviti via email e link con registrazione, membri segnaposto, spese con emoji e tutti i metodi di divisione, multivaluta, saldi, semplificazione, rimborsi                                                                                  | uno Splitwise di viaggio utilizzabile con il gruppo                            |
+| **3. Pianificazione** (2 settimane)                     | giorni, timeline, attività, alternative, luoghi, mappa, prenotazioni, budget con stime, lista bagagli, meteo                                                                                                                                                                                   | la Scozia ricostruita a mano dentro l'app                                      |
+| **4. AI** (2 settimane)                                 | client OpenRouter, sezione OpenRouter del pannello admin (chiave, modalità centralizzata, per utente o mista, modelli, quote, consumi), coda AI, scontrini e screenshot verso spese e prenotazioni, generatore di viaggi, chat con azioni, verifica degli orari con fonti, controllo dei costi | “Fammi un viaggio in Scozia in 5 giorni in auto” produce un programma completo |
+| **5. Tempo reale e offline** (1 settimana)              | WebSocket, coda di invio offline, Background Sync, Web Push, Share Target                                                                                                                                                                                                                      | uso in viaggio senza rete                                                      |
+| **6. Rifinitura** (1 settimana)                         | esportazione PDF e ICS, link pubblico, statistiche, colori dinamici dalle copertine, animazioni, accessibilità, pannello admin completo (audit, sistema, backup), documentazione                                                                                                               | versione 1.0                                                                   |
+| Dopo la 1.0                                             | importazione da Splitwise e CSV, tracciamento dei prezzi dei voli, app nativa con Capacitor                                                                                                                                                                                                    |                                                                                |
 
 **MVP consigliato**: le fasi 0, 1 e 2 più la parte di scontrini della fase 4.
 Con questo si può già usare l'app con il gruppo nel prossimo viaggio.
 
+### Stato di avanzamento
+
+**Fase 0 completata. Fase 1 in gran parte completata.** Cosa c'è:
+
+- monorepo, CI su GitHub Actions, immagini Docker multi-architettura, Caddy con HTTPS;
+- registrazione con verifica dell'email, accesso con password o magic link, recupero
+  password, super admin creato al primo avvio;
+- profilo con emoji, colore, lingua, valuta predefinita, tema e PayPal.me;
+- pannello admin: stato dei servizi, email di prova, registrazioni, OpenRouter (chiave
+  cifrata, modalità, modelli, quote), utenti, registro delle azioni;
+- formato standard del viaggio (sezione 2.3).
+
+Scelte diverse dal piano iniziale:
+
+- **Worker nella stessa immagine dell'API.** Il worker è `apps/api/src/worker.ts`, avviato
+  dallo stesso image con un comando diverso: un solo build, codice delle email condiviso.
+- **MinIO rimandato.** Arriva con il primo caricamento di file (foto profilo, copertine,
+  scontrini), per non avere un servizio inattivo nello stack.
+- **Passkey rimandate.** In Better Auth sono un pacchetto separato; si aggiungono insieme
+  alla gestione dei dispositivi.
+- **Modalità "solo su invito" provvisoria.** Gli inviti ai viaggi arrivano con la fase 2:
+  fino ad allora questa modalità blocca tutte le registrazioni, tranne quella del super
+  admin.
+
 ## 9. Decisioni ancora aperte
+
 Nessuna decisione blocca l'avvio. Il dominio si inserisce in `DOMAIN` al
 momento del deploy.
