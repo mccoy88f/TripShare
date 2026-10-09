@@ -14,7 +14,10 @@ e aggiungere la divisione delle spese.
 ### Decisioni prese
 | Tema | Scelta |
 |---|---|
-| Hosting | **VPS con dominio pubblico e HTTPS** (Let's Encrypt automatico con Caddy) |
+| Nome | **TripShare** |
+| Hosting | **VPS con dominio pubblico e HTTPS** (Let's Encrypt automatico con Caddy). Il dominio si imposta con `DOMAIN` |
+| Email | **SMTP configurato con variabili d'ambiente** |
+| Rimborsi | **Link PayPal.me** precompilato se chi riceve ha impostato il suo PayPal.me. Altrimenti il rimborso si registra soltanto |
 | Chiave OpenRouter | **Centralizzata**, gestita dal super admin. Si può passare alla **modalità per utente**, in cui ognuno usa la propria chiave |
 | Lingue | **Italiano e inglese dal primo rilascio** |
 | Valuta | **Predefinita scelta dall'utente** nel profilo, e **valuta del viaggio** scelta alla creazione |
@@ -90,8 +93,20 @@ Visualizzazioni:
 - **Saldi**: quanto deve o deve ricevere ciascuno, con algoritmo di
   **semplificazione dei debiti** (minimizzazione dei flussi, greedy su crediti e
   debiti netti).
-- **Rimborsi**: si registra un pagamento tra membri. Facoltativo: link o QR per
-  PayPal, Satispay o IBAN.
+- **Rimborsi**:
+  - per ogni trasferimento suggerito (“Luca → Marco 42,50 €”) si registra il
+    pagamento con data e nota facoltativa;
+  - se chi riceve ha inserito il suo **username PayPal.me** nel profilo, chi
+    deve pagare vede il pulsante **“Paga con PayPal”**. Il pulsante apre
+    `https://paypal.me/<username>/<importo><VALUTA>` (es.
+    `paypal.me/marco/42.50EUR`), quindi importo e valuta sono già compilati.
+    Su mobile si apre l'app PayPal, se è installata. Si mostra anche un QR
+    dello stesso link, utile se si paga da un altro dispositivo;
+  - PayPal non conferma il pagamento all'app. Dopo il ritorno da PayPal, l'app
+    chiede “Hai completato il pagamento?”: rispondendo sì, il rimborso viene
+    registrato. Chi riceve può confermarlo o contestarlo;
+  - se chi riceve non ha PayPal.me, oppure la valuta non è supportata da
+    PayPal, c'è solo il pulsante **“Segna come pagato”**.
 - **Budget e consuntivo**: confronto tra le stime della pianificazione e le
   spese reali, per categoria e per giorno. Un `BudgetItem` “da inserire” diventa
   una spesa reale quando arriva la ricevuta.
@@ -152,6 +167,7 @@ variabile d'ambiente) e non vengono mai mostrate per intero.
   - lingua, **valuta predefinita**, fuso orario, tema chiaro, scuro o
     automatico;
   - notifiche;
+  - **username PayPal.me** facoltativo, per ricevere i rimborsi;
   - chiave OpenRouter personale, se la modalità lo prevede.
 - **Inviti a un viaggio**:
   1. Il proprietario invita **via email** o crea un **link o QR** d'invito,
@@ -187,10 +203,12 @@ crea al primo avvio, da variabile d'ambiente o con un comando CLI.
 - **Viaggi**: elenco e statistiche (nessun accesso ai contenuti senza un motivo
   registrato nel log).
 - **Registrazioni**: aperte, solo su invito o chiuse; domini email consentiti.
-- **Email**: configurazione SMTP o provider (Resend, Postmark), email di prova,
-  modelli delle email in italiano e in inglese.
+- **Rimborsi**: attivazione dei link PayPal.me per l'istanza.
+- **Email**: stato della configurazione SMTP letta dalle variabili d'ambiente
+  (senza mostrare la password), pulsante per inviare un'email di prova, coda
+  e registro degli invii, anteprima dei modelli in italiano e in inglese.
 - **Impostazioni generali**:
-  - nome e logo dell'istanza;
+  - nome (predefinito **TripShare**) e logo dell'istanza;
   - valute disponibili;
   - limiti di caricamento dei file;
   - chiave Unsplash per le copertine;
@@ -255,8 +273,9 @@ pannello.
 - **File**: MinIO, compatibile S3, sostituibile con S3 o R2. Le immagini
   (avatar, copertine, ricevute) sono elaborate con `sharp`: varianti WebP e
   AVIF, miniature e placeholder sfocato (blurhash).
-- **Email**: Nodemailer (SMTP) e modelli con React Email, in italiano e in
-  inglese.
+- **Email**: Nodemailer con SMTP configurato dalle variabili d'ambiente;
+  modelli con React Email, in italiano e in inglese. Gli invii passano da una
+  coda con nuovi tentativi in caso di errore.
 - **Autenticazione**: Better Auth (email e password con verifica, magic link,
   passkey, OAuth Google facoltativo; plugin admin per ruoli e sospensioni);
   sessioni in cookie httpOnly.
@@ -265,7 +284,7 @@ pannello.
 
 ### Modello dati (essenziale)
 ```
-User (locale, defaultCurrency, avatar, avatarEmoji, role, openrouterKey cifrata)
+User (locale, defaultCurrency, avatar, avatarEmoji, role, paypalMe, openrouterKey cifrata)
  ─┬─< TripMember >── Trip (currency, coverImage, coverColor, emoji)
   │                    │
   │                    ├──< Day ──< Activity ──< ActivityAlternative
@@ -275,7 +294,7 @@ User (locale, defaultCurrency, avatar, avatarEmoji, role, openrouterKey cifrata)
   │                    ├──< BudgetItem (booked|pending|estimate, included)
   │                    ├──< Expense (emoji, category) ──< ExpensePayer, ExpenseShare, ExpenseItem
   │                    │        └── Receipt (file, ocr_json, status, confidence)
-  │                    ├──< Settlement (from, to, amount, currency)
+  │                    ├──< Settlement (from, to, amount, currency, method: manual|paypal, status: pending|confirmed|disputed)
   │                    ├──< PackingItem (owner?, checked_by)
   │                    ├──< Invitation (email?, token, role, expiresAt, maxUses, status)
   │                    └──< AiJob (tipo, modello, token, costo, stato, keySource)
@@ -308,12 +327,22 @@ TripMember può essere un segnaposto (userId nullo) collegato all'account in seg
   VAPID_PUBLIC_KEY
   VAPID_PRIVATE_KEY
   SUPERADMIN_EMAIL
-  SMTP_URL
+  APP_NAME=TripShare
+
+  SMTP_HOST
+  SMTP_PORT
+  SMTP_SECURE
+  SMTP_USER
+  SMTP_PASSWORD
+  SMTP_FROM="TripShare <noreply@dominio>"
+
   OPENROUTER_API_KEY
   ```
 
-  `SMTP_URL` e `OPENROUTER_API_KEY` sono facoltativi: servono solo come valori
-  iniziali.
+  Le variabili `SMTP_*` sono obbligatorie: all'avvio `api` verifica la
+  connessione e scrive nel log l'eventuale errore. `OPENROUTER_API_KEY` è
+  facoltativa: serve solo come valore iniziale e si può cambiare dal
+  pannello.
 
 - Volumi persistenti per `postgres`, `minio` e `caddy`. Healthcheck su ogni
   servizio. Migrazioni eseguite all'avvio di `api`.
@@ -403,9 +432,5 @@ TripMember può essere un segnaposto (userId nullo) collegato all'account in seg
 Con questo si può già usare l'app con il gruppo nel prossimo viaggio.
 
 ## 9. Decisioni ancora aperte
-1. **Rimborsi**: basta registrarli, oppure servono link di pagamento (PayPal,
-   Satispay, IBAN con QR)?
-2. **Nome e dominio** definitivi dell'istanza: servono per email, PWA e
-   certificato.
-3. **Provider email**: un SMTP già disponibile, oppure un servizio come Resend
-   o Postmark? È necessario per la verifica degli account e gli inviti.
+Nessuna decisione blocca l'avvio. Il dominio si inserisce in `DOMAIN` al
+momento del deploy.
