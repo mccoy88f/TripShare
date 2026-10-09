@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useTRPC } from '@/lib/trpc';
 import type { TripDetail } from '@/lib/types';
 import { uploadImage } from '@/lib/upload';
+import { ExportPlanButton, ImportPlanButton } from './plan/import-export';
 
 export function SettingsTab({ trip }: { trip: TripDetail }) {
   const { t } = useTranslation();
@@ -65,6 +66,16 @@ export function SettingsTab({ trip }: { trip: TripDetail }) {
           toast.success(t('common.saved'));
         }}
       />
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('plan.importExportTitle')}</CardTitle>
+          <CardDescription>{t('plan.importExportText')}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <ExportPlanButton tripId={trip.id} title={trip.title} />
+          <ImportPlanButton tripId={trip.id} />
+        </CardContent>
+      </Card>
       <Card className="border-destructive/30">
         <CardHeader>
           <CardTitle className="text-destructive">{t('trip.deleteTitle')}</CardTitle>

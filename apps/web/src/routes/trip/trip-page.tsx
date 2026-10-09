@@ -15,8 +15,23 @@ import { ExpenseDialog } from './expense-dialog';
 import { ExpensesTab } from './expenses-tab';
 import { MembersTab } from './members-tab';
 import { SettingsTab } from './settings-tab';
+import { BookingsTab } from './plan/bookings-tab';
+import { BudgetTab } from './plan/budget-tab';
+import { PackingTab } from './plan/packing-tab';
+import { PlacesTab } from './plan/places-tab';
+import { PlanTab } from './plan/plan-tab';
 
-const TABS = ['expenses', 'balances', 'members', 'settings'] as const;
+const TABS = [
+  'plan',
+  'expenses',
+  'balances',
+  'places',
+  'bookings',
+  'budget',
+  'packing',
+  'members',
+  'settings',
+] as const;
 type Tab = (typeof TABS)[number];
 
 export function TripPage() {
@@ -25,7 +40,7 @@ export function TripPage() {
   const navigate = useNavigate();
   const { tripId } = useParams({ strict: false }) as { tripId: string };
   const search = useSearch({ strict: false }) as { tab?: string };
-  const tab: Tab = TABS.includes(search.tab as Tab) ? (search.tab as Tab) : 'expenses';
+  const tab: Tab = TABS.includes(search.tab as Tab) ? (search.tab as Tab) : 'plan';
   const { data: trip, error } = useQuery(trpc.trips.get.queryOptions({ id: tripId }));
   const [adding, setAdding] = useState(false);
 
@@ -94,13 +109,13 @@ export function TripPage() {
           onValueChange={(value) =>
             void navigate({
               to: '.',
-              search: { tab: value === 'expenses' ? undefined : value },
+              search: { tab: value === 'plan' ? undefined : value },
               replace: true,
             })
           }
         >
           <div className="flex items-center justify-between gap-3">
-            <TabsList>
+            <TabsList className="min-w-0">
               {TABS.filter((x) => x !== 'settings' || trip.role === 'owner').map((x) => (
                 <TabsTrigger key={x} value={x}>
                   {t(`trip.tabs.${x}`)}
@@ -114,6 +129,21 @@ export function TripPage() {
               </Button>
             )}
           </div>
+          <TabsContent value="plan">
+            <PlanTab trip={trip} />
+          </TabsContent>
+          <TabsContent value="places">
+            <PlacesTab trip={trip} />
+          </TabsContent>
+          <TabsContent value="bookings">
+            <BookingsTab trip={trip} />
+          </TabsContent>
+          <TabsContent value="budget">
+            <BudgetTab trip={trip} />
+          </TabsContent>
+          <TabsContent value="packing">
+            <PackingTab trip={trip} />
+          </TabsContent>
           <TabsContent value="expenses">
             <ExpensesTab trip={trip} />
           </TabsContent>

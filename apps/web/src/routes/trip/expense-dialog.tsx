@@ -61,27 +61,39 @@ interface State {
   notes: string;
 }
 
-function initialState(trip: TripDetail, expense?: ExpenseT): State {
+/** Valori iniziali per una nuova spesa (da prenotazione, scontrino letto dall'AI…). */
+export interface ExpensePreset {
+  title?: string;
+  emoji?: string | null;
+  category?: ExpenseCategory;
+  date?: string;
+  amount?: number;
+  currency?: CurrencyCode;
+  notes?: string;
+}
+
+function initialState(trip: TripDetail, expense?: ExpenseT, preset?: ExpensePreset): State {
   const active = trip.members.filter((m) => !m.removed).map((m) => m.id);
   const tripCurrency = trip.currency as CurrencyCode;
   if (!expense) {
+    const currency = preset?.currency ?? tripCurrency;
     return {
-      title: '',
-      emoji: null,
-      emojiTouched: false,
-      category: 'food',
-      amount: '',
-      currency: tripCurrency,
-      rate: '1',
+      title: preset?.title ?? '',
+      emoji: preset?.emoji ?? null,
+      emojiTouched: !!preset?.emoji,
+      category: preset?.category ?? 'food',
+      amount: preset?.amount ? fmtNumber(preset.amount, currency) : '',
+      currency,
+      rate: currency === tripCurrency ? '1' : '',
       rateTouched: false,
-      date: clampDate(todayIso(), trip),
+      date: preset?.date ?? clampDate(todayIso(), trip),
       payerId: trip.myMemberId,
       method: 'equal',
       members: active,
       shares: Object.fromEntries(active.map((id) => [id, '1'])),
       percents: {},
       exact: {},
-      notes: '',
+      notes: preset?.notes ?? '',
     };
   }
   const currency = (
@@ -125,11 +137,13 @@ function clampDate(date: string, trip: TripDetail) {
 export function ExpenseDialog({
   trip,
   expense,
+  preset,
   open,
   onOpenChange,
 }: {
   trip: TripDetail;
   expense?: ExpenseT;
+  preset?: ExpensePreset;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -137,12 +151,12 @@ export function ExpenseDialog({
   const locale = (i18n.resolvedLanguage ?? 'it') as Locale;
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const [s, setS] = useState<State>(() => initialState(trip, expense));
+  const [s, setS] = useState<State>(() => initialState(trip, expense, preset));
   const [pickerOpen, setPickerOpen] = useState(false);
   const tripCurrency = trip.currency as CurrencyCode;
 
   useEffect(() => {
-    if (open) setS(initialState(trip, expense));
+    if (open) setS(initialState(trip, expense, preset));
   }, [open, expense?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = <K extends keyof State>(k: K, v: State[K]) => setS((prev) => ({ ...prev, [k]: v }));
