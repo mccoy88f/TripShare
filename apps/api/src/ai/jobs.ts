@@ -147,7 +147,7 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
       ctx.plan = plan;
       ctx.extra = t.extra;
     }
-    if (input.kind === 'receipt' || input.kind === 'booking')
+    if (input.kind === 'receipt' || input.kind === 'booking' || input.kind === 'document')
       ctx.fileDataUrl = await fileDataUrl(deps.storage, input.file, input.mime);
     if (input.kind === 'chat') {
       if (!job.tripId) throw new AiJobError('TRIP_NOT_FOUND');

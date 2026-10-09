@@ -960,5 +960,35 @@
     "label": "Steps",
     "back": "Back",
     "next": "Next"
+  },
+  "capture": {
+    "title": "Add",
+    "hint": "Take a photo of a receipt, invoice, confirmation or boarding pass: AI prepares the expense, booking, place and ticket for you to review.",
+    "camera": "Camera",
+    "gallery": "Gallery",
+    "manual": "Manual",
+    "reading": "Reading the document",
+    "readingHint": "AI is reading the document…",
+    "reviewTitle": "Here's what I found",
+    "lowConfidence": "Uncertain reading: double-check before saving.",
+    "expense": "Expense",
+    "booking": "Booking",
+    "place": "Place",
+    "ticket": "Ticket",
+    "existingBooking": "Linked to the existing booking: {{title}}",
+    "splitAll": "Split equally among everyone ({{count}}); you can change it later.",
+    "codeFound": "code read",
+    "noCode": "no code read: the photo is saved",
+    "nothing": "Nothing to add found in this document.",
+    "save": "Save all",
+    "saved": "Added to the trip",
+    "types": {
+      "receipt": "Receipt",
+      "invoice": "Invoice or receipt",
+      "booking_confirmation": "Booking confirmation",
+      "boarding_pass": "Boarding pass",
+      "ticket": "Ticket",
+      "other": "Document"
+    }
   }
 }

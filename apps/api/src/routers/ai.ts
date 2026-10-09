@@ -20,6 +20,7 @@ const MIN_ROLE = {
   verify: 'editor',
   packing: 'editor',
   schedule: 'editor',
+  document: 'editor',
   chat: 'viewer',
 } as const;
 

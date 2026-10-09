@@ -419,4 +419,87 @@ run('AI jobs (integration)', () => {
     expect(job.data.status).toBe('done');
     expect(job.data.result).toMatchObject({ date: '2026-10-13', time: '10:00' });
   });
+
+  it('reads a hotel receipt into booking, place and expense, and makes a ticket from the file', async () => {
+    await t.settings.set('openrouter.apiKey', 'sk-or-central-key-123');
+    const { marco, tripId } = await setup();
+    replies.tripshare_document = [
+      {
+        documentType: 'invoice',
+        summary: 'Ricevuta dell’hotel The Spires, 2 notti',
+        expense: {
+          title: 'Hotel The Spires',
+          total: 203,
+          currency: 'EUR',
+          category: 'lodging',
+          status: 'paid',
+          bookingRef: 'the-spires',
+        },
+        bookings: [
+          {
+            id: 'the-spires',
+            type: 'lodging',
+            title: 'The Spires',
+            status: 'booked',
+            start: { date: '2026-10-12' },
+            end: { date: '2026-10-14' },
+            placeId: 'the-spires-place',
+          },
+        ],
+        places: [{ id: 'the-spires-place', name: 'The Spires', kind: 'lodging' }],
+        ticket: { bookingRef: 'the-spires', label: 'Voucher' },
+        confidence: 'high',
+      },
+    ];
+    const file = await uploadReceipt(marco, tripId);
+    const started = await t.trpc<{ id: string }>('ai.start', marco, {
+      tripId,
+      input: {
+        kind: 'document',
+        file: file.file,
+        mime: file.mime,
+        tripCurrency: 'EUR',
+        year: 2026,
+      },
+    });
+    const job = await t.trpc<{ status: string; result: { bookings: unknown[] } }>(
+      'ai.job',
+      marco,
+      { id: started.data.id },
+      'query',
+    );
+    expect(job.data.status).toBe('done');
+    expect(job.data.result.bookings).toHaveLength(1);
+
+    // Il biglietto si crea dal file caricato, con una copia separata.
+    await t.trpc('plan.applyOps', marco, {
+      tripId,
+      ops: [
+        {
+          type: 'upsertBooking',
+          booking: {
+            id: 'the-spires',
+            type: 'lodging',
+            title: 'The Spires',
+            status: 'booked',
+            start: { date: '2026-10-12' },
+          },
+        },
+      ],
+    });
+    const ticket = await t.trpc<{ id: string }>('tickets.fromAiFile', marco, {
+      tripId,
+      bookingId: 'the-spires',
+      file: file.file,
+      label: 'Voucher',
+    });
+    expect(ticket.status).toBe(200);
+    const res = await t.app.inject({
+      method: 'GET',
+      url: `/api/trips/${tripId}/tickets/${ticket.data.id}/file`,
+      headers: { cookie: marco },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toBe('image/jpeg');
+  });
 });

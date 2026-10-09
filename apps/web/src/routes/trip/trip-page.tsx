@@ -15,6 +15,7 @@ import { useAiStatus } from '@/lib/ai';
 import { AddRequestContext, useFabAction } from '@/lib/fab';
 import { AssistantTab } from './assistant-tab';
 import { BalancesTab } from './balances-tab';
+import { CaptureSheet } from './capture';
 import { ExpenseDialog } from './expense-dialog';
 import { ExpensesTab } from './expenses-tab';
 import { MembersTab } from './members-tab';
@@ -35,6 +36,8 @@ type Tab = (typeof TABS)[number];
 /** Sotto-viste del tab Spese. */
 const MONEY_VIEWS = ['list', 'balances', 'budget'] as const;
 type MoneyView = (typeof MONEY_VIEWS)[number];
+/** Tab in cui il "+" propone di fotografare un documento. */
+const CAPTURE_TABS = ['plan', 'expenses', 'bookings', 'places'] as const;
 
 export function TripPage() {
   const { t } = useTranslation();
@@ -72,14 +75,22 @@ export function TripPage() {
   const target = tab === 'expenses' ? (view === 'budget' ? 'budget' : 'expenses') : tab;
   const viewerCan = target === 'notes' || target === 'assistant';
   const fabTarget = target === 'settings' ? 'expenses' : target;
+  const [capturing, setCapturing] = useState(false);
+  const manualAdd = () =>
+    fabTarget === 'expenses'
+      ? setAdding(true)
+      : setAddRequest((r) => ({ target: fabTarget, n: r.n + 1 }));
+  // Dove un documento fotografato è utile, il "+" apre il foglio fotocamera / galleria /
+  // manuale; senza AI si passa subito all'inserimento manuale.
+  const captureTab = CAPTURE_TABS.includes(fabTarget as (typeof CAPTURE_TABS)[number]);
   useFabAction(
     trip && (trip.role !== 'viewer' || viewerCan)
       ? {
           label: t(`trip.fab.${fabTarget}`),
           run: () =>
-            fabTarget === 'expenses'
-              ? setAdding(true)
-              : setAddRequest((r) => ({ target: fabTarget, n: r.n + 1 })),
+            captureTab && trip.role !== 'viewer' && ai.data?.available
+              ? setCapturing(true)
+              : manualAdd(),
         }
       : null,
   );
@@ -250,6 +261,15 @@ export function TripPage() {
       </div>
 
       {canEdit && <ExpenseDialog trip={trip} open={adding} onOpenChange={setAdding} />}
+      {canEdit && (
+        <CaptureSheet
+          trip={trip}
+          open={capturing}
+          onOpenChange={setCapturing}
+          manualLabel={t('capture.manual')}
+          onManual={manualAdd}
+        />
+      )}
     </div>
   );
 }

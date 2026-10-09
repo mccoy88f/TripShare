@@ -10,6 +10,7 @@ import {
   LinkSchema,
   MoneySchema,
   PackingItemSchema,
+  PlaceSchema,
   PlanOpSchema,
   RefSchema,
   buildRepairMessage,
@@ -130,6 +131,70 @@ export const VerifyResultSchema = z.object({
 });
 export type VerifyResult = z.infer<typeof VerifyResultSchema>;
 
+// ─── Documento fotografato (scontrino, ricevuta, conferma, carta d'imbarco…) ──
+
+export const DOCUMENT_TYPES = [
+  'receipt',
+  'invoice',
+  'booking_confirmation',
+  'boarding_pass',
+  'ticket',
+  'other',
+] as const;
+
+export const DocumentResultSchema = z.object({
+  documentType: z.enum(DOCUMENT_TYPES),
+  summary: z.string().min(1).max(300).describe('Cosa è il documento, in una frase'),
+  expense: z
+    .object({
+      title: z.string().min(1).max(160),
+      merchant: z.string().max(160).optional(),
+      date: z.iso.date().optional(),
+      total: z.number().positive().describe('Totale pagato o da pagare, in unità maggiori'),
+      currency: z.enum(CURRENCY_CODES),
+      category: z.enum(EXPENSE_CATEGORY_KEYS),
+      emoji: z.string().max(16).optional(),
+      status: z.enum(['paid', 'planned']).describe('"planned" se è ancora da pagare'),
+      items: z
+        .array(z.object({ name: z.string().min(1).max(160), amount: z.number() }))
+        .max(80)
+        .default([]),
+      bookingRef: RefSchema.optional().describe('id della prenotazione a cui si riferisce'),
+    })
+    .optional()
+    .describe('Solo se il documento riporta un importo da registrare come spesa'),
+  bookings: z
+    .array(
+      BookingSchema.extend({
+        id: RefSchema.describe(
+          'id nuovo in kebab-case, oppure quello di una prenotazione esistente',
+        ),
+        existing: z
+          .boolean()
+          .default(false)
+          .describe('true se corrisponde a una prenotazione già nel programma (stesso id)'),
+      }),
+    )
+    .max(10)
+    .default([]),
+  places: z
+    .array(PlaceSchema)
+    .max(5)
+    .default([])
+    .describe('Luoghi nuovi citati (alloggio, ristorante…) non già nel programma'),
+  ticket: z
+    .object({
+      bookingRef: RefSchema,
+      label: z.string().max(120).optional().describe('Es. "Andata · posto 12A"'),
+      passenger: z.string().max(120).optional(),
+    })
+    .optional()
+    .describe('Se il documento stesso è un biglietto o una carta d’imbarco'),
+  confidence: z.enum(['high', 'medium', 'low']),
+  notes: z.string().max(400).optional(),
+});
+export type DocumentResult = z.infer<typeof DocumentResultSchema>;
+
 // ─── In quale giorno mettere un luogo ───────────────────────────────────────
 
 export const ScheduleResultSchema = z.object({
@@ -192,6 +257,13 @@ export const AiInputSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('verify'), placeId: z.string().max(64) }),
   z.object({ kind: z.literal('packing') }),
   z.object({ kind: z.literal('schedule'), placeId: z.string().max(64) }),
+  z.object({
+    kind: z.literal('document'),
+    file: z.string(),
+    mime: z.string(),
+    tripCurrency: z.enum(CURRENCY_CODES),
+    year: z.number().int(),
+  }),
 ]);
 export type AiInput = z.infer<typeof AiInputSchema>;
 
@@ -203,6 +275,7 @@ export const PURPOSE: Record<AiInput['kind'], AiPurpose> = {
   verify: 'web',
   packing: 'light',
   schedule: 'chat',
+  document: 'vision',
 };
 
 function schemaOf(s: z.ZodType) {
@@ -272,6 +345,93 @@ JSON Schema: ${JSON.stringify(schemaOf(ReceiptResultSchema))}`,
             content: [
               { type: 'text', text: 'Ecco lo scontrino.' },
               filePart(ctx.fileDataUrl!, input.mime, 'receipt'),
+            ],
+          },
+        ],
+      };
+    }
+    case 'document': {
+      const plan = ctx.plan!;
+      const categories = EXPENSE_CATEGORY_KEYS.map(
+        (c) => `${c} ${EXPENSE_CATEGORIES[c].emoji}`,
+      ).join(', ');
+      const placeIds = new Set(plan.places.map((p) => p.id));
+      const bookingIds = new Set(plan.bookings.map((b) => b.id));
+      return {
+        schemaName: 'tripshare_document',
+        schema: DocumentResultSchema,
+        jsonSchema: schemaOf(DocumentResultSchema),
+        repairs: 1,
+        validate: (value) => {
+          const doc = value as DocumentResult;
+          const issues: { path: string; message: string }[] = [];
+          const newPlaces = new Set(doc.places.map((p) => p.id));
+          const refs = new Set(doc.bookings.map((b) => b.id));
+          doc.bookings.forEach((b, i) => {
+            if (b.existing && !bookingIds.has(b.id))
+              issues.push({ path: `bookings.${i}.id`, message: 'unknown existing booking id' });
+            if (!b.existing && bookingIds.has(b.id))
+              issues.push({
+                path: `bookings.${i}.id`,
+                message: 'id already used: set existing true or use a new id',
+              });
+            if (b.placeId && !newPlaces.has(b.placeId) && !placeIds.has(b.placeId))
+              issues.push({ path: `bookings.${i}.placeId`, message: 'unknown place id' });
+          });
+          doc.places.forEach((p, i) => {
+            if (placeIds.has(p.id))
+              issues.push({
+                path: `places.${i}.id`,
+                message: 'place already exists: reference it instead',
+              });
+          });
+          if (
+            doc.expense?.bookingRef &&
+            !refs.has(doc.expense.bookingRef) &&
+            !bookingIds.has(doc.expense.bookingRef)
+          )
+            issues.push({ path: 'expense.bookingRef', message: 'unknown booking' });
+          if (
+            doc.ticket &&
+            !refs.has(doc.ticket.bookingRef) &&
+            !bookingIds.has(doc.ticket.bookingRef)
+          )
+            issues.push({ path: 'ticket.bookingRef', message: 'unknown booking' });
+          return issues.length ? issues : null;
+        },
+        messages: [
+          {
+            role: 'system',
+            content: `Leggi un documento di viaggio fotografato o in PDF (scontrino, fattura o ricevuta, conferma di prenotazione, carta d'imbarco, biglietto) e ricava TUTTO quello che serve al programma del gruppo, rispondendo SOLO con JSON secondo lo schema. Testi in ${L}. Oggi è ${today()}.
+Regole:
+- "expense" solo se c'è un importo: "total" è quanto pagato o da pagare (tasse e servizio inclusi); "status" è "planned" se il documento dice che si paga dopo o sul posto. Categorie: ${categories}. Valuta dai simboli e dal paese; se manca usa ${input.tripCurrency}.
+- "bookings" per alloggi, voli, treni, noleggi, traghetti, tour, biglietti d'ingresso: andata e ritorno sono due voci. Se la prenotazione è già nel programma (stesse date e fornitore o codice) usa il suo id con "existing": true, altrimenti un id nuovo in kebab-case. Copia esattamente codici, orari (HH:MM locali) e importi; anno se manca: ${input.year}.
+- Esempio: la ricevuta di un albergo produce la prenotazione "lodging" (o quella esistente), la spesa collegata con "bookingRef" e il luogo dell'albergo in "places" se non c'è già; lo scontrino di un ristorante produce solo la spesa (e il luogo se utile).
+- "places" solo per luoghi nuovi, con id in kebab-case; per collegare una prenotazione a un luogo usa "placeId" (nuovo o esistente).
+- "ticket" se il documento stesso è un biglietto o una carta d'imbarco, con "bookingRef" della prenotazione a cui appartiene.
+- Non inventare ciò che non si legge; "confidence" low se il documento è poco leggibile.
+Programma attuale (per riconoscere prenotazioni e luoghi esistenti): ${JSON.stringify({
+              startDate: plan.trip.startDate,
+              endDate: plan.trip.endDate,
+              destination: plan.trip.destination.name,
+              bookings: plan.bookings.map((b) => ({
+                id: b.id,
+                type: b.type,
+                title: b.title,
+                provider: b.provider,
+                code: b.confirmationCode,
+                start: b.start,
+                end: b.end,
+              })),
+              places: plan.places.map((p) => ({ id: p.id, name: p.name, kind: p.kind })),
+            })}
+JSON Schema: ${JSON.stringify(schemaOf(DocumentResultSchema))}`,
+          },
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: 'Ecco il documento.' },
+              filePart(ctx.fileDataUrl!, input.mime, 'document.pdf'),
             ],
           },
         ],

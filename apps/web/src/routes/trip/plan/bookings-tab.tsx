@@ -18,7 +18,6 @@ import { cn } from '@/lib/utils';
 import type { ExpenseT, TripDetail } from '@/lib/types';
 import { useOnAdd } from '@/lib/fab';
 import { ExpenseDialog, type ExpensePreset } from '../expense-dialog';
-import { BookingImportButton } from './booking-import';
 import { myTickets, TicketsDialog, TicketViewer, useTickets, type Ticket } from './tickets';
 import {
   formatLinks,
@@ -130,11 +129,6 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
             })}
           </div>
         </section>
-      )}
-      {canEdit && (
-        <div className="flex flex-wrap gap-2">
-          <BookingImportButton trip={trip} plan={plan} />
-        </div>
       )}
       {bookings.length === 0 && (
         <p className="rounded-xl border border-dashed px-6 py-10 text-center text-sm text-muted-foreground">

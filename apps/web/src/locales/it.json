@@ -960,5 +960,35 @@
     "label": "Passaggi",
     "back": "Indietro",
     "next": "Avanti"
+  },
+  "capture": {
+    "title": "Aggiungi",
+    "hint": "Fotografa uno scontrino, una ricevuta, una conferma o una carta d'imbarco: l'AI prepara spesa, prenotazione, luogo e biglietto da controllare.",
+    "camera": "Scatta",
+    "gallery": "Galleria",
+    "manual": "Manuale",
+    "reading": "Lettura del documento",
+    "readingHint": "L'AI sta leggendo il documento…",
+    "reviewTitle": "Ecco cosa ho trovato",
+    "lowConfidence": "Lettura incerta: controlla bene i dati prima di salvare.",
+    "expense": "Spesa",
+    "booking": "Prenotazione",
+    "place": "Luogo",
+    "ticket": "Biglietto",
+    "existingBooking": "Collegato alla prenotazione già presente: {{title}}",
+    "splitAll": "Divisa in parti uguali tra tutti ({{count}}); potrai cambiarla dopo.",
+    "codeFound": "codice letto",
+    "noCode": "nessun codice letto: si salva la foto",
+    "nothing": "Non ho trovato niente da aggiungere in questo documento.",
+    "save": "Salva tutto",
+    "saved": "Aggiunto al viaggio",
+    "types": {
+      "receipt": "Scontrino",
+      "invoice": "Fattura o ricevuta",
+      "booking_confirmation": "Conferma di prenotazione",
+      "boarding_pass": "Carta d'imbarco",
+      "ticket": "Biglietto",
+      "other": "Documento"
+    }
   }
 }

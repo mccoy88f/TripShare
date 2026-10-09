@@ -72,6 +72,49 @@ export const ticketsRouter = router({
       return row!;
     }),
 
+  /** Biglietto da un file già caricato per l'AI (la foto della carta d'imbarco). */
+  fromAiFile: authedProcedure
+    .input(
+      z.object({
+        tripId: z.uuid(),
+        bookingId: z.string().min(1).max(64),
+        file: z.string().regex(/^[a-f0-9]{32}\.(jpg|png|webp|gif|pdf)$/),
+        memberId: z.uuid().nullable().optional(),
+        label: z.string().trim().max(120).optional(),
+        codeFormat: z.enum(TICKET_CODE_FORMATS).optional(),
+        codeValue: z.string().max(4000).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
+      await checkMember(ctx, input.tripId, input.memberId);
+      const data = await ctx.storage?.readPrivate(input.file);
+      if (!data || !ctx.storage)
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'FILE_NOT_FOUND' });
+      // Copia separata: il biglietto e lo scontrino della spesa si possono eliminare a parte.
+      const ext = input.file.split('.').pop()!;
+      const storageName = await ctx.storage.savePrivate(data, ext);
+      const mime =
+        ext === 'pdf' ? 'application/pdf' : ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
+      const [row] = await ctx.db
+        .insert(bookingTicket)
+        .values({
+          tripId: input.tripId,
+          bookingId: input.bookingId,
+          memberId: input.memberId ?? null,
+          label: input.label ?? null,
+          fileName: `${input.label ?? 'ticket'}.${ext}`.slice(0, 200),
+          storageName,
+          mimeType: mime,
+          size: data.length,
+          codeFormat: input.codeValue ? (input.codeFormat ?? null) : null,
+          codeValue: input.codeFormat ? (input.codeValue ?? null) : null,
+          createdBy: ctx.user.id,
+        })
+        .returning({ id: bookingTicket.id });
+      return row!;
+    }),
+
   update: authedProcedure
     .input(
       z.object({
