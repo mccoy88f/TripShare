@@ -663,7 +663,12 @@
       "confirmDelete": "Eliminare il luogo? Verrà tolto anche dalle attività.",
       "stepWhat": "Luogo",
       "stepInfo": "Orari e prezzi",
-      "stepMore": "Note e fonti"
+      "stepMore": "Note e fonti",
+      "schedule": "Al programma",
+      "scheduleTitle": "Aggiungi al programma",
+      "suggestDay": "Suggerisci il giorno con l'AI",
+      "addToPlan": "Aggiungi al programma",
+      "scheduled": "{{name}} aggiunto al programma"
     },
     "placeKinds": {
       "sight": "Attrazione",
@@ -815,8 +820,9 @@
     "privateHint": "Nota privata: la vedi solo tu",
     "pin": "In evidenza",
     "add": "Aggiungi nota",
-    "empty": "Nessuna nota. Le note pubbliche le vede tutto il gruppo, quelle private solo tu.",
-    "confirmDelete": "Eliminare questa nota?"
+    "empty": "Nessuna nota. Le note pubbliche le vede tutto il gruppo, quelle private solo tu. Usa il + per aggiungerne una.",
+    "confirmDelete": "Eliminare questa nota?",
+    "editTitle": "Modifica nota"
   },
   "ai": {
     "notAvailable": "L'AI non è configurata: chiedi all'amministratore di impostare una chiave, oppure aggiungi la tua nel profilo se è consentito.",

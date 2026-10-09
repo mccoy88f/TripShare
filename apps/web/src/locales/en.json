@@ -663,7 +663,12 @@
       "confirmDelete": "Delete the place? It will also be removed from activities.",
       "stepWhat": "Place",
       "stepInfo": "Hours and prices",
-      "stepMore": "Notes and sources"
+      "stepMore": "Notes and sources",
+      "schedule": "To plan",
+      "scheduleTitle": "Add to the plan",
+      "suggestDay": "Suggest the day with AI",
+      "addToPlan": "Add to the plan",
+      "scheduled": "{{name}} added to the plan"
     },
     "placeKinds": {
       "sight": "Sight",
@@ -815,8 +820,9 @@
     "privateHint": "Private note: only you can see it",
     "pin": "Pinned",
     "add": "Add note",
-    "empty": "No notes yet. Public notes are visible to the whole group, private ones only to you.",
-    "confirmDelete": "Delete this note?"
+    "empty": "No notes yet. Public notes are visible to the whole group, private ones only to you. Use + to add one.",
+    "confirmDelete": "Delete this note?",
+    "editTitle": "Edit note"
   },
   "ai": {
     "notAvailable": "AI is not configured: ask the administrator to set a key, or add your own in your profile if allowed.",

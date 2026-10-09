@@ -128,6 +128,20 @@ export const VerifyResultSchema = z.object({
 });
 export type VerifyResult = z.infer<typeof VerifyResultSchema>;
 
+// ─── In quale giorno mettere un luogo ───────────────────────────────────────
+
+export const ScheduleResultSchema = z.object({
+  date: z.iso.date().describe('Giorno del programma in cui inserire la visita'),
+  time: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .optional()
+    .describe('Orario consigliato HH:MM'),
+  durationMin: z.number().int().min(10).max(720).optional(),
+  reason: z.string().min(1).max(400).describe('Perché quel giorno, in una o due frasi'),
+});
+export type ScheduleResult = z.infer<typeof ScheduleResultSchema>;
+
 // ─── Lista bagagli ──────────────────────────────────────────────────────────
 
 export const PackingResultSchema = z.object({ items: z.array(PackingItemSchema).max(40) });
@@ -175,6 +189,7 @@ export const AiInputSchema = z.discriminatedUnion('kind', [
   }),
   z.object({ kind: z.literal('verify'), placeId: z.string().max(64) }),
   z.object({ kind: z.literal('packing') }),
+  z.object({ kind: z.literal('schedule'), placeId: z.string().max(64) }),
 ]);
 export type AiInput = z.infer<typeof AiInputSchema>;
 
@@ -185,6 +200,7 @@ export const PURPOSE: Record<AiInput['kind'], AiPurpose> = {
   chat: 'chat',
   verify: 'web',
   packing: 'light',
+  schedule: 'chat',
 };
 
 function schemaOf(s: z.ZodType) {
@@ -369,6 +385,54 @@ JSON Schema: ${JSON.stringify(schemaOf(VerifyResultSchema))}`,
                 ? dates
                 : [ctx.plan!.trip.startDate, ctx.plan!.trip.endDate].filter(Boolean),
               currency: ctx.plan!.trip.currency,
+            }),
+          },
+        ],
+      };
+    }
+    case 'schedule': {
+      const plan = ctx.plan!;
+      const place = plan.places.find((p) => p.id === input.placeId);
+      const days = new Set(plan.days.map((d) => d.date));
+      return {
+        schemaName: 'tripshare_schedule',
+        schema: ScheduleResultSchema,
+        jsonSchema: schemaOf(ScheduleResultSchema),
+        repairs: 1,
+        validate: (value) =>
+          days.has((value as ScheduleResult).date)
+            ? null
+            : [{ path: 'date', message: `date must be one of: ${[...days].join(', ')}` }],
+        messages: [
+          {
+            role: 'system',
+            content: `Sei il pianificatore di TripShare. Scegli in quale giorno del programma inserire la visita a un luogo per ridurre gli spostamenti: preferisci il giorno in cui il gruppo è già vicino (stessa zona, stesso percorso o alloggio vicino), rispetta orari di apertura e giorni di chiusura se noti ed evita i giorni già pieni. Proponi un orario che si incastri tra le attività esistenti. Testi in ${L}. Rispondi SOLO con JSON secondo lo schema: ${JSON.stringify(schemaOf(ScheduleResultSchema))}`,
+          },
+          {
+            role: 'user',
+            content: JSON.stringify({
+              placeToSchedule: place ?? input.placeId,
+              days: plan.days.map((d) => ({
+                date: d.date,
+                title: d.title,
+                route: d.route,
+                stayBookingId: d.stayBookingId,
+                activities: d.activities.map((a) => ({
+                  time: a.time,
+                  endTime: a.endTime,
+                  title: a.title,
+                  placeIds: a.placeIds,
+                })),
+              })),
+              places: plan.places.map((p) => ({
+                id: p.id,
+                name: p.name,
+                address: p.address,
+                location: p.location,
+              })),
+              lodging: plan.bookings
+                .filter((b) => b.type === 'lodging')
+                .map((b) => ({ id: b.id, title: b.title, start: b.start.date, end: b.end?.date })),
             }),
           },
         ],

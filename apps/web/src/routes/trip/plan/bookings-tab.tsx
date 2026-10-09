@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, Plus, Receipt, Ticket as TicketIcon, Trash2 } from 'lucide-react';
+import { Loader2, Receipt, Ticket as TicketIcon, Trash2 } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isCurrencyCode, type CurrencyCode, type ExpenseCategory } from '@tripshare/shared';
@@ -14,11 +14,12 @@ import { Field, Input, Select } from '@/components/ui/input';
 import { money, shortDate } from '@/lib/format';
 import { BOOKING_EMOJI, usePlan, usePlanOps } from '@/lib/plan';
 import { useTRPC } from '@/lib/trpc';
+import { cn } from '@/lib/utils';
 import type { ExpenseT, TripDetail } from '@/lib/types';
 import { useOnAdd } from '@/lib/fab';
 import { ExpenseDialog, type ExpensePreset } from '../expense-dialog';
 import { BookingImportButton } from './booking-import';
-import { TicketsDialog, TicketViewer, useTickets, type Ticket } from './tickets';
+import { myTickets, TicketsDialog, TicketViewer, useTickets, type Ticket } from './tickets';
 import {
   formatLinks,
   moneyDraft,
@@ -92,15 +93,46 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
   );
 
   const linked = (b: Booking) => expenses?.find((e) => e.bookingId === b.id);
+  // I biglietti che riguardano me (assegnati a me o a tutti), nell'ordine delle prenotazioni.
+  const mine = myTickets(tickets, trip.myMemberId).sort(
+    (a, b) =>
+      bookings.findIndex((x) => x.id === a.bookingId) -
+      bookings.findIndex((x) => x.id === b.bookingId),
+  );
 
   return (
     <div className="grid grid-cols-1 gap-4 pb-8">
+      {mine.length > 0 && (
+        <section className="grid grid-cols-1 gap-2">
+          <h3 className="px-1 text-sm font-semibold">🎫 {t('tickets.mine')}</h3>
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:px-0">
+            {mine.map((tk, i) => {
+              const b = bookings.find((x) => x.id === tk.bookingId);
+              return (
+                <button
+                  key={tk.id}
+                  onClick={() => setViewing({ list: mine, index: i })}
+                  className="flex w-44 shrink-0 flex-col items-start rounded-xl bg-gradient-to-br from-primary to-accent p-3 text-left text-white shadow-md transition active:scale-[0.98]"
+                >
+                  <span className="text-xl">{b ? BOOKING_EMOJI[b.type] : '🎫'}</span>
+                  <span className="line-clamp-2 text-sm font-semibold">
+                    {b?.title ?? t('tickets.ticket')}
+                  </span>
+                  {b && (
+                    <span className="text-xs opacity-85">
+                      {shortDate(b.start.date)}
+                      {b.start.time && ` ${b.start.time}`}
+                    </span>
+                  )}
+                  {tk.label && <span className="line-clamp-1 text-xs opacity-85">{tk.label}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
       {canEdit && (
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => setEditing('new')}>
-            <Plus />
-            {t('plan.booking.add')}
-          </Button>
           <BookingImportButton trip={trip} plan={plan} />
         </div>
       )}
@@ -111,7 +143,14 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
       )}
       <div className="grid grid-cols-1 gap-3">
         {bookings.map((b) => (
-          <Card key={b.id} className="flex flex-wrap items-start gap-3 p-4">
+          <Card
+            key={b.id}
+            onClick={() => canEdit && setEditing(b)}
+            className={cn(
+              'flex flex-wrap items-start gap-3 p-4',
+              canEdit && 'cursor-pointer transition hover:bg-muted/40',
+            )}
+          >
             <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-xl">
               {BOOKING_EMOJI[b.type]}
             </span>
@@ -151,7 +190,10 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
               {b.cost && b.paid === false && (
                 <span className="text-xs text-muted-foreground">{t('plan.booking.payOnSite')}</span>
               )}
-              <div className="flex flex-wrap justify-end gap-1">
+              <div
+                className="flex flex-wrap justify-end gap-1"
+                onClick={(e) => e.stopPropagation()}
+              >
                 {(canEdit || (tickets ?? []).some((x) => x.bookingId === b.id)) && (
                   <Button size="sm" variant="outline" onClick={() => setTicketsOf(b)}>
                     <TicketIcon />
@@ -182,11 +224,6 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
                       {t('plan.booking.toExpense')}
                     </Button>
                   )
-                )}
-                {canEdit && (
-                  <Button size="sm" variant="ghost" onClick={() => setEditing(b)}>
-                    {t('plan.edit')}
-                  </Button>
                 )}
               </div>
             </div>

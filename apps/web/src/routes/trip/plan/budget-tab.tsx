@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { Loader2, RefreshCw, Trash2 } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -167,12 +167,6 @@ export function BudgetTab({ trip }: { trip: TripDetail }) {
       <section className="grid grid-cols-1 gap-3">
         <div className="flex items-center justify-between">
           <h3 className="px-1 text-sm font-semibold">{t('budget.items')}</h3>
-          {canEdit && (
-            <Button size="sm" onClick={() => setEditing('new')}>
-              <Plus />
-              {t('budget.add')}
-            </Button>
-          )}
         </div>
         {summary.lines.length === 0 && (
           <p className="rounded-xl border border-dashed px-6 py-8 text-center text-sm text-muted-foreground">

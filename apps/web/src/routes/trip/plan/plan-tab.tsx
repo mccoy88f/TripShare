@@ -282,10 +282,6 @@ function DayView({
               <Pencil />
               {t('plan.editDay')}
             </Button>
-            <Button size="sm" onClick={() => setEditing({})}>
-              <Plus />
-              {t('plan.activity.add')}
-            </Button>
           </div>
         )}
       </div>

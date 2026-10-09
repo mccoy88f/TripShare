@@ -4,14 +4,19 @@ import {
   ExternalLink,
   Loader2,
   MapPin,
-  Plus,
+  CalendarPlus,
   Sparkles,
   Trash2,
 } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isCurrencyCode } from '@tripshare/shared';
-import { PLACE_KINDS, type Place, type TripDocument } from '@tripshare/shared/trip-format';
+import {
+  PLACE_KINDS,
+  type Activity,
+  type Place,
+  type TripDocument,
+} from '@tripshare/shared/trip-format';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -23,6 +28,7 @@ import { useAiStatus, useAiTask } from '@/lib/ai';
 import { money, shortDate, todayIso } from '@/lib/format';
 import { mapsUrl, PLACE_KIND_EMOJI, usePlan, usePlanOps } from '@/lib/plan';
 import type { TripDetail } from '@/lib/types';
+import { cn } from '@/lib/utils';
 import { useOnAdd } from '@/lib/fab';
 
 interface VerifyResult {
@@ -54,6 +60,7 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
   const { run } = useAiTask();
   const { apply } = usePlanOps(trip.id);
   const [verifying, setVerifying] = useState<string | null>(null);
+  const [scheduling, setScheduling] = useState<Place | null>(null);
   const verify = async (p: Place) => {
     setVerifying(p.id);
     try {
@@ -97,12 +104,6 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
 
   return (
     <div className="grid grid-cols-1 gap-4 pb-8">
-      {canEdit && (
-        <Button className="justify-self-start" onClick={() => setEditing('new')}>
-          <Plus />
-          {t('plan.place.add')}
-        </Button>
-      )}
       {plan.places.length === 0 && (
         <p className="rounded-xl border border-dashed px-6 py-10 text-center text-sm text-muted-foreground">
           {t('plan.place.empty')}
@@ -113,7 +114,14 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
           const days = daysOf(p.id);
           const verified = p.verification?.status === 'verified';
           return (
-            <Card key={p.id} className="flex flex-col gap-2 p-4">
+            <Card
+              key={p.id}
+              onClick={() => canEdit && setEditing(p)}
+              className={cn(
+                'flex flex-col gap-2 p-4',
+                canEdit && 'cursor-pointer transition hover:bg-muted/40',
+              )}
+            >
               <div className="flex items-start gap-3">
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-xl">
                   {PLACE_KIND_EMOJI[p.kind]}
@@ -154,7 +162,10 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
                   💡 {tip}
                 </p>
               ))}
-              <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-sm">
+              <div
+                className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-sm"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <a
                   href={mapsUrl(p.mapsQuery ?? p.address ?? p.name)}
                   target="_blank"
@@ -190,9 +201,12 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
                         {t('ai.verify.button')}
                       </Button>
                     )}
-                    <Button size="sm" variant="ghost" onClick={() => setEditing(p)}>
-                      {t('plan.edit')}
-                    </Button>
+                    {plan.days.length > 0 && (
+                      <Button size="sm" variant="outline" onClick={() => setScheduling(p)}>
+                        <CalendarPlus />
+                        {t('plan.place.schedule')}
+                      </Button>
+                    )}
                   </span>
                 )}
               </div>
@@ -200,6 +214,14 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
           );
         })}
       </div>
+      {scheduling && (
+        <ScheduleDialog
+          trip={trip}
+          plan={plan}
+          place={scheduling}
+          onClose={() => setScheduling(null)}
+        />
+      )}
       {editing && (
         <PlaceDialog
           tripId={trip.id}
@@ -451,6 +473,122 @@ function PlaceDialog({
             </div>
           </Step>
         </StepForm>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+const ACTIVITY_OF: Partial<Record<Place['kind'], Activity['type']>> = {
+  restaurant: 'meal',
+  cafe: 'meal',
+  bar: 'meal',
+  shop: 'shopping',
+  lodging: 'checkin',
+  airport: 'travel',
+  station: 'travel',
+  nature: 'activity',
+};
+
+/** Aggiunge la visita a un luogo nel programma, nel giorno scelto (o suggerito dall'AI). */
+function ScheduleDialog({
+  trip,
+  plan,
+  place,
+  onClose,
+}: {
+  trip: TripDetail;
+  plan: TripDocument;
+  place: Place;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const ai = useAiStatus();
+  const { run, running } = useAiTask();
+  const { apply, pending } = usePlanOps(trip.id);
+  const [date, setDate] = useState(plan.days[0]?.date ?? '');
+  const [time, setTime] = useState('');
+  const [duration, setDuration] = useState<number | undefined>();
+  const [reason, setReason] = useState<string | null>(null);
+
+  const suggest = async () => {
+    const r = await run<{ date: string; time?: string; durationMin?: number; reason: string }>(
+      trip.id,
+      { kind: 'schedule', placeId: place.id },
+    );
+    if (!r) return;
+    setDate(r.date);
+    setTime(r.time ?? '');
+    setDuration(r.durationMin);
+    setReason(r.reason);
+  };
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    await apply([
+      {
+        type: 'upsertActivity',
+        date,
+        activity: {
+          title: place.name,
+          type: ACTIVITY_OF[place.kind] ?? 'visit',
+          emoji: PLACE_KIND_EMOJI[place.kind],
+          placeIds: [place.id],
+          ...(time ? { time } : {}),
+          ...(duration ? { durationMin: duration } : {}),
+          ...(place.price ? { cost: place.price } : {}),
+        },
+      },
+    ]);
+    toast.success(t('plan.place.scheduled', { name: place.name }));
+    onClose();
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent title={t('plan.place.scheduleTitle')} description={place.name}>
+        <form onSubmit={submit} className="grid grid-cols-1 gap-4 pt-2">
+          {ai.data?.available && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full border-dashed"
+              disabled={running}
+              onClick={suggest}
+            >
+              {running ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              {t('plan.place.suggestDay')}
+            </Button>
+          )}
+          {reason && (
+            <p className="rounded-xl bg-secondary px-4 py-3 text-sm text-secondary-foreground">
+              ✨ {reason}
+            </p>
+          )}
+          <div className="grid grid-cols-[1fr_auto] gap-3">
+            <Field label={t('plan.activity.day')} htmlFor="sch-day">
+              <Select id="sch-day" value={date} onChange={(e) => setDate(e.target.value)}>
+                {plan.days.map((d, i) => (
+                  <option key={d.date} value={d.date}>
+                    {t('plan.dayN', { n: i + 1 })} · {shortDate(d.date)} · {d.title}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label={t('plan.activity.time')} htmlFor="sch-time">
+              <Input
+                id="sch-time"
+                type="time"
+                className="w-32"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+              />
+            </Field>
+          </div>
+          <Button type="submit" size="lg" className="justify-self-end" disabled={pending || !date}>
+            {pending && <Loader2 className="animate-spin" />}
+            {t('plan.place.addToPlan')}
+          </Button>
+        </form>
       </DialogContent>
     </Dialog>
   );

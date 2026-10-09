@@ -388,4 +388,35 @@ run('AI jobs (integration)', () => {
     const after = await t.trpc<unknown[]>('ai.chat.conversations', marco, { tripId }, 'query');
     expect(after.data).toHaveLength(1);
   });
+
+  it('suggests the day for a place and rejects days outside the plan', async () => {
+    await t.settings.set('openrouter.apiKey', 'sk-or-central-key-123');
+    const { marco, tripId } = await setup();
+    await t.trpc('plan.applyOps', marco, {
+      tripId,
+      ops: [
+        { type: 'ensureDays', start: '2026-10-12', end: '2026-10-14' },
+        {
+          type: 'upsertPlace',
+          place: { id: 'castello', name: 'Castello di Edimburgo', kind: 'sight' },
+        },
+      ],
+    });
+    replies.tripshare_schedule = [
+      { date: '2027-01-01', reason: 'x' },
+      { date: '2026-10-13', time: '10:00', reason: 'Siete già in centro quel giorno.' },
+    ];
+    const started = await t.trpc<{ id: string }>('ai.start', marco, {
+      tripId,
+      input: { kind: 'schedule', placeId: 'castello' },
+    });
+    const job = await t.trpc<{ status: string; result: { date: string; time: string } }>(
+      'ai.job',
+      marco,
+      { id: started.data.id },
+      'query',
+    );
+    expect(job.data.status).toBe('done');
+    expect(job.data.result).toMatchObject({ date: '2026-10-13', time: '10:00' });
+  });
 });

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
-import { ArrowLeft, CalendarDays, Loader2, Settings, Users } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Loader2, Settings, Sparkles, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AvatarStack } from '@/components/avatar-stack';
@@ -25,21 +25,12 @@ import { BudgetTab } from './plan/budget-tab';
 import { PackingTab } from './plan/packing-tab';
 import { PlacesTab } from './plan/places-tab';
 import { PlanTab } from './plan/plan-tab';
-import { TicketsTab } from './plan/tickets-tab';
 import { cn } from '@/lib/utils';
 
 /** Tab visibili nella barra; membri e impostazioni sono icone sulla copertina. */
-const MAIN_TABS = [
-  'plan',
-  'assistant',
-  'expenses',
-  'bookings',
-  'tickets',
-  'places',
-  'packing',
-  'notes',
-] as const;
-const TABS = [...MAIN_TABS, 'members', 'settings'] as const;
+const MAIN_TABS = ['plan', 'expenses', 'bookings', 'places', 'packing', 'notes'] as const;
+/** L'assistente è un'icona a destra della riga dei tab; membri e impostazioni sulla copertina. */
+const TABS = [...MAIN_TABS, 'assistant', 'members', 'settings'] as const;
 type Tab = (typeof TABS)[number];
 /** Sotto-viste del tab Spese. */
 const MONEY_VIEWS = ['list', 'balances', 'budget'] as const;
@@ -53,11 +44,14 @@ export function TripPage() {
   const search = useSearch({ strict: false }) as { tab?: string; view?: string };
   // I vecchi link a "saldi" e "budget" aprono la sotto-vista del tab Spese.
   const legacyView = search.tab === 'balances' || search.tab === 'budget' ? search.tab : undefined;
+  // I biglietti ora stanno nelle prenotazioni.
   const tab: Tab = legacyView
     ? 'expenses'
-    : TABS.includes(search.tab as Tab)
-      ? (search.tab as Tab)
-      : 'plan';
+    : search.tab === 'tickets'
+      ? 'bookings'
+      : TABS.includes(search.tab as Tab)
+        ? (search.tab as Tab)
+        : 'plan';
   const view: MoneyView =
     legacyView ??
     (MONEY_VIEWS.includes(search.view as MoneyView) ? (search.view as MoneyView) : 'list');
@@ -174,12 +168,29 @@ export function TripPage() {
           <Tabs value={tab} onValueChange={(value) => go(value as Tab)}>
             <div className="flex items-center gap-2">
               <TabsList className="min-w-0">
-                {MAIN_TABS.filter((x) => x !== 'assistant' || ai.data?.available).map((x) => (
+                {MAIN_TABS.map((x) => (
                   <TabsTrigger key={x} value={x}>
-                    {x === 'assistant' ? `✨ ${t('trip.tabs.assistant')}` : t(`trip.tabs.${x}`)}
+                    {t(`trip.tabs.${x}`)}
                   </TabsTrigger>
                 ))}
               </TabsList>
+              {ai.data?.available && (
+                <button
+                  type="button"
+                  onClick={() => go(tab === 'assistant' ? 'plan' : 'assistant')}
+                  aria-label={t('trip.tabs.assistant')}
+                  title={t('trip.tabs.assistant')}
+                  aria-pressed={tab === 'assistant'}
+                  className={cn(
+                    'ml-auto flex size-10 shrink-0 items-center justify-center rounded-full transition [&_svg]:size-5',
+                    tab === 'assistant'
+                      ? 'bg-amber-400 text-amber-950 shadow-sm'
+                      : 'bg-amber-400/15 text-amber-500 hover:bg-amber-400/25',
+                  )}
+                >
+                  <Sparkles />
+                </button>
+              )}
             </div>
             <TabsContent value="plan">
               <PlanTab trip={trip} />
@@ -216,9 +227,6 @@ export function TripPage() {
             </TabsContent>
             <TabsContent value="bookings">
               <BookingsTab trip={trip} />
-            </TabsContent>
-            <TabsContent value="tickets">
-              <TicketsTab trip={trip} />
             </TabsContent>
             <TabsContent value="places">
               <PlacesTab trip={trip} />
