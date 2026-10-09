@@ -8,6 +8,7 @@ import { TripCover } from '@/components/trip-cover';
 import { CoverCredit } from '@/components/unsplash-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { askAssistant } from '@/lib/assistant-ask';
 import { focusItem } from '@/lib/search-focus';
 import { SearchPanel, type SearchResult } from './search';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -254,7 +255,20 @@ export function TripPage() {
             </div>
             {searching && (
               <div className="mt-6">
-                <SearchPanel trip={trip} query={query} onPick={pick} />
+                <SearchPanel
+                  trip={trip}
+                  query={query}
+                  onPick={pick}
+                  onAsk={
+                    ai.data?.available
+                      ? (question) => {
+                          askAssistant(question);
+                          closeSearch();
+                          go('assistant');
+                        }
+                      : undefined
+                  }
+                />
               </div>
             )}
             {!searching && (

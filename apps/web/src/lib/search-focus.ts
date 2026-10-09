@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react';
  * Elemento da mostrare dopo una ricerca: il tab giusto viene aperto dalla pagina, qui si
  * ritrova l'elemento (marcato con data-search-id), lo si porta in vista e lo si evidenzia.
  */
-let state = { n: 0, date: undefined as string | undefined };
+let state = { n: 0, date: undefined as string | undefined, key: '' };
 const listeners = new Set<() => void>();
 
 export const searchId = (key: string) => ({ 'data-search-id': key });
@@ -15,6 +15,9 @@ export function takeFocusDate() {
   state = { ...state, date: undefined };
   return date;
 }
+
+/** Chiave dell'ultimo elemento richiesto (per aprire sezioni chiuse che lo contengono). */
+export const focusedKey = () => state.key;
 
 export function useFocusRequest() {
   return useSyncExternalStore(
@@ -27,7 +30,7 @@ export function useFocusRequest() {
 }
 
 export function focusItem(key: string, date?: string) {
-  state = { n: state.n + 1, date };
+  state = { n: state.n + 1, date, key };
   listeners.forEach((l) => l());
   // L'elemento compare solo dopo il cambio di tab (e del giorno): si riprova per qualche secondo.
   let tries = 0;

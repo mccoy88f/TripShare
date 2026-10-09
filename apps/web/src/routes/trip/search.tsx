@@ -3,7 +3,9 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EXPENSE_CATEGORIES, categoryLabel, type Locale } from '@tripshare/shared';
 import { normalizeText } from '@tripshare/shared/trip-format';
+import { Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { longDate, money, shortDate } from '@/lib/format';
 import { BOOKING_EMOJI, usePlan } from '@/lib/plan';
@@ -65,10 +67,13 @@ export function SearchPanel({
   trip,
   query,
   onPick,
+  onAsk,
 }: {
   trip: TripDetail;
   query: string;
   onPick: (result: SearchResult) => void;
+  /** Presente solo se l'assistente è disponibile. */
+  onAsk?: (question: string) => void;
 }) {
   const { t, i18n } = useTranslation();
   const locale = (i18n.resolvedLanguage ?? 'it') as Locale;
@@ -241,11 +246,20 @@ export function SearchPanel({
       (a, b) => b.score - a.score || KIND_ORDER.indexOf(a.r.kind) - KIND_ORDER.indexOf(b.r.kind),
     )
     .map((x) => x.r);
+  const ask = onAsk && (
+    <Button variant="outline" className="justify-self-center" onClick={() => onAsk(query.trim())}>
+      <Sparkles />
+      {t('search.ask')}
+    </Button>
+  );
   if (found.length === 0)
     return (
-      <p className="px-2 py-10 text-center text-sm text-muted-foreground">
-        {t('search.empty', { query: query.trim() })}
-      </p>
+      <div className="grid grid-cols-1 gap-4 py-10">
+        <p className="px-2 text-center text-sm text-muted-foreground">
+          {t('search.empty', { query: query.trim() })}
+        </p>
+        {ask}
+      </div>
     );
   return (
     <div className="grid grid-cols-1 gap-3 pb-8">
@@ -278,6 +292,7 @@ export function SearchPanel({
           </p>
         )}
       </Card>
+      {ask}
     </div>
   );
 }

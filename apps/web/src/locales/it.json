@@ -1078,6 +1078,7 @@
       "note": "Note"
     },
     "count_one": "{{count}} risultato",
-    "count_other": "{{count}} risultati"
+    "count_other": "{{count}} risultati",
+    "ask": "Chiedi all'assistente"
   }
 }

@@ -33,6 +33,7 @@ import { ExpenseDialog, type ExpensePreset } from './expense-dialog';
 import { useOnAdd } from '@/lib/fab';
 import { useKeyboard } from '@/lib/keyboard';
 import { ProposalDialog } from './proposal-dialog';
+import { hasPendingAsk, takePendingAsk } from '@/lib/assistant-ask';
 import { confirmDialog } from '@/components/confirm';
 
 /** Descrizione breve di una modifica proposta dall'assistente. */
@@ -118,7 +119,10 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
     trpc.ai.chat.conversations.queryOptions({ tripId: trip.id }),
   );
   // undefined = ancora da scegliere (si apre la più recente), null = nuova chat.
-  const [conversationId, setConversationId] = useState<string | null | undefined>(undefined);
+  const [conversationId, setConversationId] = useState<string | null | undefined>(
+    // Se arriva una domanda dalla ricerca si parte subito da una chat nuova.
+    hasPendingAsk() ? null : undefined,
+  );
   useEffect(() => {
     if (conversationId === undefined && conversations)
       setConversationId(conversations[0]?.id ?? null);
@@ -196,6 +200,11 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
     await queryClient.invalidateQueries({ queryKey: conversationsKey });
     setSent(null);
   };
+
+  useEffect(() => {
+    const ask = takePendingAsk();
+    if (ask) void send(ask);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();

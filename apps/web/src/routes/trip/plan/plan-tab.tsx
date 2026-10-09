@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle,
+  ChevronDown,
   CalendarPlus,
   ExternalLink,
   Lightbulb,
@@ -42,7 +43,7 @@ import { GeneratePlanButton } from './generate-trip';
 import { ImportPlanButton } from './import-export';
 import { myTickets, TicketViewer, useTickets, type Ticket } from './tickets';
 import { confirmDialog } from '@/components/confirm';
-import { searchId, takeFocusDate, useFocusRequest } from '@/lib/search-focus';
+import { focusedKey, searchId, takeFocusDate, useFocusRequest } from '@/lib/search-focus';
 
 type Weather = {
   date: string;
@@ -70,26 +71,31 @@ export function PlanTab({ trip }: { trip: TripDetail }) {
   const [selected, setSelected] = useState<string | null>(null);
   /** Consiglio in modifica: indice nella lista, oppure -1 per uno nuovo. */
   const [tipIndex, setTipIndex] = useState<number | null>(null);
+  const [tipsOpen, setTipsOpen] = useState(false);
   const stripRef = useRef<HTMLDivElement>(null);
   // Un risultato di ricerca può chiedere di aprire un giorno preciso.
   const focusRequest = useFocusRequest();
   useEffect(() => {
     const date = takeFocusDate();
     if (date) setSelected(date);
+    // Un consiglio trovato dalla ricerca sta in una sezione chiusa: la si apre.
+    if (focusedKey().startsWith('tip:')) setTipsOpen(true);
   }, [focusRequest]);
   useOnAdd('plan', () => {
     if (plan && plan.days.length === 0) toast.info(t('trip.fab.noDays'));
   });
 
-  // Giorno iniziale: oggi se è nel viaggio, altrimenti il primo.
+  // Giorno iniziale: oggi se è nel viaggio, altrimenti quello più vicino a oggi.
   useEffect(() => {
     if (!plan || selected) return;
-    const today = todayIso();
+    const today = Date.parse(`${todayIso()}T00:00:00Z`);
+    const nearest = [...plan.days].sort(
+      (a, b) =>
+        Math.abs(Date.parse(`${a.date}T00:00:00Z`) - today) -
+        Math.abs(Date.parse(`${b.date}T00:00:00Z`) - today),
+    )[0];
     // Un giorno già scelto (anche da una ricerca nello stesso istante) non va sovrascritto.
-    setSelected(
-      (current) =>
-        current ?? plan.days.find((d) => d.date === today)?.date ?? plan.days[0]?.date ?? null,
-    );
+    setSelected((current) => current ?? nearest?.date ?? null);
   }, [plan, selected]);
 
   const weatherByDate = useMemo(
@@ -189,28 +195,41 @@ export function PlanTab({ trip }: { trip: TripDetail }) {
 
       {(plan.tips.length > 0 || (canEdit && plan.days.length > 0)) && (
         <section>
-          <div className="mb-2 flex items-center justify-between px-1">
-            <h3 className="text-sm font-semibold">💡 {t('plan.tips')}</h3>
-            {canEdit && (
+          <div className="mb-2 flex items-center justify-between gap-2 px-1">
+            <button
+              type="button"
+              onClick={() => setTipsOpen(!tipsOpen)}
+              aria-expanded={tipsOpen}
+              className="flex min-w-0 items-center gap-2 text-left text-sm font-semibold"
+            >
+              <ChevronDown
+                className={cn('size-4 shrink-0 transition-transform', !tipsOpen && '-rotate-90')}
+              />
+              <span>💡 {t('plan.tips')}</span>
+              <span className="font-normal text-muted-foreground">{plan.tips.length}</span>
+            </button>
+            {canEdit && tipsOpen && (
               <Button size="sm" variant="ghost" onClick={() => setTipIndex(-1)}>
                 <Plus />
                 {t('plan.tip.add')}
               </Button>
             )}
           </div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {plan.tips.map((tip, i) => (
-              <Card
-                key={i}
-                {...searchId(`tip:${i}`)}
-                className={cn('p-4', canEdit && 'cursor-pointer transition hover:bg-muted/40')}
-                onClick={() => canEdit && setTipIndex(i)}
-              >
-                <p className="font-semibold">{tip.title}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{tip.text}</p>
-              </Card>
-            ))}
-          </div>
+          {tipsOpen && (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {plan.tips.map((tip, i) => (
+                <Card
+                  key={i}
+                  {...searchId(`tip:${i}`)}
+                  className={cn('p-4', canEdit && 'cursor-pointer transition hover:bg-muted/40')}
+                  onClick={() => canEdit && setTipIndex(i)}
+                >
+                  <p className="font-semibold">{tip.title}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{tip.text}</p>
+                </Card>
+              ))}
+            </div>
+          )}
         </section>
       )}
       {tipIndex !== null && (
