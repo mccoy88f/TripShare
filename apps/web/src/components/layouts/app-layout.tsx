@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
-import { LogOut, Plane, Plus, Receipt, Scale, Shield, UserRound } from 'lucide-react';
+import { LogOut, Plane, Plus, Shield, UserRound } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Logo } from '@/components/brand';
@@ -36,14 +36,15 @@ export function AppLayout() {
 
   const items: NavItem[] = [
     { to: '/app', label: t('nav.trips'), icon: Plane, exact: true },
-    { to: '/app/expenses', label: t('nav.expenses'), icon: Receipt, soon: true },
-    { to: '/app/balances', label: t('nav.balances'), icon: Scale, soon: true },
     { to: '/app/profile', label: t('nav.profile'), icon: UserRound },
   ];
   if (me?.role === 'superadmin')
     items.push({ to: '/app/admin', label: t('nav.admin'), icon: Shield });
+  const inTrip = /^\/app\/trips\/[0-9a-f-]{36}/.test(pathname);
   const isActive = (item: NavItem) =>
-    item.exact ? pathname === item.to : pathname.startsWith(item.to);
+    item.exact
+      ? pathname === item.to || pathname.startsWith('/app/trips/')
+      : pathname.startsWith(item.to);
 
   const logout = async () => {
     await signOut();
@@ -99,20 +100,25 @@ export function AppLayout() {
 
         {/* Navigazione in basso (mobile) */}
         <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
-          <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-center px-2">
-            {items.slice(0, 2).map((item) => (
-              <BottomLink key={item.to} item={item} active={isActive(item)} />
-            ))}
-            <div className="flex justify-center">
-              <button
-                disabled
-                title={t('common.soon')}
-                className="-mt-6 flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-white shadow-lg shadow-accent/30 disabled:opacity-60"
-              >
-                <Plus className="size-6" />
-              </button>
-            </div>
-            {[items[2]!, items.find((i) => i.to === '/app/admin') ?? items[3]!].map((item) => (
+          <div
+            className="mx-auto grid h-16 max-w-md items-center px-2"
+            style={{
+              gridTemplateColumns: `repeat(${items.length + (inTrip ? 0 : 1)}, minmax(0, 1fr))`,
+            }}
+          >
+            <BottomLink item={items[0]!} active={isActive(items[0]!)} />
+            {!inTrip && (
+              <div className="flex justify-center">
+                <Link
+                  to="/app/trips/new"
+                  aria-label={t('app.newTrip')}
+                  className="-mt-6 flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-white shadow-lg shadow-accent/30 transition active:scale-95"
+                >
+                  <Plus className="size-6" />
+                </Link>
+              </div>
+            )}
+            {items.slice(1).map((item) => (
               <BottomLink key={item.to} item={item} active={isActive(item)} />
             ))}
           </div>

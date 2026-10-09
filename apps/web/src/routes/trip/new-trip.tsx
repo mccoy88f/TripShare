@@ -1,0 +1,48 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+import { isCurrencyCode } from '@tripshare/shared';
+import { useMe } from '@/components/layouts/app-layout';
+import { emptyTripForm, toTripInput, TripForm } from '@/components/trip-form';
+import { useTRPC } from '@/lib/trpc';
+import { uploadImage } from '@/lib/upload';
+
+export function NewTripPage() {
+  const { t } = useTranslation();
+  const trpc = useTRPC();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { data: me } = useMe();
+  const [uploading, setUploading] = useState(false);
+  const create = useMutation(trpc.trips.create.mutationOptions());
+
+  if (!me) return null;
+  return (
+    <div>
+      <h1 className="mb-6 text-3xl font-bold tracking-tight">{t('trip.new.title')}</h1>
+      <TripForm
+        initial={emptyTripForm(isCurrencyCode(me.defaultCurrency) ? me.defaultCurrency : 'EUR')}
+        submitLabel={t('trip.new.submit')}
+        pending={create.isPending || uploading}
+        onSubmit={async (values, file) => {
+          try {
+            const { id } = await create.mutateAsync(toTripInput(values));
+            if (file) {
+              setUploading(true);
+              await uploadImage(`/api/trips/${id}/cover`, file).catch(() =>
+                toast.error(t('trip.form.photoError')),
+              );
+              setUploading(false);
+            }
+            await queryClient.invalidateQueries({ queryKey: trpc.trips.list.queryKey() });
+            await navigate({ to: '/app/trips/$tripId', params: { tripId: id } });
+          } catch {
+            toast.error(t('common.error'));
+          }
+        }}
+      />
+    </div>
+  );
+}

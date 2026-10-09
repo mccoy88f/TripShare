@@ -467,27 +467,34 @@ Con questo si può già usare l'app con il gruppo nel prossimo viaggio.
 
 ### Stato di avanzamento
 
-**Fase 0 completata. Fase 1 in gran parte completata.** Cosa c'è:
+**Fasi 0, 1 e 2 completate.** Cosa c'è:
 
-- monorepo, CI su GitHub Actions, immagini Docker multi-architettura, Caddy con HTTPS;
+- monorepo, CI su GitHub Actions, immagini Docker multi-architettura, Caddy con HTTPS,
+  compose dedicato per Coolify;
 - registrazione con verifica dell'email, accesso con password o magic link, recupero
   password, super admin creato al primo avvio;
-- profilo con emoji, colore, lingua, valuta predefinita, tema e PayPal.me;
+- profilo con foto o emoji, colore, lingua, valuta predefinita, tema e PayPal.me;
 - pannello admin: stato dei servizi, email di prova, registrazioni, OpenRouter (chiave
   cifrata, modalità, modelli, quote), utenti, registro delle azioni;
+- viaggi con foto di copertina (o sfumatura), emoji, date e valuta;
+- membri con ruoli, persone senza account (segnaposto) che si collegano all'account
+  accettando l'invito; inviti via link condivisibile o email, anche in modalità
+  "solo su invito";
+- spese con emoji e categoria, divisione in parti uguali, quote, percentuali o importi
+  esatti, in qualsiasi valuta con il tasso BCE del giorno (modificabile);
+- saldi esatti al centesimo, trasferimenti minimi, rimborsi registrati o pagati con
+  link PayPal.me precompilato;
 - formato standard del viaggio (sezione 2.3).
 
 Scelte diverse dal piano iniziale:
 
 - **Worker nella stessa immagine dell'API.** Il worker è `apps/api/src/worker.ts`, avviato
   dallo stesso image con un comando diverso: un solo build, codice delle email condiviso.
-- **MinIO rimandato.** Arriva con il primo caricamento di file (foto profilo, copertine,
-  scontrini), per non avere un servizio inattivo nello stack.
+- **Archivio file su disco invece di MinIO.** Foto profilo e copertine sono salvate in un
+  volume Docker (`uploads`), già convertite in WebP. Si passerà a uno storage S3 solo se
+  servirà (es. più istanze dell'API).
 - **Passkey rimandate.** In Better Auth sono un pacchetto separato; si aggiungono insieme
   alla gestione dei dispositivi.
-- **Modalità "solo su invito" provvisoria.** Gli inviti ai viaggi arrivano con la fase 2:
-  fino ad allora questa modalità blocca tutte le registrazioni, tranne quella del super
-  admin.
 
 ## 9. Decisioni ancora aperte
 

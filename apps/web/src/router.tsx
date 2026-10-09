@@ -16,6 +16,9 @@ import { ForgotPasswordPage, LoginPage, ResetPasswordPage, SignupPage } from '@/
 import { LandingPage } from '@/routes/landing';
 import { LegalPage, NotFoundPage } from '@/routes/misc-pages';
 import { TripsPage } from '@/routes/trips';
+import { InvitePage } from '@/routes/trip/invite-page';
+import { NewTripPage } from '@/routes/trip/new-trip';
+import { TripPage } from '@/routes/trip/trip-page';
 
 const rootRoute = createRootRoute({
   component: () => (
@@ -66,7 +69,16 @@ const loginRoute = createRoute({
 const signupRoute = createRoute({
   getParentRoute: () => authLayout,
   path: '/signup',
+  validateSearch: (s: Record<string, unknown>): { invite?: string; email?: string } => ({
+    ...(typeof s.invite === 'string' ? { invite: s.invite } : {}),
+    ...(typeof s.email === 'string' ? { email: s.email } : {}),
+  }),
   component: SignupPage,
+});
+const inviteRoute = createRoute({
+  getParentRoute: () => authLayout,
+  path: '/invite/$token',
+  component: InvitePage,
 });
 const forgotRoute = createRoute({
   getParentRoute: () => authLayout,
@@ -106,6 +118,18 @@ const tripsRoute = createRoute({
     s.verified ? { verified: String(s.verified) } : {},
   component: TripsPage,
 });
+const newTripRoute = createRoute({
+  getParentRoute: () => appLayout,
+  path: '/trips/new',
+  component: NewTripPage,
+});
+const tripRoute = createRoute({
+  getParentRoute: () => appLayout,
+  path: '/trips/$tripId',
+  validateSearch: (s: Record<string, unknown>): { tab?: string } =>
+    typeof s.tab === 'string' ? { tab: s.tab } : {},
+  component: TripPage,
+});
 const profileRoute = createRoute({
   getParentRoute: () => appLayout,
   path: '/profile',
@@ -119,8 +143,8 @@ const adminRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   publicLayout.addChildren([landingRoute, privacyRoute, termsRoute]),
-  authLayout.addChildren([loginRoute, signupRoute, forgotRoute, resetRoute]),
-  appLayout.addChildren([tripsRoute, profileRoute, adminRoute]),
+  authLayout.addChildren([loginRoute, signupRoute, forgotRoute, resetRoute, inviteRoute]),
+  appLayout.addChildren([tripsRoute, newTripRoute, tripRoute, profileRoute, adminRoute]),
 ]);
 
 export const router = createRouter({

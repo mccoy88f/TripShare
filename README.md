@@ -8,15 +8,15 @@ installabile, gira in Docker e usa OpenRouter per l'AI. Interfaccia in italiano 
 
 ## Stato
 
-| Fase                                                                                                   | Stato                                                                    |
-| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
-| 0. Fondamenta: monorepo, Docker con HTTPS, database, design system, i18n, CI, PWA                      | ✅                                                                       |
-| 1. Account e sito pubblico: registrazione con verifica email, accesso, profilo, pannello admin di base | ✅ in gran parte (manca la foto profilo, che arriva con l'archivio file) |
-| 2. Viaggi e spese                                                                                      | ⏳                                                                       |
-| 3. Pianificazione                                                                                      | ⏳                                                                       |
-| 4. AI con OpenRouter (formato del viaggio già pronto)                                                  | ⏳                                                                       |
-| 5. Tempo reale e offline                                                                               | ⏳                                                                       |
-| 6. Rifinitura                                                                                          | ⏳                                                                       |
+| Fase                                                                                                    | Stato |
+| ------------------------------------------------------------------------------------------------------- | ----- |
+| 0. Fondamenta: monorepo, Docker con HTTPS, database, design system, i18n, CI, PWA                       | ✅    |
+| 1. Account e sito pubblico: registrazione con verifica email, accesso, profilo con foto, pannello admin | ✅    |
+| 2. Viaggi e spese: copertine, inviti, membri senza account, spese multivaluta, saldi, PayPal.me         | ✅    |
+| 3. Pianificazione                                                                                       | ⏳    |
+| 4. AI con OpenRouter (formato del viaggio già pronto)                                                   | ⏳    |
+| 5. Tempo reale e offline                                                                                | ⏳    |
+| 6. Rifinitura                                                                                           | ⏳    |
 
 ## Installazione su un VPS
 

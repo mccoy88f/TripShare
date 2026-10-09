@@ -34,7 +34,7 @@ export function allocate(total: number, weights: readonly number[]): number[] {
 }
 
 export type SplitInput =
-  | { method: 'equal'; members: readonly MemberId[] }
+  | { method: 'equal'; members: MemberId[] }
   | { method: 'shares'; shares: Readonly<Record<MemberId, number>> }
   | { method: 'percent'; percents: Readonly<Record<MemberId, number>> }
   | { method: 'exact'; amounts: Readonly<Record<MemberId, number>> };

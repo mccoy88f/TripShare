@@ -133,7 +133,7 @@
     "hello": "Ciao {{name}}",
     "tripsTitle": "I tuoi viaggi",
     "noTrips": "Nessun viaggio, per ora",
-    "noTripsText": "Presto potrai creare un viaggio, invitare il gruppo e iniziare a segnare le spese.",
+    "noTripsText": "Crea il primo viaggio, invita il gruppo e inizia a segnare le spese.",
     "newTrip": "Nuovo viaggio",
     "installTitle": "Installa TripShare",
     "installText": "Aggiungila alla schermata Home per usarla come un'app, anche offline.",
@@ -146,7 +146,7 @@
     "title": "Profilo",
     "subtitle": "Come ti vedono gli altri e le tue preferenze.",
     "avatar": "Avatar",
-    "avatarHint": "Scegli un'emoji e un colore. Il caricamento della foto arriva con l'archivio file.",
+    "avatarHint": "Carica una foto oppure scegli un'emoji e un colore.",
     "chooseEmoji": "Scegli emoji",
     "searchEmoji": "Cerca emoji…",
     "removeEmoji": "Usa le iniziali",
@@ -156,7 +156,11 @@
     "payments": "Rimborsi",
     "paypalMe": "Username PayPal.me",
     "paypalHint": "Chi ti deve dei soldi vedrà il pulsante \"Paga con PayPal\" con l'importo già compilato.",
-    "paypalInvalid": "Username PayPal.me non valido."
+    "paypalInvalid": "Username PayPal.me non valido.",
+    "uploadPhoto": "Carica foto",
+    "changePhoto": "Cambia foto",
+    "removePhoto": "Rimuovi foto",
+    "photoTooLarge": "La foto è troppo grande."
   },
   "admin": {
     "title": "Amministrazione",
@@ -245,5 +249,163 @@
   "notFound": {
     "title": "Pagina non trovata",
     "home": "Torna alla home"
+  },
+  "balance": {
+    "settled": "In pari",
+    "getBack": "Ricevi {{amount}}",
+    "owe": "Devi {{amount}}",
+    "suggested": "Come saldare",
+    "allSettled": "Tutti in pari!",
+    "payPaypal": "Paga con PayPal",
+    "markPaid": "Segna come pagato",
+    "confirmManual": "Confermi che {{from}} ha dato {{amount}} a {{to}}?",
+    "recorded": "Rimborso registrato",
+    "history": "Rimborsi registrati",
+    "paidTo": "{{from}} → {{to}}",
+    "confirmDelete": "Annullare questo rimborso?",
+    "paypalDoneTitle": "Hai completato il pagamento?",
+    "paypalDoneText": "PayPal non avvisa TripShare. Se hai inviato {{amount}} a {{to}}, registralo qui.",
+    "notYet": "Non ancora",
+    "yesPaid": "Sì, ho pagato"
+  },
+  "expense": {
+    "add": "Aggiungi spesa",
+    "added": "Spesa aggiunta",
+    "newTitle": "Nuova spesa",
+    "editTitle": "Modifica spesa",
+    "title": "Descrizione",
+    "titlePlaceholder": "Cena, benzina, museo…",
+    "amount": "Importo",
+    "category": "Categoria",
+    "paidBy": "Pagato da",
+    "date": "Data",
+    "me": "{{name}} (tu)",
+    "you": "Tu",
+    "splitTitle": "Diviso tra",
+    "methods": {
+      "equal": "Uguale",
+      "shares": "Quote",
+      "percent": "%",
+      "exact": "Importi"
+    },
+    "notes": "Note",
+    "delete": "Elimina",
+    "deleted": "Spesa eliminata",
+    "confirmDelete": "Eliminare questa spesa?",
+    "empty": "Nessuna spesa",
+    "emptyText": "Aggiungi la prima spesa con il pulsante +.",
+    "paidByName": "Pagato da {{name}}",
+    "lent": "ti devono {{amount}}",
+    "borrowed": "devi {{amount}}",
+    "converted": "≈ {{amount}} nella valuta del viaggio",
+    "rateHint": "Tasso BCE del giorno, modificabile.",
+    "rateUnavailable": "Tasso non disponibile: inseriscilo a mano.",
+    "errors": {
+      "noMembers": "Scegli almeno una persona.",
+      "percent": "Le percentuali sommano {{sum}}%, devono fare 100%.",
+      "exact": "Mancano {{left}} da assegnare.",
+      "PAYERS_MUST_SUM_TO_TOTAL": "L'importo pagato non corrisponde al totale.",
+      "FX_UNAVAILABLE": "Tasso di cambio non disponibile: inseriscilo a mano.",
+      "UNKNOWN_MEMBER": "Uno dei membri non fa più parte del viaggio.",
+      "AMOUNT_TOO_SMALL": "Importo troppo piccolo."
+    },
+    "currency": "Valuta",
+    "paidByYou": "Pagato da te"
+  },
+  "invite": {
+    "from": "{{name}} ti invita",
+    "generic": "Sei invitato",
+    "members": "{{count}} partecipanti",
+    "needAccount": "Per unirti al viaggio crea un account gratuito o accedi.",
+    "signUp": "Registrati e unisciti",
+    "signIn": "Ho già un account",
+    "open": "Apri il viaggio",
+    "whoAreYou": "Sei già nel gruppo?",
+    "iAm": "Sono {{name}}",
+    "claimHint": "Se qualcuno ti ha già aggiunto, scegli il tuo nome: le spese segnate per te passano al tuo account.",
+    "join": "Unisciti al viaggio",
+    "joined": "Benvenuto nel viaggio!",
+    "invalidTitle": "Invito non valido",
+    "invalidText": "Il link è scaduto, è stato revocato o è già stato usato. Chiedine uno nuovo.",
+    "errors": {
+      "INVITATION_OTHER_EMAIL": "Questo invito è per un altro indirizzo email. Accedi con l'account giusto.",
+      "INVITATION_INVALID": "Invito non più valido.",
+      "PLACEHOLDER_TAKEN": "Questo nome è già stato preso da qualcun altro."
+    }
+  },
+  "members": {
+    "placeholder": "Senza account",
+    "role": "Ruolo",
+    "roles": {
+      "owner": "Proprietario",
+      "editor": "Può modificare",
+      "viewer": "Solo lettura"
+    },
+    "inviteThem": "Invita",
+    "remove": "Rimuovi",
+    "confirmRemove": "Rimuovere {{name}} dal viaggio? Le spese già segnate restano.",
+    "inviteTitle": "Invita il gruppo",
+    "inviteText": "Chi apre il link si registra (o accede) ed entra subito nel viaggio.",
+    "createLink": "Crea e condividi link",
+    "shareText": "Unisciti al viaggio \"{{title}}\" su TripShare",
+    "copied": "Link copiato",
+    "byEmail": "Invita via email",
+    "send": "Invia",
+    "emailSent": "Invito inviato a {{email}}",
+    "addPlaceholder": "Aggiungi persona senza account",
+    "placeholderHint": "Puoi segnare spese per lei da subito; quando si registrerà potrà collegarsi.",
+    "add": "Aggiungi",
+    "activeInvites": "Inviti attivi",
+    "openLink": "Link aperto",
+    "expires": "scade il {{date}}",
+    "uses_one": "usato {{count}} volta",
+    "uses_other": "usato {{count}} volte",
+    "copy": "Copia link",
+    "revoke": "Revoca",
+    "leave": "Esci dal viaggio",
+    "confirmLeave": "Vuoi uscire da questo viaggio?",
+    "errors": {
+      "LAST_OWNER": "Il viaggio deve avere almeno un proprietario.",
+      "PLACEHOLDER_ROLE": "Le persone senza account non hanno un ruolo."
+    }
+  },
+  "trip": {
+    "totalSpent": "Spesi {{amount}}",
+    "notFound": "Viaggio non trovato",
+    "tabs": {
+      "expenses": "Spese",
+      "balances": "Saldi",
+      "members": "Membri",
+      "settings": "Impostazioni"
+    },
+    "new": {
+      "title": "Nuovo viaggio",
+      "submit": "Crea viaggio"
+    },
+    "form": {
+      "title": "Nome del viaggio",
+      "titlePlaceholder": "Weekend a Lisbona",
+      "destination": "Destinazione",
+      "destinationPlaceholder": "Lisbona, Portogallo",
+      "start": "Dal",
+      "end": "Al",
+      "endBeforeStart": "La fine è prima dell'inizio.",
+      "currency": "Valuta del viaggio",
+      "currencyHint": "Saldi e totali sono in questa valuta.",
+      "currencyLocked": "Non modificabile: ci sono già spese.",
+      "description": "Descrizione",
+      "addPhoto": "Foto di copertina",
+      "changePhoto": "Cambia foto",
+      "removePhoto": "Rimuovi foto",
+      "color": "Colore",
+      "photoError": "Non è stato possibile caricare la foto."
+    },
+    "deleteTitle": "Elimina viaggio",
+    "deleteText": "Elimina per tutti il viaggio con spese, saldi e inviti. Non si può annullare.",
+    "deleteConfirm": "Per confermare scrivi il nome del viaggio: {{title}}",
+    "delete": "Elimina viaggio",
+    "errors": {
+      "CURRENCY_LOCKED": "La valuta non si può cambiare dopo aver inserito spese."
+    }
   }
 }

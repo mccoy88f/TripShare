@@ -176,9 +176,10 @@ export function LoginPage() {
 
 export function SignupPage() {
   const { t, i18n } = useTranslation();
+  const search = useSearch({ strict: false }) as { invite?: string; email?: string };
   const [form, setForm] = useState({
     name: '',
-    email: '',
+    email: search.email ?? '',
     password: '',
     currency: guessCurrency(),
   });
@@ -198,7 +199,9 @@ export function SignupPage() {
       password: form.password,
       locale: (i18n.resolvedLanguage ?? 'it') as Locale,
       defaultCurrency: form.currency,
-      callbackURL: '/app?verified=1',
+      // Dopo la conferma dell'email si torna all'invito, per entrare nel viaggio.
+      callbackURL: search.invite ? `/invite/${search.invite}` : '/app?verified=1',
+      fetchOptions: search.invite ? { headers: { 'x-invite-token': search.invite } } : undefined,
     });
     setPending(false);
     if (error) return setError(authErrorMessage(t, error));
@@ -267,7 +270,11 @@ export function SignupPage() {
         )}
         <p className="mt-6 text-center text-sm text-muted-foreground">
           {t('auth.haveAccount')}{' '}
-          <Link to="/login" className="font-semibold text-primary hover:underline">
+          <Link
+            to="/login"
+            search={search.invite ? { redirect: `/invite/${search.invite}` } : {}}
+            className="font-semibold text-primary hover:underline"
+          >
             {t('nav.signIn')}
           </Link>
         </p>

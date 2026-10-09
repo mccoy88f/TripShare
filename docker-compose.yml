@@ -35,7 +35,11 @@ services:
     image: ${IMAGE_PREFIX:-tripshare}-api:${TAG:-latest}
     restart: unless-stopped
     env_file: .env
-    environment: *app-env
+    environment:
+      <<: *app-env
+      UPLOADS_DIR: /data/uploads
+    volumes:
+      - uploads:/data/uploads
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -79,6 +83,7 @@ services:
       retries: 5
 
 volumes:
+  uploads:
   caddy-data:
   caddy-config:
   postgres-data:

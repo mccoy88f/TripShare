@@ -33,6 +33,8 @@ ARG APP_VERSION=dev
 ENV NODE_ENV=production PORT=3000 MIGRATIONS_DIR=/app/drizzle APP_VERSION=${APP_VERSION}
 WORKDIR /app
 COPY --from=build --chown=node:node /out ./
+# Cartella delle foto caricate (volume "uploads" nel compose).
+RUN mkdir -p /data/uploads && chown node:node /data/uploads
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \

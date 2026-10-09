@@ -14,6 +14,7 @@ export function EmojiPicker({
   return (
     <Frimousse.Root
       locale={i18n.resolvedLanguage === 'en' ? 'en' : 'it'}
+      emojibaseUrl="/emojibase"
       className={cn('isolate flex h-[340px] w-[300px] flex-col', className)}
       onEmojiSelect={({ emoji }) => onSelect(emoji)}
     >

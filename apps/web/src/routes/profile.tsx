@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Smile } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Camera, Loader2, Smile, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
@@ -20,6 +20,7 @@ import { Field, Input, Select } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { applyTheme, type Theme } from '@/lib/theme';
 import { useTRPC } from '@/lib/trpc';
+import { uploadImage } from '@/lib/upload';
 import { cn } from '@/lib/utils';
 
 const COLORS = [
@@ -51,6 +52,26 @@ export function ProfilePage() {
     paypalMe: '',
   });
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const photoInput = useRef<HTMLInputElement>(null);
+  const refreshMe = () => queryClient.invalidateQueries({ queryKey: trpc.me.get.queryKey() });
+  const removePhoto = useMutation(trpc.me.removeAvatar.mutationOptions({ onSuccess: refreshMe }));
+  const onPhoto = async (file: File) => {
+    setUploading(true);
+    try {
+      await uploadImage('/api/me/avatar', file);
+      await refreshMe();
+      toast.success(t('common.saved'));
+    } catch (err) {
+      toast.error(
+        err instanceof Error && err.message === 'FILE_TOO_LARGE'
+          ? t('profile.photoTooLarge')
+          : t('trip.form.photoError'),
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     if (!me) return;
@@ -111,6 +132,32 @@ export function ProfilePage() {
             <UserAvatar user={preview} size="xl" className="shadow-lg" />
             <div className="grid gap-3">
               <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={uploading}
+                  onClick={() => photoInput.current?.click()}
+                >
+                  {uploading ? <Loader2 className="animate-spin" /> : <Camera />}
+                  {me.image ? t('profile.changePhoto') : t('profile.uploadPhoto')}
+                </Button>
+                {me.image && (
+                  <Button type="button" variant="ghost" onClick={() => removePhoto.mutate()}>
+                    <Trash2 />
+                    {t('profile.removePhoto')}
+                  </Button>
+                )}
+                <input
+                  ref={photoInput}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void onPhoto(f);
+                    e.target.value = '';
+                  }}
+                />
                 <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
                   <PopoverTrigger asChild>
                     <Button type="button" variant="outline">

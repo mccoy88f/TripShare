@@ -133,7 +133,7 @@
     "hello": "Hi {{name}}",
     "tripsTitle": "Your trips",
     "noTrips": "No trips yet",
-    "noTripsText": "Soon you'll be able to create a trip, invite the group and start logging expenses.",
+    "noTripsText": "Create your first trip, invite the group and start logging expenses.",
     "newTrip": "New trip",
     "installTitle": "Install TripShare",
     "installText": "Add it to your home screen to use it like an app, even offline.",
@@ -146,7 +146,7 @@
     "title": "Profile",
     "subtitle": "How others see you and your preferences.",
     "avatar": "Avatar",
-    "avatarHint": "Pick an emoji and a color. Photo upload comes with file storage.",
+    "avatarHint": "Upload a photo or pick an emoji and a color.",
     "chooseEmoji": "Choose emoji",
     "searchEmoji": "Search emoji…",
     "removeEmoji": "Use initials",
@@ -156,7 +156,11 @@
     "payments": "Repayments",
     "paypalMe": "PayPal.me username",
     "paypalHint": "People who owe you money will see a \"Pay with PayPal\" button with the amount prefilled.",
-    "paypalInvalid": "Invalid PayPal.me username."
+    "paypalInvalid": "Invalid PayPal.me username.",
+    "uploadPhoto": "Upload photo",
+    "changePhoto": "Change photo",
+    "removePhoto": "Remove photo",
+    "photoTooLarge": "The photo is too large."
   },
   "admin": {
     "title": "Administration",
@@ -245,5 +249,163 @@
   "notFound": {
     "title": "Page not found",
     "home": "Back to home"
+  },
+  "balance": {
+    "settled": "Settled up",
+    "getBack": "You get {{amount}}",
+    "owe": "You owe {{amount}}",
+    "suggested": "How to settle up",
+    "allSettled": "Everyone is settled up!",
+    "payPaypal": "Pay with PayPal",
+    "markPaid": "Mark as paid",
+    "confirmManual": "Confirm that {{from}} gave {{amount}} to {{to}}?",
+    "recorded": "Payment recorded",
+    "history": "Recorded payments",
+    "paidTo": "{{from}} → {{to}}",
+    "confirmDelete": "Cancel this payment?",
+    "paypalDoneTitle": "Did you complete the payment?",
+    "paypalDoneText": "PayPal doesn't notify TripShare. If you sent {{amount}} to {{to}}, record it here.",
+    "notYet": "Not yet",
+    "yesPaid": "Yes, I paid"
+  },
+  "expense": {
+    "add": "Add expense",
+    "added": "Expense added",
+    "newTitle": "New expense",
+    "editTitle": "Edit expense",
+    "title": "Description",
+    "titlePlaceholder": "Dinner, fuel, museum…",
+    "amount": "Amount",
+    "category": "Category",
+    "paidBy": "Paid by",
+    "date": "Date",
+    "me": "{{name}} (you)",
+    "you": "You",
+    "splitTitle": "Split between",
+    "methods": {
+      "equal": "Equal",
+      "shares": "Shares",
+      "percent": "%",
+      "exact": "Amounts"
+    },
+    "notes": "Notes",
+    "delete": "Delete",
+    "deleted": "Expense deleted",
+    "confirmDelete": "Delete this expense?",
+    "empty": "No expenses yet",
+    "emptyText": "Add the first expense with the + button.",
+    "paidByName": "Paid by {{name}}",
+    "lent": "you lent {{amount}}",
+    "borrowed": "you owe {{amount}}",
+    "converted": "≈ {{amount}} in the trip currency",
+    "rateHint": "ECB rate of the day, editable.",
+    "rateUnavailable": "Rate unavailable: enter it manually.",
+    "errors": {
+      "noMembers": "Pick at least one person.",
+      "percent": "Percentages add up to {{sum}}%, they must total 100%.",
+      "exact": "{{left}} left to assign.",
+      "PAYERS_MUST_SUM_TO_TOTAL": "The paid amount doesn't match the total.",
+      "FX_UNAVAILABLE": "Exchange rate unavailable: enter it manually.",
+      "UNKNOWN_MEMBER": "One of the members is no longer in the trip.",
+      "AMOUNT_TOO_SMALL": "Amount too small."
+    },
+    "currency": "Currency",
+    "paidByYou": "Paid by you"
+  },
+  "invite": {
+    "from": "{{name}} invites you",
+    "generic": "You're invited",
+    "members": "{{count}} travelers",
+    "needAccount": "To join the trip, create a free account or sign in.",
+    "signUp": "Sign up and join",
+    "signIn": "I already have an account",
+    "open": "Open the trip",
+    "whoAreYou": "Are you already in the group?",
+    "iAm": "I'm {{name}}",
+    "claimHint": "If someone already added you, pick your name: expenses logged for you move to your account.",
+    "join": "Join the trip",
+    "joined": "Welcome to the trip!",
+    "invalidTitle": "Invalid invitation",
+    "invalidText": "The link has expired, was revoked or was already used. Ask for a new one.",
+    "errors": {
+      "INVITATION_OTHER_EMAIL": "This invitation is for another email address. Sign in with the right account.",
+      "INVITATION_INVALID": "Invitation no longer valid.",
+      "PLACEHOLDER_TAKEN": "Someone else already took this name."
+    }
+  },
+  "members": {
+    "placeholder": "No account",
+    "role": "Role",
+    "roles": {
+      "owner": "Owner",
+      "editor": "Can edit",
+      "viewer": "View only"
+    },
+    "inviteThem": "Invite",
+    "remove": "Remove",
+    "confirmRemove": "Remove {{name}} from the trip? Logged expenses stay.",
+    "inviteTitle": "Invite the group",
+    "inviteText": "Whoever opens the link signs up (or signs in) and joins the trip right away.",
+    "createLink": "Create and share link",
+    "shareText": "Join the trip \"{{title}}\" on TripShare",
+    "copied": "Link copied",
+    "byEmail": "Invite by email",
+    "send": "Send",
+    "emailSent": "Invitation sent to {{email}}",
+    "addPlaceholder": "Add a person without an account",
+    "placeholderHint": "You can log expenses for them right away; they can link their account when they sign up.",
+    "add": "Add",
+    "activeInvites": "Active invitations",
+    "openLink": "Open link",
+    "expires": "expires {{date}}",
+    "uses_one": "used {{count}} time",
+    "uses_other": "used {{count}} times",
+    "copy": "Copy link",
+    "revoke": "Revoke",
+    "leave": "Leave the trip",
+    "confirmLeave": "Do you want to leave this trip?",
+    "errors": {
+      "LAST_OWNER": "The trip must keep at least one owner.",
+      "PLACEHOLDER_ROLE": "People without an account have no role."
+    }
+  },
+  "trip": {
+    "totalSpent": "{{amount}} spent",
+    "notFound": "Trip not found",
+    "tabs": {
+      "expenses": "Expenses",
+      "balances": "Balances",
+      "members": "Members",
+      "settings": "Settings"
+    },
+    "new": {
+      "title": "New trip",
+      "submit": "Create trip"
+    },
+    "form": {
+      "title": "Trip name",
+      "titlePlaceholder": "Weekend in Lisbon",
+      "destination": "Destination",
+      "destinationPlaceholder": "Lisbon, Portugal",
+      "start": "From",
+      "end": "To",
+      "endBeforeStart": "The end is before the start.",
+      "currency": "Trip currency",
+      "currencyHint": "Balances and totals use this currency.",
+      "currencyLocked": "Locked: there are already expenses.",
+      "description": "Description",
+      "addPhoto": "Cover photo",
+      "changePhoto": "Change photo",
+      "removePhoto": "Remove photo",
+      "color": "Color",
+      "photoError": "The photo could not be uploaded."
+    },
+    "deleteTitle": "Delete trip",
+    "deleteText": "Deletes the trip with expenses, balances and invitations for everyone. This cannot be undone.",
+    "deleteConfirm": "To confirm, type the trip name: {{title}}",
+    "delete": "Delete trip",
+    "errors": {
+      "CURRENCY_LOCKED": "The currency can't be changed after expenses were added."
+    }
   }
 }
