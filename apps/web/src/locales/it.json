@@ -781,7 +781,9 @@
     "stepMore": "Note",
     "confirmDelete": "Eliminare questa voce di budget?",
     "chart": "Budget e spese per categoria",
-    "chartHint": "Anello interno: budget · anello esterno: speso"
+    "chartHint": "Anello interno: budget · anello esterno: speso",
+    "noBudget": "senza budget",
+    "notSpent": "non ancora speso"
   },
   "packing": {
     "progress": "{{done}} di {{total}} pronti",

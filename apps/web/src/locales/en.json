@@ -781,7 +781,9 @@
     "stepMore": "Notes",
     "confirmDelete": "Delete this budget item?",
     "chart": "Budget and spending by category",
-    "chartHint": "Inner ring: budget · outer ring: spent"
+    "chartHint": "Inner ring: budget · outer ring: spent",
+    "noBudget": "no budget",
+    "notSpent": "not spent yet"
   },
   "packing": {
     "progress": "{{done}} of {{total}} ready",

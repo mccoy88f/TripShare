@@ -131,47 +131,20 @@ export function BudgetTab({ trip }: { trip: TripDetail }) {
       )}
 
       {categories.length > 0 && (
-        <Card className="grid grid-cols-1 gap-3 p-4">
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-2.5 rounded-full bg-primary/35" /> {t('budget.planned')}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-2.5 rounded-full bg-accent" /> {t('budget.spent')}
-            </span>
+        <Card className="grid grid-cols-1 gap-4 p-4">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>← {t('budget.planned')}</span>
+            <span>{t('budget.spent')} →</span>
           </div>
-          {categories.map((c) => {
-            // Ogni barra è in scala sulla propria categoria: previsto e speso si confrontano tra loro.
-            const planned = summary.byCategory[c] ?? 0;
-            const actual = actualByCategory[c] ?? 0;
-            const scale = Math.max(planned, actual, 1);
-            return (
-              <div key={c} className="grid grid-cols-1 gap-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span>
-                    {EXPENSE_CATEGORIES[c].emoji} {categoryLabel(c, locale)}
-                  </span>
-                  <span className="tabular text-muted-foreground">
-                    {money(actualByCategory[c] ?? 0, trip.currency)} /{' '}
-                    {money(summary.byCategory[c] ?? 0, trip.currency)}
-                  </span>
-                </div>
-                <div className="relative h-2.5 rounded-full bg-muted">
-                  <div
-                    className="absolute inset-y-0 left-0 rounded-full bg-primary/35"
-                    style={{ width: `${(planned / scale) * 100}%` }}
-                  />
-                  <div
-                    className={cn(
-                      'absolute inset-y-0 left-0 h-1.5 translate-y-0.5 rounded-full',
-                      actual > planned ? 'bg-destructive' : 'bg-accent',
-                    )}
-                    style={{ width: `${(actual / scale) * 100}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
+          {categories.map((c) => (
+            <DifferenceBar
+              key={c}
+              label={`${EXPENSE_CATEGORIES[c].emoji} ${categoryLabel(c, locale)}`}
+              planned={summary.byCategory[c] ?? 0}
+              actual={actualByCategory[c] ?? 0}
+              currency={trip.currency}
+            />
+          ))}
         </Card>
       )}
 
@@ -598,5 +571,75 @@ function BudgetDonut({
         ))}
       </div>
     </Card>
+  );
+}
+
+/**
+ * Confronto tra previsto (a sinistra) e speso (a destra): il cursore parte dal centro, che
+ * vale "speso uguale al previsto", e si sposta a destra se si è speso di più, a sinistra se
+ * di meno. Il bordo corrisponde a una differenza pari al 100% del previsto.
+ */
+function DifferenceBar({
+  label,
+  planned,
+  actual,
+  currency,
+}: {
+  label: string;
+  planned: number;
+  actual: number;
+  currency: string;
+}) {
+  const { t } = useTranslation();
+  // Senza budget o senza spese il confronto non ha senso: cursore grigio al centro.
+  const note = planned <= 0 ? t('budget.noBudget') : actual <= 0 ? t('budget.notSpent') : null;
+  const ratio = note ? 0 : Math.max(-1, Math.min(1, (actual - planned) / planned));
+  const over = actual > planned;
+  const tone = note ? 'bg-muted-foreground/60' : over ? 'bg-destructive' : 'bg-success';
+  const position = 50 + ratio * 47;
+  return (
+    <div className="grid grid-cols-1 gap-1.5">
+      <div className="flex items-baseline justify-between gap-2 text-sm">
+        <span className="min-w-0 truncate">{label}</span>
+        {note ? (
+          <span className="shrink-0 text-xs text-muted-foreground">{note}</span>
+        ) : (
+          <span
+            className={cn(
+              'tabular shrink-0 text-xs font-medium',
+              over ? 'text-destructive' : 'text-success',
+            )}
+          >
+            {over ? '+' : '−'}
+            {money(Math.abs(actual - planned), currency)}
+          </span>
+        )}
+      </div>
+      <div
+        className="relative h-3 rounded-full bg-muted"
+        role="img"
+        aria-label={`${label}: ${t('budget.planned')} ${money(planned, currency)}, ${t('budget.spent')} ${money(actual, currency)}`}
+      >
+        <div
+          className={cn('absolute inset-y-1 rounded-full opacity-40', tone)}
+          style={{
+            left: `${Math.min(50, position)}%`,
+            width: `${Math.abs(position - 50)}%`,
+          }}
+        />
+        <div className="absolute inset-y-0 left-1/2 w-px bg-foreground/30" />
+        <div
+          className={cn(
+            'absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card shadow transition-all',
+            tone,
+          )}
+          style={{ left: `${position}%` }}
+        />
+      </div>
+      <div className="tabular flex justify-between text-xs text-muted-foreground">
+        <span>{money(planned, currency)}</span>
+        <span className="font-medium text-foreground">{money(actual, currency)}</span>
+      </div>
+    </div>
   );
 }
