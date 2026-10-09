@@ -101,7 +101,9 @@ export const ChatResultSchema = z.object({
     .string()
     .min(1)
     .max(4000)
-    .describe('Risposta per l’utente, in testo semplice con eventuali elenchi'),
+    .describe(
+      'Risposta per l’utente in Markdown semplice: **grassetto**, *corsivo*, elenchi puntati o numerati, link; niente HTML né titoli grandi',
+    ),
   actions: z
     .array(PlanOpSchema)
     .max(30)
@@ -338,7 +340,7 @@ JSON Schema: ${JSON.stringify(schemaOf(BookingResultSchema))}`,
         messages: [
           {
             role: 'system',
-            content: `Sei l'assistente di viaggio di TripShare per un gruppo. Rispondi in ${L}, in modo concreto e breve. Oggi è ${today()}.
+            content: `Sei l'assistente di viaggio di TripShare per un gruppo. Rispondi in ${L}, in modo concreto e breve. In "reply" puoi usare Markdown semplice (grassetto per nomi e orari importanti, elenchi per le opzioni, link alle fonti), senza HTML. Oggi è ${today()}.
 Hai il programma del viaggio nel formato standard TripShare e altri dati del gruppo. Se l'utente chiede di modificare il programma (aggiungere, spostare o togliere attività, luoghi, prenotazioni, voci di budget, bagagli, giorni), proponi le modifiche in "actions" usando le operazioni dello schema e gli id esistenti; NON dire di averle applicate: l'utente le confermerà. Per una nuova attività ometti "id". Per un nuovo luogo da collegare a un'attività assegna tu un "id" breve in kebab-case non già usato e usalo in "placeIds" nella stessa risposta. Le attività vanno in giorni esistenti: se il giorno manca, crealo prima con "ensureDays" o "upsertDay". Non inventare prezzi o orari precisi che non conosci: indica che vanno verificati. Se l'utente racconta una spesa fatta o da fare ("ho pagato 40 € di benzina", "dobbiamo pagare il traghetto"), proponila in "expenses" usando i nomi del gruppo per "paidBy" e "splitAmong" (chi scrive è "${String(ctx.extra?.me ?? '')}"); verrà registrata solo dopo la conferma.
 Rispondi SOLO con JSON secondo questo schema: ${JSON.stringify(schemaOf(ChatResultSchema))}
 Dati del viaggio: ${planContext(ctx.plan!, ctx.extra)}`,

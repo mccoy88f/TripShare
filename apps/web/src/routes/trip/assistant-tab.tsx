@@ -11,6 +11,7 @@ import {
   type ExpenseCategory,
 } from '@tripshare/shared';
 import type { PlanOp } from '@tripshare/shared/trip-format';
+import { Markdown } from '@/components/markdown';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/input';
 import { useAiStatus, useAiTask } from '@/lib/ai';
@@ -268,13 +269,13 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
           <div key={m.id} className={cn('flex', mine ? 'justify-end' : 'justify-start')}>
             <div
               className={cn(
-                'max-w-[85%] rounded-2xl px-4 py-2.5 text-sm break-words whitespace-pre-wrap',
+                'max-w-[85%] rounded-2xl px-4 py-2.5 text-sm break-words',
                 mine
-                  ? 'rounded-br-md bg-primary text-primary-foreground'
+                  ? 'rounded-br-md bg-primary whitespace-pre-wrap text-primary-foreground'
                   : 'rounded-bl-md border bg-card',
               )}
             >
-              {m.content}
+              {mine ? m.content : <Markdown>{m.content}</Markdown>}
               {expenses.length > 0 && (
                 <div className="mt-3 grid grid-cols-1 gap-2 text-foreground">
                   {expenses.map((e, i) => (
