@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Step, StepForm } from '@/components/ui/steps';
 import { Field, Input, Select } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { money } from '@/lib/format';
@@ -24,6 +25,7 @@ import { usePlan, usePlanOps } from '@/lib/plan';
 import { useTRPC } from '@/lib/trpc';
 import type { TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useOnAdd } from '@/lib/fab';
 import { moneyDraft, MoneyFields, moneyFromDraft, moneyLabel, textareaClass } from './fields';
 
 export function BudgetTab({ trip }: { trip: TripDetail }) {
@@ -35,6 +37,7 @@ export function BudgetTab({ trip }: { trip: TripDetail }) {
   const { data: expenses } = useQuery(trpc.expenses.list.queryOptions({ tripId: trip.id }));
   const { apply, pending } = usePlanOps(trip.id);
   const [editing, setEditing] = useState<BudgetItem | 'new' | null>(null);
+  useOnAdd('budget', () => setEditing('new'));
   const [loadingRates, setLoadingRates] = useState(false);
   const canEdit = trip.role !== 'viewer';
   if (!data || !expenses)
@@ -292,85 +295,14 @@ function BudgetDialog({
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent title={item ? t('budget.editTitle') : t('budget.add')}>
-        <form onSubmit={submit} className="grid grid-cols-1 gap-4 pt-2">
-          <Field label={t('expense.title')} htmlFor="bu-title">
-            <Input
-              id="bu-title"
-              required
-              maxLength={160}
-              value={d.title}
-              onChange={(e) => set('title', e.target.value)}
-            />
-          </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label={t('expense.category')} htmlFor="bu-cat">
-              <Select
-                id="bu-cat"
-                value={d.category}
-                onChange={(e) => set('category', e.target.value as ExpenseCategory)}
-              >
-                {EXPENSE_CATEGORY_KEYS.map((c) => (
-                  <option key={c} value={c}>
-                    {EXPENSE_CATEGORIES[c].emoji} {categoryLabel(c, locale)}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label={t('budget.statusLabel')} htmlFor="bu-status">
-              <Select
-                id="bu-status"
-                value={d.status}
-                onChange={(e) => set('status', e.target.value as BudgetItem['status'])}
-              >
-                {(['booked', 'pending', 'estimate'] as const).map((s) => (
-                  <option key={s} value={s}>
-                    {t(`budget.status.${s}`)}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          </div>
-          <MoneyFields
-            idPrefix="bu"
-            label={t('expense.amount')}
-            value={d.amount}
-            onChange={(v) => set('amount', v)}
-          />
-          {d.status !== 'pending' && !amount && (
-            <p className="text-sm text-destructive">{t('budget.amountRequired')}</p>
-          )}
-          {plan.bookings.length > 0 && (
-            <Field label={t('plan.activity.booking')} htmlFor="bu-booking">
-              <Select
-                id="bu-booking"
-                value={d.bookingId}
-                onChange={(e) => set('bookingId', e.target.value)}
-              >
-                <option value="">—</option>
-                {plan.bookings.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.title}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          )}
-          <label className="flex items-center justify-between gap-3 text-sm font-medium">
-            {t('budget.included')}
-            <Switch checked={d.included} onCheckedChange={(v) => set('included', v)} />
-          </label>
-          <Field label={t('expense.notes')} htmlFor="bu-notes">
-            <textarea
-              id="bu-notes"
-              rows={2}
-              maxLength={400}
-              className={textareaClass}
-              value={d.notes}
-              onChange={(e) => set('notes', e.target.value)}
-            />
-          </Field>
-          <div className="flex items-center gap-3">
-            {item && (
+        <StepForm
+          onSubmit={submit}
+          freeNavigation={!!item}
+          pending={pending}
+          submitLabel={t('common.save')}
+          submitDisabled={!d.title.trim() || (d.status !== 'pending' && !amount)}
+          leading={
+            item && (
               <Button
                 type="button"
                 variant="ghost"
@@ -382,19 +314,92 @@ function BudgetDialog({
                 }}
               >
                 <Trash2 />
-                {t('expense.delete')}
+                <span className="hidden sm:inline">{t('expense.delete')}</span>
               </Button>
+            )
+          }
+        >
+          <Step title={t('budget.stepWhat')}>
+            <Field label={t('expense.title')} htmlFor="bu-title">
+              <Input
+                id="bu-title"
+                required
+                maxLength={160}
+                value={d.title}
+                onChange={(e) => set('title', e.target.value)}
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={t('expense.category')} htmlFor="bu-cat">
+                <Select
+                  id="bu-cat"
+                  value={d.category}
+                  onChange={(e) => set('category', e.target.value as ExpenseCategory)}
+                >
+                  {EXPENSE_CATEGORY_KEYS.map((c) => (
+                    <option key={c} value={c}>
+                      {EXPENSE_CATEGORIES[c].emoji} {categoryLabel(c, locale)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label={t('budget.statusLabel')} htmlFor="bu-status">
+                <Select
+                  id="bu-status"
+                  value={d.status}
+                  onChange={(e) => set('status', e.target.value as BudgetItem['status'])}
+                >
+                  {(['booked', 'pending', 'estimate'] as const).map((s) => (
+                    <option key={s} value={s}>
+                      {t(`budget.status.${s}`)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            <MoneyFields
+              idPrefix="bu"
+              label={t('expense.amount')}
+              value={d.amount}
+              onChange={(v) => set('amount', v)}
+            />
+            {d.status !== 'pending' && !amount && (
+              <p className="text-sm text-destructive">{t('budget.amountRequired')}</p>
             )}
-            <div className="flex-1" />
-            <Button
-              type="submit"
-              disabled={pending || !d.title.trim() || (d.status !== 'pending' && !amount)}
-            >
-              {pending && <Loader2 className="animate-spin" />}
-              {t('common.save')}
-            </Button>
-          </div>
-        </form>
+            {plan.bookings.length > 0 && (
+              <Field label={t('plan.activity.booking')} htmlFor="bu-booking">
+                <Select
+                  id="bu-booking"
+                  value={d.bookingId}
+                  onChange={(e) => set('bookingId', e.target.value)}
+                >
+                  <option value="">—</option>
+                  {plan.bookings.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.title}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            )}
+            <label className="flex items-center justify-between gap-3 text-sm font-medium">
+              {t('budget.included')}
+              <Switch checked={d.included} onCheckedChange={(v) => set('included', v)} />
+            </label>
+          </Step>
+          <Step title={t('budget.stepMore')}>
+            <Field label={t('expense.notes')} htmlFor="bu-notes">
+              <textarea
+                id="bu-notes"
+                rows={2}
+                maxLength={400}
+                className={textareaClass}
+                value={d.notes}
+                onChange={(e) => set('notes', e.target.value)}
+              />
+            </Field>
+          </Step>
+        </StepForm>
       </DialogContent>
     </Dialog>
   );

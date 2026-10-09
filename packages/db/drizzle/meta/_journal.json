@@ -64,6 +64,13 @@
       "when": 1791563015123,
       "tag": "0008_cover_credit",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791565453462,
+      "tag": "0009_chat_expenses",
+      "breakpoints": true
     }
   ]
 }

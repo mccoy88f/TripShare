@@ -12,6 +12,7 @@ import { Field, Input, Select } from '@/components/ui/input';
 import { shortDate } from '@/lib/format';
 import { useTRPC } from '@/lib/trpc';
 import type { TripDetail } from '@/lib/types';
+import { useOnAdd } from '@/lib/fab';
 
 export function MembersTab({ trip }: { trip: TripDetail }) {
   const { t } = useTranslation();
@@ -19,6 +20,11 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const canEdit = trip.role !== 'viewer';
+  useOnAdd('members', () => {
+    const input = document.getElementById('inv-email');
+    input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    input?.focus();
+  });
   const isOwner = trip.role === 'owner';
   const invites = useQuery({
     ...trpc.invitations.list.queryOptions({ tripId: trip.id }),

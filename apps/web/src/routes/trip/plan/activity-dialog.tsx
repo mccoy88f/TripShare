@@ -1,4 +1,4 @@
-import { Loader2, Smile, Trash2 } from 'lucide-react';
+import { Smile, Trash2 } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isCurrencyCode, type CurrencyCode } from '@tripshare/shared';
@@ -10,6 +10,7 @@ import {
 } from '@tripshare/shared/trip-format';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Step, StepForm } from '@/components/ui/steps';
 import { EmojiPicker } from '@/components/ui/emoji-picker';
 import { Field, Input, Select } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -179,234 +180,14 @@ export function ActivityDialog({
         title={activity ? t('plan.activity.editTitle') : t('plan.activity.newTitle')}
         description={longDate(date)}
       >
-        <form onSubmit={submit} className="grid grid-cols-1 gap-5 pt-2">
-          <div className="flex items-end gap-3">
-            <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-secondary text-3xl"
-                  aria-label={t('profile.chooseEmoji')}
-                >
-                  {shownEmoji || <Smile />}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent>
-                <EmojiPicker
-                  onSelect={(emoji) => {
-                    set('emoji', emoji);
-                    setPickerOpen(false);
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
-            <Field label={t('plan.activity.title')} htmlFor="act-title" className="flex-1">
-              <Input
-                id="act-title"
-                required
-                maxLength={160}
-                value={d.title}
-                onChange={(e) => set('title', e.target.value)}
-              />
-            </Field>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <Field label={t('plan.activity.time')} htmlFor="act-time">
-              <Input
-                id="act-time"
-                type="time"
-                value={d.time}
-                onChange={(e) => set('time', e.target.value)}
-              />
-            </Field>
-            <Field label={t('plan.activity.endTime')} htmlFor="act-end">
-              <Input
-                id="act-end"
-                type="time"
-                value={d.endTime}
-                onChange={(e) => set('endTime', e.target.value)}
-              />
-            </Field>
-            <Field
-              label={t('plan.activity.type')}
-              htmlFor="act-type"
-              className="col-span-2 sm:col-span-1"
-            >
-              <Select
-                id="act-type"
-                value={d.type}
-                onChange={(e) => set('type', e.target.value as Activity['type'])}
-              >
-                {ACTIVITY_TYPES.map((x) => (
-                  <option key={x} value={x}>
-                    {ACTIVITY_TYPE_EMOJI[x]} {t(`plan.activityTypes.${x}`)}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          </div>
-
-          <Field label={t('plan.activity.description')} htmlFor="act-desc">
-            <textarea
-              id="act-desc"
-              rows={3}
-              maxLength={1500}
-              className={textareaClass}
-              value={d.description}
-              onChange={(e) => set('description', e.target.value)}
-            />
-          </Field>
-
-          <div className="grid grid-cols-1 gap-2">
-            <span className="text-sm font-medium">{t('plan.activity.places')}</span>
-            {plan.places.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {plan.places.map((p) => {
-                  const on = d.placeIds.includes(p.id);
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() =>
-                        set(
-                          'placeIds',
-                          on ? d.placeIds.filter((x) => x !== p.id) : [...d.placeIds, p.id],
-                        )
-                      }
-                      className={cn(
-                        'rounded-full border px-3 py-1 text-sm',
-                        on
-                          ? 'border-primary bg-primary/10 font-semibold text-primary'
-                          : 'hover:bg-muted',
-                      )}
-                    >
-                      {PLACE_KIND_EMOJI[p.kind]} {p.name}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            <Input
-              placeholder={t('plan.activity.newPlace')}
-              value={newPlace}
-              onChange={(e) => setNewPlace(e.target.value)}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {plan.bookings.length > 0 && (
-              <Field label={t('plan.activity.booking')} htmlFor="act-booking">
-                <Select
-                  id="act-booking"
-                  value={d.bookingId}
-                  onChange={(e) => set('bookingId', e.target.value)}
-                >
-                  <option value="">—</option>
-                  {plan.bookings.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.title}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            )}
-            {activity && !alternativeId && (
-              <Field label={t('plan.activity.day')} htmlFor="act-day">
-                <Select id="act-day" value={d.date} onChange={(e) => set('date', e.target.value)}>
-                  {plan.days.map((day) => (
-                    <option key={day.date} value={day.date}>
-                      {longDate(day.date)} · {day.title}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 rounded-xl border p-3">
-            <label className="flex items-center gap-2 text-sm font-medium">
-              <input
-                type="checkbox"
-                className="accent-[var(--primary)]"
-                checked={d.hasTransport}
-                onChange={(e) => set('hasTransport', e.target.checked)}
-              />
-              {t('plan.activity.transport')}
-            </label>
-            {d.hasTransport && (
-              <>
-                <div className="grid grid-cols-3 gap-2">
-                  <Select
-                    value={d.mode}
-                    onChange={(e) => set('mode', e.target.value as Draft['mode'])}
-                    aria-label={t('plan.activity.mode')}
-                  >
-                    {TRANSPORT_MODES.map((m) => (
-                      <option key={m} value={m}>
-                        {TRANSPORT_EMOJI[m]} {t(`plan.modes.${m}`)}
-                      </option>
-                    ))}
-                  </Select>
-                  <Input
-                    inputMode="numeric"
-                    placeholder={t('plan.activity.minutes')}
-                    value={d.duration}
-                    onChange={(e) => set('duration', e.target.value)}
-                  />
-                  <Input
-                    inputMode="decimal"
-                    placeholder="km"
-                    value={d.distance}
-                    onChange={(e) => set('distance', e.target.value)}
-                  />
-                </div>
-                <Input
-                  placeholder={t('plan.activity.route')}
-                  value={d.route}
-                  onChange={(e) => set('route', e.target.value)}
-                />
-                <MoneyFields
-                  idPrefix="tr"
-                  label={t('plan.activity.transportCost')}
-                  value={d.transportCost}
-                  onChange={(v) => set('transportCost', v)}
-                />
-              </>
-            )}
-          </div>
-
-          <MoneyFields
-            idPrefix="cost"
-            label={t('plan.activity.cost')}
-            value={d.cost}
-            onChange={(v) => set('cost', v)}
-          />
-          <LinesField
-            id="act-warn"
-            label={`⚠️ ${t('plan.activity.warnings')}`}
-            hint={t('plan.onePerLine')}
-            value={d.warnings}
-            onChange={(v) => set('warnings', v)}
-          />
-          <LinesField
-            id="act-tips"
-            label={`💡 ${t('plan.activity.tips')}`}
-            value={d.tips}
-            onChange={(v) => set('tips', v)}
-          />
-          <Field label={`🔗 ${t('plan.links')}`} htmlFor="act-links" hint={t('plan.linksHint')}>
-            <textarea
-              id="act-links"
-              rows={2}
-              className={textareaClass}
-              value={d.links}
-              onChange={(e) => set('links', e.target.value)}
-            />
-          </Field>
-
-          <div className="flex items-center gap-3">
-            {activity && (
+        <StepForm
+          onSubmit={submit}
+          freeNavigation={!!activity}
+          pending={pending}
+          submitLabel={t('common.save')}
+          submitDisabled={!d.title.trim()}
+          leading={
+            activity && (
               <Button
                 type="button"
                 variant="ghost"
@@ -419,16 +200,240 @@ export function ActivityDialog({
                 }}
               >
                 <Trash2 />
-                {t('expense.delete')}
+                <span className="hidden sm:inline">{t('expense.delete')}</span>
               </Button>
-            )}
-            <div className="flex-1" />
-            <Button type="submit" size="lg" disabled={pending || !d.title.trim()}>
-              {pending && <Loader2 className="animate-spin" />}
-              {t('common.save')}
-            </Button>
-          </div>
-        </form>
+            )
+          }
+        >
+          <Step title={t('plan.activity.stepWhat')}>
+            <div className="flex items-end gap-3">
+              <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-secondary text-3xl"
+                    aria-label={t('profile.chooseEmoji')}
+                  >
+                    {shownEmoji || <Smile />}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent>
+                  <EmojiPicker
+                    onSelect={(emoji) => {
+                      set('emoji', emoji);
+                      setPickerOpen(false);
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Field label={t('plan.activity.title')} htmlFor="act-title" className="flex-1">
+                <Input
+                  id="act-title"
+                  required
+                  maxLength={160}
+                  value={d.title}
+                  onChange={(e) => set('title', e.target.value)}
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <Field label={t('plan.activity.time')} htmlFor="act-time">
+                <Input
+                  id="act-time"
+                  type="time"
+                  value={d.time}
+                  onChange={(e) => set('time', e.target.value)}
+                />
+              </Field>
+              <Field label={t('plan.activity.endTime')} htmlFor="act-end">
+                <Input
+                  id="act-end"
+                  type="time"
+                  value={d.endTime}
+                  onChange={(e) => set('endTime', e.target.value)}
+                />
+              </Field>
+              <Field
+                label={t('plan.activity.type')}
+                htmlFor="act-type"
+                className="col-span-2 sm:col-span-1"
+              >
+                <Select
+                  id="act-type"
+                  value={d.type}
+                  onChange={(e) => set('type', e.target.value as Activity['type'])}
+                >
+                  {ACTIVITY_TYPES.map((x) => (
+                    <option key={x} value={x}>
+                      {ACTIVITY_TYPE_EMOJI[x]} {t(`plan.activityTypes.${x}`)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+
+            <Field label={t('plan.activity.description')} htmlFor="act-desc">
+              <textarea
+                id="act-desc"
+                rows={3}
+                maxLength={1500}
+                className={textareaClass}
+                value={d.description}
+                onChange={(e) => set('description', e.target.value)}
+              />
+            </Field>
+          </Step>
+          <Step title={t('plan.activity.stepWhere')}>
+            <div className="grid grid-cols-1 gap-2">
+              <span className="text-sm font-medium">{t('plan.activity.places')}</span>
+              {plan.places.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {plan.places.map((p) => {
+                    const on = d.placeIds.includes(p.id);
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() =>
+                          set(
+                            'placeIds',
+                            on ? d.placeIds.filter((x) => x !== p.id) : [...d.placeIds, p.id],
+                          )
+                        }
+                        className={cn(
+                          'rounded-full border px-3 py-1 text-sm',
+                          on
+                            ? 'border-primary bg-primary/10 font-semibold text-primary'
+                            : 'hover:bg-muted',
+                        )}
+                      >
+                        {PLACE_KIND_EMOJI[p.kind]} {p.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <Input
+                placeholder={t('plan.activity.newPlace')}
+                value={newPlace}
+                onChange={(e) => setNewPlace(e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {plan.bookings.length > 0 && (
+                <Field label={t('plan.activity.booking')} htmlFor="act-booking">
+                  <Select
+                    id="act-booking"
+                    value={d.bookingId}
+                    onChange={(e) => set('bookingId', e.target.value)}
+                  >
+                    <option value="">—</option>
+                    {plan.bookings.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.title}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              )}
+              {activity && !alternativeId && (
+                <Field label={t('plan.activity.day')} htmlFor="act-day">
+                  <Select id="act-day" value={d.date} onChange={(e) => set('date', e.target.value)}>
+                    {plan.days.map((day) => (
+                      <option key={day.date} value={day.date}>
+                        {longDate(day.date)} · {day.title}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 rounded-xl border p-3">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  className="accent-[var(--primary)]"
+                  checked={d.hasTransport}
+                  onChange={(e) => set('hasTransport', e.target.checked)}
+                />
+                {t('plan.activity.transport')}
+              </label>
+              {d.hasTransport && (
+                <>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Select
+                      value={d.mode}
+                      onChange={(e) => set('mode', e.target.value as Draft['mode'])}
+                      aria-label={t('plan.activity.mode')}
+                    >
+                      {TRANSPORT_MODES.map((m) => (
+                        <option key={m} value={m}>
+                          {TRANSPORT_EMOJI[m]} {t(`plan.modes.${m}`)}
+                        </option>
+                      ))}
+                    </Select>
+                    <Input
+                      inputMode="numeric"
+                      placeholder={t('plan.activity.minutes')}
+                      value={d.duration}
+                      onChange={(e) => set('duration', e.target.value)}
+                    />
+                    <Input
+                      inputMode="decimal"
+                      placeholder="km"
+                      value={d.distance}
+                      onChange={(e) => set('distance', e.target.value)}
+                    />
+                  </div>
+                  <Input
+                    placeholder={t('plan.activity.route')}
+                    value={d.route}
+                    onChange={(e) => set('route', e.target.value)}
+                  />
+                  <MoneyFields
+                    idPrefix="tr"
+                    label={t('plan.activity.transportCost')}
+                    value={d.transportCost}
+                    onChange={(v) => set('transportCost', v)}
+                  />
+                </>
+              )}
+            </div>
+          </Step>
+          <Step title={t('plan.activity.stepMore')}>
+            <MoneyFields
+              idPrefix="cost"
+              label={t('plan.activity.cost')}
+              value={d.cost}
+              onChange={(v) => set('cost', v)}
+            />
+            <LinesField
+              id="act-warn"
+              label={`⚠️ ${t('plan.activity.warnings')}`}
+              hint={t('plan.onePerLine')}
+              value={d.warnings}
+              onChange={(v) => set('warnings', v)}
+            />
+            <LinesField
+              id="act-tips"
+              label={`💡 ${t('plan.activity.tips')}`}
+              value={d.tips}
+              onChange={(v) => set('tips', v)}
+            />
+            <Field label={`🔗 ${t('plan.links')}`} htmlFor="act-links" hint={t('plan.linksHint')}>
+              <textarea
+                id="act-links"
+                rows={2}
+                className={textareaClass}
+                value={d.links}
+                onChange={(e) => set('links', e.target.value)}
+              />
+            </Field>
+          </Step>
+        </StepForm>
       </DialogContent>
     </Dialog>
   );

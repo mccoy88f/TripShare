@@ -16,12 +16,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Step, StepForm } from '@/components/ui/steps';
 import { Field, Input, Select } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useAiStatus, useAiTask } from '@/lib/ai';
 import { money, shortDate, todayIso } from '@/lib/format';
 import { mapsUrl, PLACE_KIND_EMOJI, usePlan, usePlanOps } from '@/lib/plan';
 import type { TripDetail } from '@/lib/types';
+import { useOnAdd } from '@/lib/fab';
 
 interface VerifyResult {
   openingHours?: string;
@@ -46,6 +48,7 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
   const { t } = useTranslation();
   const { data } = usePlan(trip.id);
   const [editing, setEditing] = useState<Place | 'new' | null>(null);
+  useOnAdd('places', () => setEditing('new'));
   const canEdit = trip.role !== 'viewer';
   const ai = useAiStatus();
   const { run } = useAiTask();
@@ -281,140 +284,14 @@ function PlaceDialog({
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent title={place ? t('plan.place.editTitle') : t('plan.place.add')}>
-        <form onSubmit={submit} className="grid grid-cols-1 gap-4 pt-2">
-          <div className="grid grid-cols-[1fr_auto] gap-3">
-            <Field label={t('plan.place.name')} htmlFor="pl-name">
-              <Input
-                id="pl-name"
-                required
-                maxLength={160}
-                value={d.name}
-                onChange={(e) => set('name', e.target.value)}
-              />
-            </Field>
-            <Field label={t('plan.place.kind')} htmlFor="pl-kind">
-              <Select
-                id="pl-kind"
-                className="w-44"
-                value={d.kind}
-                onChange={(e) => set('kind', e.target.value as Place['kind'])}
-              >
-                {PLACE_KINDS.map((k) => (
-                  <option key={k} value={k}>
-                    {PLACE_KIND_EMOJI[k]} {t(`plan.placeKinds.${k}`)}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          </div>
-          <Field label={t('plan.place.address')} htmlFor="pl-addr">
-            <Input
-              id="pl-addr"
-              maxLength={240}
-              value={d.address}
-              onChange={(e) => set('address', e.target.value)}
-            />
-          </Field>
-          <Field
-            label={t('plan.place.mapsQuery')}
-            htmlFor="pl-maps"
-            hint={t('plan.place.mapsQueryHint')}
-          >
-            <Input
-              id="pl-maps"
-              maxLength={240}
-              value={d.mapsQuery}
-              onChange={(e) => set('mapsQuery', e.target.value)}
-            />
-          </Field>
-          <Field label={t('plan.place.hours')} htmlFor="pl-hours">
-            <Input
-              id="pl-hours"
-              maxLength={400}
-              placeholder="9:30–17:00"
-              value={d.openingHours}
-              onChange={(e) => set('openingHours', e.target.value)}
-            />
-          </Field>
-          <MoneyFields
-            idPrefix="pl"
-            label={t('plan.place.price')}
-            value={d.price}
-            onChange={(v) => set('price', v)}
-          />
-          <Field label={t('plan.place.priceLevel')} htmlFor="pl-level">
-            <Select
-              id="pl-level"
-              value={d.priceLevel}
-              onChange={(e) => set('priceLevel', e.target.value)}
-            >
-              <option value="">—</option>
-              {[1, 2, 3, 4].map((n) => (
-                <option key={n} value={n}>
-                  {'€'.repeat(n)}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label={t('plan.activity.description')} htmlFor="pl-desc">
-            <textarea
-              id="pl-desc"
-              rows={2}
-              maxLength={1000}
-              className={textareaClass}
-              value={d.description}
-              onChange={(e) => set('description', e.target.value)}
-            />
-          </Field>
-          <LinesField
-            id="pl-tips"
-            label={`💡 ${t('plan.activity.tips')}`}
-            hint={t('plan.onePerLine')}
-            value={d.tips}
-            onChange={(v) => set('tips', v)}
-          />
-          <Field label={`🔗 ${t('plan.links')}`} htmlFor="pl-links" hint={t('plan.linksHint')}>
-            <textarea
-              id="pl-links"
-              rows={2}
-              className={textareaClass}
-              value={d.links}
-              onChange={(e) => set('links', e.target.value)}
-            />
-          </Field>
-          <div className="grid grid-cols-1 gap-3 rounded-xl border p-3">
-            <div className="grid grid-cols-2 gap-3">
-              <Field label={t('plan.place.verification')} htmlFor="pl-ver">
-                <Select
-                  id="pl-ver"
-                  value={d.verified}
-                  onChange={(e) => set('verified', e.target.value as 'verified' | 'unverified')}
-                >
-                  <option value="unverified">{t('plan.place.toCheck')}</option>
-                  <option value="verified">{t('plan.place.verified')}</option>
-                </Select>
-              </Field>
-              <Field label={t('plan.place.checkedAt')} htmlFor="pl-checked">
-                <Input
-                  id="pl-checked"
-                  type="date"
-                  value={d.checkedAt}
-                  onChange={(e) => set('checkedAt', e.target.value)}
-                />
-              </Field>
-            </div>
-            <Field label={t('plan.place.sources')} htmlFor="pl-sources" hint={t('plan.linksHint')}>
-              <textarea
-                id="pl-sources"
-                rows={2}
-                className={textareaClass}
-                value={d.sources}
-                onChange={(e) => set('sources', e.target.value)}
-              />
-            </Field>
-          </div>
-          <div className="flex items-center gap-3">
-            {place && (
+        <StepForm
+          onSubmit={submit}
+          freeNavigation={!!place}
+          pending={pending}
+          submitLabel={t('common.save')}
+          submitDisabled={!d.name.trim()}
+          leading={
+            place && (
               <Button
                 type="button"
                 variant="ghost"
@@ -427,16 +304,153 @@ function PlaceDialog({
                 }}
               >
                 <Trash2 />
-                {t('expense.delete')}
+                <span className="hidden sm:inline">{t('expense.delete')}</span>
               </Button>
-            )}
-            <div className="flex-1" />
-            <Button type="submit" disabled={pending || !d.name.trim()}>
-              {pending && <Loader2 className="animate-spin" />}
-              {t('common.save')}
-            </Button>
-          </div>
-        </form>
+            )
+          }
+        >
+          <Step title={t('plan.place.stepWhat')}>
+            <div className="grid grid-cols-[1fr_auto] gap-3">
+              <Field label={t('plan.place.name')} htmlFor="pl-name">
+                <Input
+                  id="pl-name"
+                  required
+                  maxLength={160}
+                  value={d.name}
+                  onChange={(e) => set('name', e.target.value)}
+                />
+              </Field>
+              <Field label={t('plan.place.kind')} htmlFor="pl-kind">
+                <Select
+                  id="pl-kind"
+                  className="w-44"
+                  value={d.kind}
+                  onChange={(e) => set('kind', e.target.value as Place['kind'])}
+                >
+                  {PLACE_KINDS.map((k) => (
+                    <option key={k} value={k}>
+                      {PLACE_KIND_EMOJI[k]} {t(`plan.placeKinds.${k}`)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            <Field label={t('plan.place.address')} htmlFor="pl-addr">
+              <Input
+                id="pl-addr"
+                maxLength={240}
+                value={d.address}
+                onChange={(e) => set('address', e.target.value)}
+              />
+            </Field>
+            <Field
+              label={t('plan.place.mapsQuery')}
+              htmlFor="pl-maps"
+              hint={t('plan.place.mapsQueryHint')}
+            >
+              <Input
+                id="pl-maps"
+                maxLength={240}
+                value={d.mapsQuery}
+                onChange={(e) => set('mapsQuery', e.target.value)}
+              />
+            </Field>
+          </Step>
+          <Step title={t('plan.place.stepInfo')}>
+            <Field label={t('plan.place.hours')} htmlFor="pl-hours">
+              <Input
+                id="pl-hours"
+                maxLength={400}
+                placeholder="9:30–17:00"
+                value={d.openingHours}
+                onChange={(e) => set('openingHours', e.target.value)}
+              />
+            </Field>
+            <MoneyFields
+              idPrefix="pl"
+              label={t('plan.place.price')}
+              value={d.price}
+              onChange={(v) => set('price', v)}
+            />
+            <Field label={t('plan.place.priceLevel')} htmlFor="pl-level">
+              <Select
+                id="pl-level"
+                value={d.priceLevel}
+                onChange={(e) => set('priceLevel', e.target.value)}
+              >
+                <option value="">—</option>
+                {[1, 2, 3, 4].map((n) => (
+                  <option key={n} value={n}>
+                    {'€'.repeat(n)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </Step>
+          <Step title={t('plan.place.stepMore')}>
+            <Field label={t('plan.activity.description')} htmlFor="pl-desc">
+              <textarea
+                id="pl-desc"
+                rows={2}
+                maxLength={1000}
+                className={textareaClass}
+                value={d.description}
+                onChange={(e) => set('description', e.target.value)}
+              />
+            </Field>
+            <LinesField
+              id="pl-tips"
+              label={`💡 ${t('plan.activity.tips')}`}
+              hint={t('plan.onePerLine')}
+              value={d.tips}
+              onChange={(v) => set('tips', v)}
+            />
+            <Field label={`🔗 ${t('plan.links')}`} htmlFor="pl-links" hint={t('plan.linksHint')}>
+              <textarea
+                id="pl-links"
+                rows={2}
+                className={textareaClass}
+                value={d.links}
+                onChange={(e) => set('links', e.target.value)}
+              />
+            </Field>
+            <div className="grid grid-cols-1 gap-3 rounded-xl border p-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t('plan.place.verification')} htmlFor="pl-ver">
+                  <Select
+                    id="pl-ver"
+                    value={d.verified}
+                    onChange={(e) => set('verified', e.target.value as 'verified' | 'unverified')}
+                  >
+                    <option value="unverified">{t('plan.place.toCheck')}</option>
+                    <option value="verified">{t('plan.place.verified')}</option>
+                  </Select>
+                </Field>
+                <Field label={t('plan.place.checkedAt')} htmlFor="pl-checked">
+                  <Input
+                    id="pl-checked"
+                    type="date"
+                    value={d.checkedAt}
+                    onChange={(e) => set('checkedAt', e.target.value)}
+                  />
+                </Field>
+              </div>
+              <Field
+                label={t('plan.place.sources')}
+                htmlFor="pl-sources"
+                hint={t('plan.linksHint')}
+              >
+                <textarea
+                  id="pl-sources"
+                  rows={2}
+                  className={textareaClass}
+                  value={d.sources}
+                  onChange={(e) => set('sources', e.target.value)}
+                />
+              </Field>
+            </div>
+          </Step>
+        </StepForm>
       </DialogContent>
     </Dialog>
   );

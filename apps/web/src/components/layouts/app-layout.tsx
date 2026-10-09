@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
-import { LogOut, Plane, Plus, Shield, UserRound } from 'lucide-react';
+import { LogOut, Plane, Plus, UserRound } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Logo } from '@/components/brand';
@@ -10,6 +10,7 @@ import { UserAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { signOut } from '@/lib/auth-client';
+import { useCurrentFab } from '@/lib/fab';
 import { applyTheme, type Theme } from '@/lib/theme';
 import { useTRPC } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
@@ -38,9 +39,7 @@ export function AppLayout() {
     { to: '/app', label: t('nav.trips'), icon: Plane, exact: true },
     { to: '/app/profile', label: t('nav.profile'), icon: UserRound },
   ];
-  if (me?.role === 'superadmin')
-    items.push({ to: '/app/admin', label: t('nav.admin'), icon: Shield });
-  const inTrip = /^\/app\/trips\/[0-9a-f-]{36}/.test(pathname);
+  const fab = useCurrentFab();
   const isActive = (item: NavItem) =>
     item.exact
       ? pathname === item.to || pathname.startsWith('/app/trips/')
@@ -61,6 +60,7 @@ export function AppLayout() {
             <NavLink key={item.to} item={item} active={isActive(item)} />
           ))}
         </nav>
+        <FabButton fab={fab} variant="sidebar" />
         <div className="flex-1" />
         {me && (
           <div className="flex items-center gap-3 rounded-xl p-2">
@@ -100,27 +100,12 @@ export function AppLayout() {
 
         {/* Navigazione in basso (mobile) */}
         <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
-          <div
-            className="mx-auto grid h-16 max-w-md items-center px-2"
-            style={{
-              gridTemplateColumns: `repeat(${items.length + (inTrip ? 0 : 1)}, minmax(0, 1fr))`,
-            }}
-          >
+          <div className="mx-auto grid h-16 max-w-md grid-cols-3 items-center px-2">
             <BottomLink item={items[0]!} active={isActive(items[0]!)} />
-            {!inTrip && (
-              <div className="flex justify-center">
-                <Link
-                  to="/app/trips/new"
-                  aria-label={t('app.newTrip')}
-                  className="-mt-6 flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-white shadow-lg shadow-accent/30 transition active:scale-95"
-                >
-                  <Plus className="size-6" />
-                </Link>
-              </div>
-            )}
-            {items.slice(1).map((item) => (
-              <BottomLink key={item.to} item={item} active={isActive(item)} />
-            ))}
+            <div className="flex justify-center">
+              <FabButton fab={fab} variant="bottom" />
+            </div>
+            <BottomLink item={items[1]!} active={isActive(items[1]!)} />
           </div>
         </nav>
       </div>
@@ -173,6 +158,42 @@ function BottomLink({ item, active }: { item: NavItem; active: boolean }) {
   if (item.soon) return <span className={cls}>{content}</span>;
   return (
     <Link to={item.to} className={cls}>
+      {content}
+    </Link>
+  );
+}
+
+/** "+" contestuale: l'azione della pagina attiva, altrimenti un nuovo viaggio. */
+function FabButton({
+  fab,
+  variant,
+}: {
+  fab: { label: string; run: () => void } | null;
+  variant: 'bottom' | 'sidebar';
+}) {
+  const { t } = useTranslation();
+  const label = fab?.label ?? t('app.newTrip');
+  const cls =
+    variant === 'bottom'
+      ? '-mt-6 flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-white shadow-lg shadow-accent/30 transition active:scale-95'
+      : 'mt-3 flex items-center justify-center gap-2 rounded-full bg-gradient-to-br from-primary to-accent px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-accent/25 transition active:scale-[0.98]';
+  const content =
+    variant === 'bottom' ? (
+      <Plus className="size-6" />
+    ) : (
+      <>
+        <Plus className="size-4" />
+        {label}
+      </>
+    );
+  if (fab)
+    return (
+      <button type="button" onClick={fab.run} aria-label={label} title={label} className={cls}>
+        {content}
+      </button>
+    );
+  return (
+    <Link to="/app/trips/new" aria-label={label} title={label} className={cls}>
       {content}
     </Link>
   );

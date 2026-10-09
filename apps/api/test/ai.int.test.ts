@@ -272,4 +272,73 @@ run('AI jobs (integration)', () => {
     expect(job.data.status).toBe('done');
     expect(job.data.result.actions).toHaveLength(2);
   });
+
+  it('proposes a new place linked to an activity and an expense, both applicable', async () => {
+    await t.settings.set('openrouter.apiKey', 'sk-or-central-key-123');
+    const { marco, tripId } = await setup();
+    replies.tripshare_assistant = [
+      {
+        reply: 'Aggiungo la distilleria e registro la benzina.',
+        actions: [
+          { type: 'ensureDays', start: '2026-10-12', end: '2026-10-14' },
+          {
+            type: 'upsertPlace',
+            place: { id: 'glenkinchie', name: 'Glenkinchie Distillery', kind: 'sight' },
+          },
+          {
+            type: 'upsertActivity',
+            date: '2026-10-13',
+            activity: {
+              title: 'Visita alla distilleria',
+              type: 'visit',
+              placeIds: ['glenkinchie'],
+            },
+          },
+        ],
+        expenses: [
+          {
+            title: 'Benzina',
+            amount: 45,
+            currency: 'GBP',
+            category: 'fuel',
+            paidBy: 'Marco',
+            status: 'paid',
+          },
+        ],
+      },
+    ];
+    const started = await t.trpc<{ id: string }>('ai.start', marco, {
+      tripId,
+      input: {
+        kind: 'chat',
+        message: 'Aggiungi una distilleria il secondo giorno, ho pagato 45 £ di benzina',
+      },
+    });
+    const job = await t.trpc<{
+      status: string;
+      result: { actions: unknown[]; expenses: { title: string; paidBy: string }[] };
+    }>('ai.job', marco, { id: started.data.id }, 'query');
+    expect(job.data.status).toBe('done');
+    expect(job.data.result.expenses[0]).toMatchObject({ title: 'Benzina', paidBy: 'Marco' });
+
+    // Le modifiche si applicano al programma così come proposte.
+    const applied = await t.trpc('plan.applyOps', marco, {
+      tripId,
+      ops: job.data.result.actions,
+    });
+    expect(applied.status).toBe(200);
+    const plan = await t.trpc<{
+      plan: { places: { id: string }[]; days: { activities: { placeIds: string[] }[] }[] };
+    }>('plan.get', marco, { tripId }, 'query');
+    expect(plan.data.plan.places.map((p) => p.id)).toContain('glenkinchie');
+    expect(plan.data.plan.days[1]!.activities[0]!.placeIds).toEqual(['glenkinchie']);
+
+    const history = await t.trpc<{ expenses: unknown[] | null }[]>(
+      'ai.chat.history',
+      marco,
+      { tripId },
+      'query',
+    );
+    expect(history.data[1]!.expenses).toHaveLength(1);
+  });
 });

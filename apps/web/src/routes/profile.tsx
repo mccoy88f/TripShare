@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Camera, Loader2, Smile, Trash2 } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import { Camera, Loader2, Shield, Smile, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -311,6 +312,14 @@ export function ProfilePage() {
         </div>
       </form>
       <AiKeysCard />
+      {me.role === 'superadmin' && (
+        <Button asChild variant="outline" size="lg" className="justify-self-start">
+          <Link to="/app/admin">
+            <Shield />
+            {t('nav.admin')}
+          </Link>
+        </Button>
+      )}
     </div>
   );
 }

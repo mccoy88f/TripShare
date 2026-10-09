@@ -73,6 +73,29 @@ export type BookingResult = z.infer<typeof BookingResultSchema>;
 
 // ─── Assistente del viaggio ─────────────────────────────────────────────────
 
+/** Spesa proposta dall'assistente: diventa una spesa vera solo quando l'utente la conferma. */
+export const ExpenseProposalSchema = z.object({
+  title: z.string().min(1).max(160),
+  amount: z.number().positive().describe('Importo totale in unità maggiori'),
+  currency: z.enum(CURRENCY_CODES),
+  category: z.enum(EXPENSE_CATEGORY_KEYS),
+  emoji: z.string().max(16).optional(),
+  date: z.iso.date().optional(),
+  paidBy: z
+    .string()
+    .max(120)
+    .optional()
+    .describe('Nome di chi ha pagato (o pagherà), come nel gruppo'),
+  splitAmong: z
+    .array(z.string().max(120))
+    .max(50)
+    .default([])
+    .describe('Nomi tra cui dividere; vuoto = tutto il gruppo'),
+  status: z.enum(['paid', 'planned']).default('paid').describe('"planned" se è ancora da pagare'),
+  notes: z.string().max(400).optional(),
+});
+export type ExpenseProposal = z.infer<typeof ExpenseProposalSchema>;
+
 export const ChatResultSchema = z.object({
   reply: z
     .string()
@@ -84,6 +107,11 @@ export const ChatResultSchema = z.object({
     .max(30)
     .default([])
     .describe('Modifiche al programma proposte; vuoto se la domanda non richiede modifiche'),
+  expenses: z
+    .array(ExpenseProposalSchema)
+    .max(10)
+    .default([])
+    .describe('Spese da registrare proposte; vuoto se l’utente non parla di spese'),
 });
 export type ChatResult = z.infer<typeof ChatResultSchema>;
 
@@ -290,7 +318,7 @@ JSON Schema: ${JSON.stringify(schemaOf(BookingResultSchema))}`,
           {
             role: 'system',
             content: `Sei l'assistente di viaggio di TripShare per un gruppo. Rispondi in ${L}, in modo concreto e breve. Oggi è ${today()}.
-Hai il programma del viaggio nel formato standard TripShare e altri dati del gruppo. Se l'utente chiede di modificare il programma (aggiungere, spostare o togliere attività, luoghi, prenotazioni, voci di budget, bagagli, giorni), proponi le modifiche in "actions" usando le operazioni dello schema e gli id esistenti; NON dire di averle applicate: l'utente le confermerà. Per una nuova attività ometti "id". Le attività vanno in giorni esistenti: se il giorno manca, crealo prima con "ensureDays" o "upsertDay". Non inventare prezzi o orari precisi che non conosci: indica che vanno verificati.
+Hai il programma del viaggio nel formato standard TripShare e altri dati del gruppo. Se l'utente chiede di modificare il programma (aggiungere, spostare o togliere attività, luoghi, prenotazioni, voci di budget, bagagli, giorni), proponi le modifiche in "actions" usando le operazioni dello schema e gli id esistenti; NON dire di averle applicate: l'utente le confermerà. Per una nuova attività ometti "id". Per un nuovo luogo da collegare a un'attività assegna tu un "id" breve in kebab-case non già usato e usalo in "placeIds" nella stessa risposta. Le attività vanno in giorni esistenti: se il giorno manca, crealo prima con "ensureDays" o "upsertDay". Non inventare prezzi o orari precisi che non conosci: indica che vanno verificati. Se l'utente racconta una spesa fatta o da fare ("ho pagato 40 € di benzina", "dobbiamo pagare il traghetto"), proponila in "expenses" usando i nomi del gruppo per "paidBy" e "splitAmong" (chi scrive è "${String(ctx.extra?.me ?? '')}"); verrà registrata solo dopo la conferma.
 Rispondi SOLO con JSON secondo questo schema: ${JSON.stringify(schemaOf(ChatResultSchema))}
 Dati del viaggio: ${planContext(ctx.plan!, ctx.extra)}`,
           },

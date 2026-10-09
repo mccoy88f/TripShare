@@ -277,6 +277,8 @@ export const aiChatMessage = pgTable(
     content: text().notNull(),
     /** Operazioni sul programma proposte dall'assistente. */
     actions: jsonb(),
+    /** Spese proposte dall'assistente (da confermare). */
+    expenses: jsonb(),
     appliedAt: timestamp({ withTimezone: true }),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },

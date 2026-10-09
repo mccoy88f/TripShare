@@ -373,7 +373,9 @@
     "willPay": "Will pay",
     "willPayName": "{{name}} will pay",
     "markPaid": "Mark paid",
-    "markedPaid": "Expense marked as paid"
+    "markedPaid": "Expense marked as paid",
+    "stepWhat": "Expense",
+    "stepSplit": "Who pays and split"
   },
   "invite": {
     "from": "{{name}} invites you",
@@ -487,6 +489,19 @@
       "list": "Expenses",
       "balances": "Balances",
       "budget": "Budget"
+    },
+    "fab": {
+      "plan": "Add activity",
+      "assistant": "Ask the assistant",
+      "expenses": "Add expense",
+      "budget": "Add budget item",
+      "bookings": "Add booking",
+      "tickets": "Add tickets",
+      "places": "Add place",
+      "packing": "Add to packing",
+      "notes": "Add note",
+      "members": "Invite someone",
+      "noDays": "Create the trip days first (or generate them with AI)."
     }
   },
   "models": {
@@ -569,7 +584,10 @@
       "cost": "Cost",
       "warnings": "Warnings",
       "tips": "Tips",
-      "confirmDelete": "Delete this activity?"
+      "confirmDelete": "Delete this activity?",
+      "stepWhat": "Activity",
+      "stepWhere": "Places and travel",
+      "stepMore": "Costs and tips"
     },
     "activityTypes": {
       "travel": "Transfer",
@@ -637,7 +655,10 @@
       "checkedAt": "Checked on",
       "sources": "Sources",
       "map": "Map",
-      "confirmDelete": "Delete the place? It will also be removed from activities."
+      "confirmDelete": "Delete the place? It will also be removed from activities.",
+      "stepWhat": "Place",
+      "stepInfo": "Hours and prices",
+      "stepMore": "Notes and sources"
     },
     "placeKinds": {
       "sight": "Sight",
@@ -677,7 +698,9 @@
       "paidYes": "Already paid",
       "payOnSite": "Pay on site",
       "toExpense": "Log expense",
-      "confirmDelete": "Delete the booking?"
+      "confirmDelete": "Delete the booking?",
+      "stepWhat": "Booking",
+      "stepDetails": "Details and cost"
     },
     "bookingStatus": {
       "booked": "Booked",
@@ -718,7 +741,9 @@
       "pending": "Amount to enter",
       "estimate": "Estimate"
     },
-    "amountRequired": "An amount is required, except for items with amount to enter."
+    "amountRequired": "An amount is required, except for items with amount to enter.",
+    "stepWhat": "Item",
+    "stepMore": "Notes"
   },
   "packing": {
     "progress": "{{done}} of {{total}} ready",
@@ -771,7 +796,9 @@
     "emptyTab": "No tickets yet",
     "emptyTabText": "Upload tickets, QR codes and Wallet passes from bookings: they will show up here, with who they are assigned to.",
     "all": "All tickets",
-    "manage": "Manage tickets"
+    "manage": "Manage tickets",
+    "needBooking": "Add a booking first: tickets are linked to a booking.",
+    "chooseBooking": "Which booking?"
   },
   "notes": {
     "title": "Title",
@@ -888,7 +915,8 @@
         "deletePackingItem": "Remove from packing",
         "deleteAlternative": "Remove alternative",
         "setExchangeRates": "Exchange rates"
-      }
+      },
+      "addExpense": "Add"
     },
     "verify": {
       "button": "Verify",
@@ -914,5 +942,10 @@
     "none": "No photos found.",
     "credit": "Free photos from",
     "photoBy": "Photo by"
+  },
+  "steps": {
+    "label": "Steps",
+    "back": "Back",
+    "next": "Next"
   }
 }

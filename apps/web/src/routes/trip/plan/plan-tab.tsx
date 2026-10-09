@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import type { Activity, Day, TripDocument } from '@tripshare/shared/trip-format';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ import {
 import { useTRPC } from '@/lib/trpc';
 import type { TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useOnAdd } from '@/lib/fab';
 import { ActivityDialog } from './activity-dialog';
 import { moneyLabel, textareaClass } from './fields';
 import { GeneratePlanButton } from './generate-trip';
@@ -62,6 +64,9 @@ export function PlanTab({ trip }: { trip: TripDetail }) {
   const plan = data?.plan;
   const [selected, setSelected] = useState<string | null>(null);
   const stripRef = useRef<HTMLDivElement>(null);
+  useOnAdd('plan', () => {
+    if (plan && plan.days.length === 0) toast.info(t('trip.fab.noDays'));
+  });
 
   // Giorno iniziale: oggi se è nel viaggio, altrimenti il primo.
   useEffect(() => {
@@ -237,6 +242,7 @@ function DayView({
   const [editing, setEditing] = useState<{ activity?: Activity; alternativeId?: string } | null>(
     null,
   );
+  useOnAdd('plan', () => setEditing({}));
   const [editDay, setEditDay] = useState(false);
   const stay = day.stayBookingId
     ? plan.bookings.find((b) => b.id === day.stayBookingId)

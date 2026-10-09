@@ -93,7 +93,7 @@ async function fileDataUrl(storage: FileStorage | undefined, name: string, mime:
   return `data:image/jpeg;base64,${jpeg.toString('base64')}`;
 }
 
-async function loadTripContext(db: Database, tripId: string, locale: Locale) {
+async function loadTripContext(db: Database, tripId: string, locale: Locale, userId: string) {
   const [row] = await db.select().from(trip).where(eq(trip.id, tripId));
   if (!row) throw new AiJobError('TRIP_NOT_FOUND');
   const [members, count, ledgers] = await Promise.all([
@@ -108,6 +108,7 @@ async function loadTripContext(db: Database, tripId: string, locale: Locale) {
     plan,
     extra: {
       group: active.map((m) => m.name),
+      me: active.find((m) => m.userId === userId)?.name,
       spentSoFar: ledger ? { amountMinor: ledger.total, currency: row.currency } : undefined,
     },
   };
@@ -140,7 +141,7 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
     const ctx: TaskContext = { locale };
     let plan: TripDocument | undefined;
     if (job.tripId && input.kind !== 'generate') {
-      const t = await loadTripContext(db, job.tripId, locale);
+      const t = await loadTripContext(db, job.tripId, locale, job.userId);
       plan = t.plan;
       ctx.plan = plan;
       ctx.extra = t.extra;
@@ -230,6 +231,7 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
           role: 'assistant',
           content: chat.reply,
           actions: chat.actions.length ? chat.actions : null,
+          expenses: chat.expenses.length ? chat.expenses : null,
         })
         .returning({ id: aiChatMessage.id });
       result = { ...chat, messageId: msg!.id };

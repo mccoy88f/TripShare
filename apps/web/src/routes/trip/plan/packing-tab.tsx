@@ -14,6 +14,7 @@ import { usePlan, usePlanOps } from '@/lib/plan';
 import { useTRPC } from '@/lib/trpc';
 import type { TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useOnAdd } from '@/lib/fab';
 
 const GROUPS: PackingItem['group'][] = [
   'documents',
@@ -41,6 +42,11 @@ export function PackingTab({ trip }: { trip: TripDetail }) {
   const { data } = usePlan(trip.id);
   const { apply, pending } = usePlanOps(trip.id);
   const [item, setItem] = useState('');
+  useOnAdd('packing', () => {
+    const el = document.getElementById('packing-new');
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el?.focus();
+  });
   const [group, setGroup] = useState<PackingItem['group']>('clothing');
   const [perPerson, setPerPerson] = useState(false);
   const ai = useAiStatus();
@@ -134,6 +140,7 @@ export function PackingTab({ trip }: { trip: TripDetail }) {
       {canEdit && (
         <form onSubmit={add} className="flex flex-wrap items-center gap-2">
           <Input
+            id="packing-new"
             className="min-w-48 flex-1"
             required
             maxLength={160}

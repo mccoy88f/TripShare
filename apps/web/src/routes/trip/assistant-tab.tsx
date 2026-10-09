@@ -1,16 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Loader2, Send, Sparkles, Trash2 } from 'lucide-react';
+import { Check, Loader2, Plus, Send, Sparkles, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import {
+  EXPENSE_CATEGORIES,
+  isCurrencyCode,
+  toMinor,
+  type CurrencyCode,
+  type ExpenseCategory,
+} from '@tripshare/shared';
 import type { PlanOp } from '@tripshare/shared/trip-format';
 import { Button } from '@/components/ui/button';
 import { useAiStatus, useAiTask } from '@/lib/ai';
-import { shortDate } from '@/lib/format';
+import { money, shortDate } from '@/lib/format';
 import { usePlanOps } from '@/lib/plan';
 import { useTRPC } from '@/lib/trpc';
 import type { TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { ExpenseDialog, type ExpensePreset } from './expense-dialog';
+import { useOnAdd } from '@/lib/fab';
 
 /** Descrizione breve di una modifica proposta dall'assistente. */
 function describeOp(op: PlanOp, t: TFunction): string {
@@ -46,6 +55,42 @@ function describeOp(op: PlanOp, t: TFunction): string {
   }
 }
 
+interface ExpenseProposal {
+  title: string;
+  amount: number;
+  currency: string;
+  category: ExpenseCategory;
+  emoji?: string;
+  date?: string;
+  paidBy?: string;
+  splitAmong: string[];
+  status: 'paid' | 'planned';
+  notes?: string;
+}
+
+/** Spesa proposta → valori iniziali del dialog (i nomi diventano partecipanti del viaggio). */
+function presetOf(e: ExpenseProposal, trip: TripDetail): ExpensePreset {
+  const active = trip.members.filter((m) => !m.removed);
+  const norm = (x: string) => x.trim().toLowerCase();
+  const byName = (name: string) =>
+    active.find((m) => norm(m.name) === norm(name)) ??
+    active.find((m) => norm(m.name).split(' ')[0] === norm(name).split(' ')[0]);
+  const currency = isCurrencyCode(e.currency) ? e.currency : (trip.currency as CurrencyCode);
+  const members = e.splitAmong.map(byName).filter((m) => !!m);
+  return {
+    title: e.title,
+    emoji: e.emoji ?? null,
+    category: e.category,
+    amount: toMinor(e.amount, currency),
+    currency,
+    date: e.date,
+    notes: e.notes,
+    status: e.status,
+    payerId: e.paidBy ? byName(e.paidBy)?.id : undefined,
+    memberIds: members.map((m) => m.id),
+  };
+}
+
 export function AssistantTab({ trip }: { trip: TripDetail }) {
   const { t } = useTranslation();
   const trpc = useTRPC();
@@ -63,7 +108,9 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
   );
   const [message, setMessage] = useState('');
   const [sent, setSent] = useState<string | null>(null);
+  const [expense, setExpense] = useState<ExpensePreset | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
+  useOnAdd('assistant', () => document.getElementById('assistant-input')?.focus());
   const canEdit = trip.role !== 'viewer';
 
   useEffect(() => {
@@ -97,7 +144,7 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
   const suggestions = [t('ai.chat.s1'), t('ai.chat.s2'), t('ai.chat.s3'), t('ai.chat.s4')];
 
   return (
-    <div className="grid grid-cols-1 gap-4 pb-24">
+    <div className="grid grid-cols-1 gap-4 pb-40">
       {messages.length === 0 && !sent && (
         <div className="grid place-items-center gap-3 rounded-xl border border-dashed px-6 py-10 text-center">
           <Sparkles className="size-8 text-accent" />
@@ -119,6 +166,7 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
 
       {messages.map((m) => {
         const actions = (m.actions ?? []) as PlanOp[];
+        const expenses = (m.expenses ?? []) as ExpenseProposal[];
         const mine = m.role === 'user';
         return (
           <div key={m.id} className={cn('flex', mine ? 'justify-end' : 'justify-start')}>
@@ -131,6 +179,37 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
               )}
             >
               {m.content}
+              {expenses.length > 0 && (
+                <div className="mt-3 grid grid-cols-1 gap-2 text-foreground">
+                  {expenses.map((e, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3 rounded-xl bg-muted/60 px-3 py-2.5 whitespace-normal"
+                    >
+                      <span className="text-xl">
+                        {e.emoji ?? EXPENSE_CATEGORIES[e.category]?.emoji ?? '📦'}
+                      </span>
+                      <span className="min-w-0 flex-1 text-[13px]">
+                        <span className="block truncate font-semibold">{e.title}</span>
+                        <span className="block text-muted-foreground">
+                          {money(
+                            toMinor(e.amount, isCurrencyCode(e.currency) ? e.currency : 'EUR'),
+                            e.currency,
+                          )}
+                          {e.paidBy && ` · ${e.paidBy}`}
+                          {e.status === 'planned' && ` · ⏳ ${t('expense.planned')}`}
+                        </span>
+                      </span>
+                      {canEdit && (
+                        <Button size="sm" onClick={() => setExpense(presetOf(e, trip))}>
+                          <Plus />
+                          {t('ai.chat.addExpense')}
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
               {actions.length > 0 && (
                 <div className="mt-3 grid grid-cols-1 gap-2 rounded-xl bg-muted/60 p-3 text-foreground">
                   <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -183,6 +262,14 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
         </>
       )}
       <div ref={bottom} />
+      {expense && (
+        <ExpenseDialog
+          trip={trip}
+          preset={expense}
+          open
+          onOpenChange={(o) => !o && setExpense(null)}
+        />
+      )}
 
       <form
         onSubmit={onSubmit}
@@ -205,6 +292,7 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
             </Button>
           )}
           <textarea
+            id="assistant-input"
             rows={1}
             maxLength={3000}
             value={message}

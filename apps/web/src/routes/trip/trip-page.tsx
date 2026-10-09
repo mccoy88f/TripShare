@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
-import { ArrowLeft, CalendarDays, Loader2, Plus, Settings, Users } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Loader2, Settings, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AvatarStack } from '@/components/avatar-stack';
@@ -12,6 +12,7 @@ import { dateRange, money } from '@/lib/format';
 import { useTRPC } from '@/lib/trpc';
 import { BalancePill } from '@/routes/trips';
 import { useAiStatus } from '@/lib/ai';
+import { AddRequestContext, useFabAction } from '@/lib/fab';
 import { AssistantTab } from './assistant-tab';
 import { BalancesTab } from './balances-tab';
 import { ExpenseDialog } from './expense-dialog';
@@ -27,7 +28,7 @@ import { PlanTab } from './plan/plan-tab';
 import { TicketsTab } from './plan/tickets-tab';
 import { cn } from '@/lib/utils';
 
-/** Tab visibili nella barra; membri e impostazioni sono icone a destra. */
+/** Tab visibili nella barra; membri e impostazioni sono icone sulla copertina. */
 const MAIN_TABS = [
   'plan',
   'assistant',
@@ -72,6 +73,22 @@ export function TripPage() {
   const { data: trip, error } = useQuery(trpc.trips.get.queryOptions({ id: tripId }));
   const [adding, setAdding] = useState(false);
   const ai = useAiStatus();
+  const [addRequest, setAddRequest] = useState({ target: '', n: 0 });
+  // Il "+" in basso aggiunge qualcosa nel tab attivo.
+  const target = tab === 'expenses' ? (view === 'budget' ? 'budget' : 'expenses') : tab;
+  const viewerCan = target === 'notes' || target === 'assistant';
+  const fabTarget = target === 'settings' ? 'expenses' : target;
+  useFabAction(
+    trip && (trip.role !== 'viewer' || viewerCan)
+      ? {
+          label: t(`trip.fab.${fabTarget}`),
+          run: () =>
+            fabTarget === 'expenses'
+              ? setAdding(true)
+              : setAddRequest((r) => ({ target: fabTarget, n: r.n + 1 })),
+        }
+      : null,
+  );
 
   if (error) {
     return (
@@ -108,7 +125,24 @@ export function TripPage() {
                 <ArrowLeft />
               </Link>
             </Button>
-            <BalancePill amount={myBalance} currency={trip.currency} className="text-sm" />
+            <div className="flex items-center gap-2">
+              <CoverButton
+                active={tab === 'members'}
+                label={t('trip.tabs.members')}
+                onClick={() => go(tab === 'members' ? 'plan' : 'members')}
+              >
+                <Users />
+              </CoverButton>
+              {trip.role === 'owner' && (
+                <CoverButton
+                  active={tab === 'settings'}
+                  label={t('trip.tabs.settings')}
+                  onClick={() => go(tab === 'settings' ? 'plan' : 'settings')}
+                >
+                  <Settings />
+                </CoverButton>
+              )}
+            </div>
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight drop-shadow-sm sm:text-4xl">
@@ -136,111 +170,83 @@ export function TripPage() {
       </TripCover>
 
       <div className="mx-auto max-w-4xl px-4 pt-5 lg:px-8">
-        <Tabs value={tab} onValueChange={(value) => go(value as Tab)}>
-          <div className="flex items-center gap-2">
-            <TabsList className="min-w-0 flex-1 sm:flex-none">
-              {MAIN_TABS.filter((x) => x !== 'assistant' || ai.data?.available).map((x) => (
-                <TabsTrigger key={x} value={x}>
-                  {x === 'assistant' ? `✨ ${t('trip.tabs.assistant')}` : t(`trip.tabs.${x}`)}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            <div className="ml-auto flex shrink-0 items-center gap-1">
-              <IconTab
-                active={tab === 'members'}
-                label={t('trip.tabs.members')}
-                onClick={() => go('members')}
-              >
-                <Users />
-              </IconTab>
-              {trip.role === 'owner' && (
-                <IconTab
-                  active={tab === 'settings'}
-                  label={t('trip.tabs.settings')}
-                  onClick={() => go('settings')}
-                >
-                  <Settings />
-                </IconTab>
-              )}
-            </div>
-          </div>
-          <TabsContent value="plan">
-            <PlanTab trip={trip} />
-          </TabsContent>
-          <TabsContent value="assistant">
-            <AssistantTab trip={trip} />
-          </TabsContent>
-          <TabsContent value="expenses">
-            <div className="mb-5 flex items-center gap-3">
-              <div className="inline-flex rounded-full bg-muted p-1">
-                {MONEY_VIEWS.map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => go('expenses', v)}
-                    className={cn(
-                      'rounded-full px-3.5 py-1 text-sm font-medium transition',
-                      view === v ? 'bg-card shadow-sm' : 'text-muted-foreground',
-                    )}
-                  >
-                    {t(`trip.money.${v}`)}
-                  </button>
+        <AddRequestContext.Provider value={addRequest}>
+          <Tabs value={tab} onValueChange={(value) => go(value as Tab)}>
+            <div className="flex items-center gap-2">
+              <TabsList className="min-w-0">
+                {MAIN_TABS.filter((x) => x !== 'assistant' || ai.data?.available).map((x) => (
+                  <TabsTrigger key={x} value={x}>
+                    {x === 'assistant' ? `✨ ${t('trip.tabs.assistant')}` : t(`trip.tabs.${x}`)}
+                  </TabsTrigger>
                 ))}
-              </div>
-              {canEdit && (
-                <Button onClick={() => setAdding(true)} className="ml-auto hidden sm:inline-flex">
-                  <Plus />
-                  {t('expense.add')}
-                </Button>
-              )}
+              </TabsList>
             </div>
-            {view === 'list' && <ExpensesTab trip={trip} />}
-            {view === 'balances' && <BalancesTab trip={trip} />}
-            {view === 'budget' && <BudgetTab trip={trip} />}
-          </TabsContent>
-          <TabsContent value="bookings">
-            <BookingsTab trip={trip} />
-          </TabsContent>
-          <TabsContent value="tickets">
-            <TicketsTab trip={trip} />
-          </TabsContent>
-          <TabsContent value="places">
-            <PlacesTab trip={trip} />
-          </TabsContent>
-          <TabsContent value="packing">
-            <PackingTab trip={trip} />
-          </TabsContent>
-          <TabsContent value="notes">
-            <NotesTab trip={trip} />
-          </TabsContent>
-          <TabsContent value="members">
-            <MembersTab trip={trip} />
-          </TabsContent>
-          {trip.role === 'owner' && (
-            <TabsContent value="settings">
-              <SettingsTab trip={trip} />
+            <TabsContent value="plan">
+              <PlanTab trip={trip} />
             </TabsContent>
-          )}
-        </Tabs>
+            <TabsContent value="assistant">
+              <AssistantTab trip={trip} />
+            </TabsContent>
+            <TabsContent value="expenses">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="inline-flex rounded-full bg-muted p-1">
+                  {MONEY_VIEWS.map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => go('expenses', v)}
+                      className={cn(
+                        'rounded-full px-3.5 py-1 text-sm font-medium transition',
+                        view === v ? 'bg-card shadow-sm' : 'text-muted-foreground',
+                      )}
+                    >
+                      {t(`trip.money.${v}`)}
+                    </button>
+                  ))}
+                </div>
+                <BalancePill
+                  amount={myBalance}
+                  currency={trip.currency}
+                  className="ml-auto text-sm"
+                />
+              </div>
+              {view === 'list' && <ExpensesTab trip={trip} />}
+              {view === 'balances' && <BalancesTab trip={trip} />}
+              {view === 'budget' && <BudgetTab trip={trip} />}
+            </TabsContent>
+            <TabsContent value="bookings">
+              <BookingsTab trip={trip} />
+            </TabsContent>
+            <TabsContent value="tickets">
+              <TicketsTab trip={trip} />
+            </TabsContent>
+            <TabsContent value="places">
+              <PlacesTab trip={trip} />
+            </TabsContent>
+            <TabsContent value="packing">
+              <PackingTab trip={trip} />
+            </TabsContent>
+            <TabsContent value="notes">
+              <NotesTab trip={trip} />
+            </TabsContent>
+            <TabsContent value="members">
+              <MembersTab trip={trip} />
+            </TabsContent>
+            {trip.role === 'owner' && (
+              <TabsContent value="settings">
+                <SettingsTab trip={trip} />
+              </TabsContent>
+            )}
+          </Tabs>
+        </AddRequestContext.Provider>
       </div>
 
-      {canEdit && (
-        <>
-          <button
-            onClick={() => setAdding(true)}
-            aria-label={t('expense.add')}
-            className="fixed right-5 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-white shadow-lg shadow-accent/30 transition active:scale-95 sm:hidden"
-          >
-            <Plus className="size-6" />
-          </button>
-          <ExpenseDialog trip={trip} open={adding} onOpenChange={setAdding} />
-        </>
-      )}
+      {canEdit && <ExpenseDialog trip={trip} open={adding} onOpenChange={setAdding} />}
     </div>
   );
 }
 
-function IconTab({
+function CoverButton({
   active,
   label,
   onClick,
@@ -259,10 +265,8 @@ function IconTab({
       title={label}
       aria-pressed={active}
       className={cn(
-        'flex size-10 items-center justify-center rounded-full transition [&_svg]:size-5',
-        active
-          ? 'bg-primary text-primary-foreground shadow-sm'
-          : 'bg-muted text-muted-foreground hover:text-foreground',
+        'flex size-10 items-center justify-center rounded-full backdrop-blur transition [&_svg]:size-5',
+        active ? 'bg-white text-slate-900' : 'bg-black/25 text-white hover:bg-black/40',
       )}
     >
       {children}

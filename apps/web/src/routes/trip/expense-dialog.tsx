@@ -22,6 +22,7 @@ import {
 import { UserAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Step, StepForm } from '@/components/ui/steps';
 import { EmojiPicker } from '@/components/ui/emoji-picker';
 import { Field, Input, Select } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -86,6 +87,9 @@ export interface ExpensePreset {
   notes?: string;
   status?: 'paid' | 'planned';
   bookingId?: string;
+  payerId?: string;
+  /** Partecipanti tra cui dividere (divisione in parti uguali). */
+  memberIds?: string[];
 }
 
 function initialState(trip: TripDetail, expense?: ExpenseT, preset?: ExpensePreset): State {
@@ -103,9 +107,9 @@ function initialState(trip: TripDetail, expense?: ExpenseT, preset?: ExpensePres
       rate: currency === tripCurrency ? '1' : '',
       rateTouched: false,
       date: preset?.date ?? clampDate(todayIso(), trip),
-      payerId: trip.myMemberId,
+      payerId: preset?.payerId ?? trip.myMemberId,
       method: 'equal',
-      members: active,
+      members: preset?.memberIds?.length ? preset.memberIds : active,
       shares: Object.fromEntries(active.map((id) => [id, '1'])),
       percents: {},
       exact: {},
@@ -350,167 +354,203 @@ export function ExpenseDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent title={expense ? t('expense.editTitle') : t('expense.newTitle')}>
-        <form onSubmit={submit} className="grid grid-cols-1 gap-5 pt-2">
-          {!expense && !s.receipt && <ReceiptScanButton trip={trip} onResult={onReceipt} />}
-          {s.receipt && (
-            <a
-              href={`/api/trips/${trip.id}/receipts/${s.receipt}`}
-              target="_blank"
-              rel="noreferrer"
-              className={cn(
-                'inline-flex items-center gap-2 justify-self-start rounded-full bg-secondary px-3 py-1 text-sm font-medium',
-                !expense && 'pointer-events-none',
-              )}
-            >
-              🧾 {expense ? t('ai.receipt.open') : t('ai.receipt.attached')}
-            </a>
-          )}
-          <div className="flex items-end gap-3">
-            <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-secondary text-3xl transition hover:scale-105"
-                  aria-label={t('profile.chooseEmoji')}
-                >
-                  {shownEmoji || <Smile />}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent>
-                <EmojiPicker
-                  onSelect={(emoji) => {
-                    setS((prev) => ({ ...prev, emoji, emojiTouched: true }));
-                    setPickerOpen(false);
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
-            <Field label={t('expense.title')} htmlFor="exp-title" className="flex-1">
-              <Input
-                id="exp-title"
-                required
-                maxLength={160}
-                placeholder={t('expense.titlePlaceholder')}
-                value={s.title}
-                onChange={(e) => set('title', e.target.value)}
-              />
-            </Field>
-          </div>
-
-          <div className="grid grid-cols-[1fr_auto] gap-3">
-            <Field label={t('expense.amount')} htmlFor="exp-amount">
-              <Input
-                id="exp-amount"
-                inputMode="decimal"
-                required
-                placeholder="0,00"
-                className="tabular text-lg font-semibold"
-                value={s.amount}
-                aria-invalid={s.amount !== '' && !amount}
-                onChange={(e) => set('amount', e.target.value)}
-              />
-            </Field>
-            <Field label={t('expense.currency')} htmlFor="exp-cur">
-              <Select
-                id="exp-cur"
-                className="w-28"
-                value={s.currency}
-                onChange={(e) => {
-                  const currency = e.target.value as CurrencyCode;
-                  // Il tasso arriva dalla BCE; finché non c'è (o se non arriva) va inserito a mano.
-                  setS((prev) => ({
-                    ...prev,
-                    currency,
-                    rateTouched: false,
-                    rate: currency === tripCurrency ? '1' : '',
-                  }));
+        <StepForm
+          onSubmit={submit}
+          freeNavigation={!!expense}
+          pending={pending}
+          submitLabel={expense ? t('common.save') : t('expense.add')}
+          submitDisabled={!amount || !split.input || !s.title.trim() || (foreign && !(rate > 0))}
+          leading={
+            expense && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-destructive"
+                disabled={pending}
+                onClick={async () => {
+                  if (!confirm(t('expense.confirmDelete'))) return;
+                  await remove.mutateAsync({ tripId: trip.id, id: expense.id });
+                  await invalidate();
+                  toast.success(t('expense.deleted'));
+                  onOpenChange(false);
                 }}
               >
-                {CURRENCY_CODES.map((c) => (
-                  <option key={c} value={c}>
-                    {c} {CURRENCIES[c].symbol !== c ? CURRENCIES[c].symbol : ''}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          </div>
-          {foreign && (
-            <div className="grid grid-cols-1 gap-1.5 rounded-xl bg-muted/60 p-3 text-sm">
-              <label className="flex flex-wrap items-center gap-2" htmlFor="exp-rate">
-                <span>1 {s.currency} =</span>
+                <Trash2 />
+                <span className="hidden sm:inline">{t('expense.delete')}</span>
+              </Button>
+            )
+          }
+        >
+          <Step title={t('expense.stepWhat')}>
+            {!expense && !s.receipt && <ReceiptScanButton trip={trip} onResult={onReceipt} />}
+            {s.receipt && (
+              <a
+                href={`/api/trips/${trip.id}/receipts/${s.receipt}`}
+                target="_blank"
+                rel="noreferrer"
+                className={cn(
+                  'inline-flex items-center gap-2 justify-self-start rounded-full bg-secondary px-3 py-1 text-sm font-medium',
+                  !expense && 'pointer-events-none',
+                )}
+              >
+                🧾 {expense ? t('ai.receipt.open') : t('ai.receipt.attached')}
+              </a>
+            )}
+            <div className="flex items-end gap-3">
+              <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-secondary text-3xl transition hover:scale-105"
+                    aria-label={t('profile.chooseEmoji')}
+                  >
+                    {shownEmoji || <Smile />}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent>
+                  <EmojiPicker
+                    onSelect={(emoji) => {
+                      setS((prev) => ({ ...prev, emoji, emojiTouched: true }));
+                      setPickerOpen(false);
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Field label={t('expense.title')} htmlFor="exp-title" className="flex-1">
                 <Input
-                  id="exp-rate"
-                  inputMode="decimal"
-                  className="tabular h-9 w-28"
-                  value={s.rate}
-                  onChange={(e) =>
-                    setS((prev) => ({ ...prev, rate: e.target.value, rateTouched: true }))
-                  }
+                  id="exp-title"
+                  required
+                  maxLength={160}
+                  placeholder={t('expense.titlePlaceholder')}
+                  value={s.title}
+                  onChange={(e) => set('title', e.target.value)}
                 />
-                <span>{tripCurrency}</span>
-                {fx.isFetching && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
-              </label>
-              <p className="text-muted-foreground">
-                {fx.isError && !(rate > 0)
-                  ? t('expense.rateUnavailable')
-                  : converted
-                    ? t('expense.converted', { amount: money(converted, tripCurrency, locale) })
-                    : t('expense.rateHint')}
-              </p>
+              </Field>
             </div>
-          )}
 
-          <div className="grid grid-cols-1 gap-1.5">
-            <span className="text-sm font-medium">{t('expense.category')}</span>
-            <div className="flex flex-wrap gap-1.5">
-              {EXPENSE_CATEGORY_KEYS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() =>
+            <div className="grid grid-cols-[1fr_auto] gap-3">
+              <Field label={t('expense.amount')} htmlFor="exp-amount">
+                <Input
+                  id="exp-amount"
+                  inputMode="decimal"
+                  required
+                  pattern="\s*[0-9]+([.,][0-9]{0,4})?\s*"
+                  placeholder="0,00"
+                  className="tabular text-lg font-semibold"
+                  value={s.amount}
+                  aria-invalid={s.amount !== '' && !amount}
+                  onChange={(e) => set('amount', e.target.value)}
+                />
+              </Field>
+              <Field label={t('expense.currency')} htmlFor="exp-cur">
+                <Select
+                  id="exp-cur"
+                  className="w-28"
+                  value={s.currency}
+                  onChange={(e) => {
+                    const currency = e.target.value as CurrencyCode;
+                    // Il tasso arriva dalla BCE; finché non c'è (o se non arriva) va inserito a mano.
+                    setS((prev) => ({
+                      ...prev,
+                      currency,
+                      rateTouched: false,
+                      rate: currency === tripCurrency ? '1' : '',
+                    }));
+                  }}
+                >
+                  {CURRENCY_CODES.map((c) => (
+                    <option key={c} value={c}>
+                      {c} {CURRENCIES[c].symbol !== c ? CURRENCIES[c].symbol : ''}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            {foreign && (
+              <div className="grid grid-cols-1 gap-1.5 rounded-xl bg-muted/60 p-3 text-sm">
+                <label className="flex flex-wrap items-center gap-2" htmlFor="exp-rate">
+                  <span>1 {s.currency} =</span>
+                  <Input
+                    id="exp-rate"
+                    inputMode="decimal"
+                    required
+                    pattern="[0-9]+([.,][0-9]+)?"
+                    className="tabular h-9 w-28"
+                    value={s.rate}
+                    onChange={(e) =>
+                      setS((prev) => ({ ...prev, rate: e.target.value, rateTouched: true }))
+                    }
+                  />
+                  <span>{tripCurrency}</span>
+                  {fx.isFetching && (
+                    <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  )}
+                </label>
+                <p className="text-muted-foreground">
+                  {fx.isError && !(rate > 0)
+                    ? t('expense.rateUnavailable')
+                    : converted
+                      ? t('expense.converted', { amount: money(converted, tripCurrency, locale) })
+                      : t('expense.rateHint')}
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={t('expense.category')} htmlFor="exp-cat">
+                <Select
+                  id="exp-cat"
+                  value={s.category}
+                  onChange={(e) => {
+                    const c = e.target.value as ExpenseCategory;
                     setS((prev) => ({
                       ...prev,
                       category: c,
                       emoji: prev.emojiTouched ? prev.emoji : null,
-                    }))
-                  }
+                    }));
+                  }}
+                >
+                  {EXPENSE_CATEGORY_KEYS.map((c) => (
+                    <option key={c} value={c}>
+                      {EXPENSE_CATEGORIES[c].emoji} {categoryLabel(c, locale)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label={t('expense.date')} htmlFor="exp-date">
+                <Input
+                  id="exp-date"
+                  type="date"
+                  required
+                  value={s.date}
+                  onChange={(e) => set('date', e.target.value)}
+                />
+              </Field>
+            </div>
+          </Step>
+          <Step title={t('expense.stepSplit')}>
+            <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
+              {(['paid', 'planned'] as const).map((st) => (
+                <button
+                  key={st}
+                  type="button"
+                  aria-pressed={s.status === st}
+                  onClick={() => set('status', st)}
                   className={cn(
-                    'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition',
-                    s.category === c
-                      ? 'border-primary bg-primary/10 font-semibold text-primary'
-                      : 'hover:bg-muted',
+                    'rounded-full px-3 py-1.5 text-sm font-medium transition',
+                    s.status === st ? 'bg-card shadow-sm' : 'text-muted-foreground',
                   )}
                 >
-                  <span>{EXPENSE_CATEGORIES[c].emoji}</span>
-                  {categoryLabel(c, locale)}
+                  {st === 'paid' ? `✅ ${t('expense.paidStatus')}` : `⏳ ${t('expense.planned')}`}
                 </button>
               ))}
             </div>
-          </div>
+            {s.status === 'planned' && (
+              <p className="-mt-3 px-1 text-[13px] text-muted-foreground">
+                {t('expense.plannedHint')}
+              </p>
+            )}
 
-          <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
-            {(['paid', 'planned'] as const).map((st) => (
-              <button
-                key={st}
-                type="button"
-                aria-pressed={s.status === st}
-                onClick={() => set('status', st)}
-                className={cn(
-                  'rounded-full px-3 py-1.5 text-sm font-medium transition',
-                  s.status === st ? 'bg-card shadow-sm' : 'text-muted-foreground',
-                )}
-              >
-                {st === 'paid' ? `✅ ${t('expense.paidStatus')}` : `⏳ ${t('expense.planned')}`}
-              </button>
-            ))}
-          </div>
-          {s.status === 'planned' && (
-            <p className="-mt-3 px-1 text-[13px] text-muted-foreground">
-              {t('expense.plannedHint')}
-            </p>
-          )}
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field
               label={s.status === 'planned' ? t('expense.willPay') : t('expense.paidBy')}
               htmlFor="exp-payer"
@@ -527,190 +567,152 @@ export function ExpenseDialog({
                 ))}
               </Select>
             </Field>
-            <Field label={t('expense.date')} htmlFor="exp-date">
-              <Input
-                id="exp-date"
-                type="date"
-                required
-                value={s.date}
-                onChange={(e) => set('date', e.target.value)}
-              />
-            </Field>
-          </div>
 
-          {s.items.length > 0 && (
-            <div className="grid grid-cols-1 gap-3 rounded-xl bg-muted/50 p-3">
-              <label className="flex items-center justify-between gap-3 text-sm font-medium">
-                <span>🧾 {t('ai.receipt.byItems', { count: s.items.length })}</span>
-                <input
-                  type="checkbox"
-                  className="size-5 accent-[var(--primary)]"
-                  checked={s.byItems}
-                  onChange={(e) =>
-                    e.target.checked
-                      ? applyItems(s.items)
-                      : setS((prev) => ({ ...prev, byItems: false, method: 'equal' }))
-                  }
-                />
-              </label>
-              {s.byItems && (
-                <ItemSplit
-                  items={s.items}
-                  members={trip.members.filter((m) => !m.removed)}
-                  currency={s.currency}
-                  onChange={(items) => applyItems(items)}
-                />
-              )}
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-sm font-medium">{t('expense.splitTitle')}</span>
-              <div className="inline-flex rounded-full bg-muted p-1">
-                {(['equal', 'shares', 'percent', 'exact'] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => {
-                      setS((prev) => {
-                        const next = { ...prev, method: m };
-                        if (m === 'percent' && prev.members.length) {
-                          const each = Math.floor((100 / prev.members.length) * 100) / 100;
-                          next.percents = Object.fromEntries(
-                            prev.members.map((id, i) => [
-                              id,
-                              String(
-                                i === 0
-                                  ? Math.round((100 - each * (prev.members.length - 1)) * 100) / 100
-                                  : each,
-                              ),
-                            ]),
-                          );
-                        }
-                        if (m === 'exact' && amount && prev.members.length) {
-                          const parts = computeShares(amount, {
-                            method: 'equal',
-                            members: prev.members,
-                          });
-                          next.exact = Object.fromEntries(
-                            prev.members.map((id) => [id, fmtNumber(parts[id]!, prev.currency)]),
-                          );
-                        }
-                        return next;
-                      });
-                    }}
-                    className={cn(
-                      'rounded-full px-3 py-1 text-xs font-semibold transition',
-                      s.method === m ? 'bg-card shadow-sm' : 'text-muted-foreground',
-                    )}
-                  >
-                    {t(`expense.methods.${m}`)}
-                  </button>
-                ))}
+            {s.items.length > 0 && (
+              <div className="grid grid-cols-1 gap-3 rounded-xl bg-muted/50 p-3">
+                <label className="flex items-center justify-between gap-3 text-sm font-medium">
+                  <span>🧾 {t('ai.receipt.byItems', { count: s.items.length })}</span>
+                  <input
+                    type="checkbox"
+                    className="size-5 accent-[var(--primary)]"
+                    checked={s.byItems}
+                    onChange={(e) =>
+                      e.target.checked
+                        ? applyItems(s.items)
+                        : setS((prev) => ({ ...prev, byItems: false, method: 'equal' }))
+                    }
+                  />
+                </label>
+                {s.byItems && (
+                  <ItemSplit
+                    items={s.items}
+                    members={trip.members.filter((m) => !m.removed)}
+                    currency={s.currency}
+                    onChange={(items) => applyItems(items)}
+                  />
+                )}
               </div>
-            </div>
-            <div className="divide-y rounded-xl border">
-              {members
-                .filter((m) => !m.removed)
-                .map((m) => {
-                  const on = s.members.includes(m.id);
-                  return (
-                    <div key={m.id} className="flex items-center gap-3 px-3 py-2.5">
-                      <input
-                        type="checkbox"
-                        className="size-5 accent-[var(--primary)]"
-                        checked={on}
-                        onChange={() => toggleMember(m.id)}
-                        aria-label={m.name}
-                      />
-                      <UserAvatar user={m} size="sm" />
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium">{m.name}</span>
-                      {on && s.method === 'shares' && (
-                        <Input
-                          inputMode="decimal"
-                          className="tabular h-9 w-16 text-center"
-                          value={s.shares[m.id] ?? '1'}
-                          onChange={(e) => set('shares', { ...s.shares, [m.id]: e.target.value })}
-                          aria-label={t('expense.methods.shares')}
-                        />
+            )}
+
+            <div className="grid grid-cols-1 gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-sm font-medium">{t('expense.splitTitle')}</span>
+                <div className="inline-flex rounded-full bg-muted p-1">
+                  {(['equal', 'shares', 'percent', 'exact'] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => {
+                        setS((prev) => {
+                          const next = { ...prev, method: m };
+                          if (m === 'percent' && prev.members.length) {
+                            const each = Math.floor((100 / prev.members.length) * 100) / 100;
+                            next.percents = Object.fromEntries(
+                              prev.members.map((id, i) => [
+                                id,
+                                String(
+                                  i === 0
+                                    ? Math.round((100 - each * (prev.members.length - 1)) * 100) /
+                                        100
+                                    : each,
+                                ),
+                              ]),
+                            );
+                          }
+                          if (m === 'exact' && amount && prev.members.length) {
+                            const parts = computeShares(amount, {
+                              method: 'equal',
+                              members: prev.members,
+                            });
+                            next.exact = Object.fromEntries(
+                              prev.members.map((id) => [id, fmtNumber(parts[id]!, prev.currency)]),
+                            );
+                          }
+                          return next;
+                        });
+                      }}
+                      className={cn(
+                        'rounded-full px-3 py-1 text-xs font-semibold transition',
+                        s.method === m ? 'bg-card shadow-sm' : 'text-muted-foreground',
                       )}
-                      {on && s.method === 'percent' && (
-                        <div className="flex items-center gap-1">
+                    >
+                      {t(`expense.methods.${m}`)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="divide-y rounded-xl border">
+                {members
+                  .filter((m) => !m.removed)
+                  .map((m) => {
+                    const on = s.members.includes(m.id);
+                    return (
+                      <div key={m.id} className="flex items-center gap-3 px-3 py-2.5">
+                        <input
+                          type="checkbox"
+                          className="size-5 accent-[var(--primary)]"
+                          checked={on}
+                          onChange={() => toggleMember(m.id)}
+                          aria-label={m.name}
+                        />
+                        <UserAvatar user={m} size="sm" />
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                          {m.name}
+                        </span>
+                        {on && s.method === 'shares' && (
                           <Input
                             inputMode="decimal"
-                            className="tabular h-9 w-20 text-right"
-                            value={s.percents[m.id] ?? '0'}
-                            onChange={(e) =>
-                              set('percents', { ...s.percents, [m.id]: e.target.value })
-                            }
+                            className="tabular h-9 w-16 text-center"
+                            value={s.shares[m.id] ?? '1'}
+                            onChange={(e) => set('shares', { ...s.shares, [m.id]: e.target.value })}
+                            aria-label={t('expense.methods.shares')}
                           />
-                          %
-                        </div>
-                      )}
-                      {on && s.method === 'exact' && (
-                        <Input
-                          inputMode="decimal"
-                          className="tabular h-9 w-24 text-right"
-                          value={s.exact[m.id] ?? ''}
-                          onChange={(e) => set('exact', { ...s.exact, [m.id]: e.target.value })}
-                        />
-                      )}
-                      {on && s.method !== 'exact' && (
-                        <span className="tabular w-20 text-right text-sm text-muted-foreground">
-                          {split.preview[m.id] !== undefined
-                            ? money(split.preview[m.id]!, s.currency, locale)
-                            : '—'}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
+                        )}
+                        {on && s.method === 'percent' && (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              inputMode="decimal"
+                              className="tabular h-9 w-20 text-right"
+                              value={s.percents[m.id] ?? '0'}
+                              onChange={(e) =>
+                                set('percents', { ...s.percents, [m.id]: e.target.value })
+                              }
+                            />
+                            %
+                          </div>
+                        )}
+                        {on && s.method === 'exact' && (
+                          <Input
+                            inputMode="decimal"
+                            className="tabular h-9 w-24 text-right"
+                            value={s.exact[m.id] ?? ''}
+                            onChange={(e) => set('exact', { ...s.exact, [m.id]: e.target.value })}
+                          />
+                        )}
+                        {on && s.method !== 'exact' && (
+                          <span className="tabular w-20 text-right text-sm text-muted-foreground">
+                            {split.preview[m.id] !== undefined
+                              ? money(split.preview[m.id]!, s.currency, locale)
+                              : '—'}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+              {split.error && <p className="text-sm text-destructive">{split.error}</p>}
             </div>
-            {split.error && <p className="text-sm text-destructive">{split.error}</p>}
-          </div>
 
-          <Field label={`${t('expense.notes')} (${t('common.optional')})`} htmlFor="exp-notes">
-            <Input
-              id="exp-notes"
-              maxLength={1000}
-              value={s.notes}
-              onChange={(e) => set('notes', e.target.value)}
-            />
-          </Field>
-
-          <div className="flex items-center gap-3">
-            {expense && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-destructive"
-                disabled={pending}
-                onClick={async () => {
-                  if (!confirm(t('expense.confirmDelete'))) return;
-                  await remove.mutateAsync({ tripId: trip.id, id: expense.id });
-                  await invalidate();
-                  toast.success(t('expense.deleted'));
-                  onOpenChange(false);
-                }}
-              >
-                <Trash2 />
-                {t('expense.delete')}
-              </Button>
-            )}
-            <div className="flex-1" />
-            <Button
-              type="submit"
-              size="lg"
-              disabled={
-                pending || !amount || !split.input || !s.title.trim() || (foreign && !(rate > 0))
-              }
-            >
-              {pending && <Loader2 className="animate-spin" />}
-              {expense ? t('common.save') : t('expense.add')}
-            </Button>
-          </div>
-        </form>
+            <Field label={`${t('expense.notes')} (${t('common.optional')})`} htmlFor="exp-notes">
+              <Input
+                id="exp-notes"
+                maxLength={1000}
+                value={s.notes}
+                onChange={(e) => set('notes', e.target.value)}
+              />
+            </Field>
+          </Step>
+        </StepForm>
       </DialogContent>
     </Dialog>
   );

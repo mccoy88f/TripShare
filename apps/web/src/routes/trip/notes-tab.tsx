@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { useTRPC } from '@/lib/trpc';
 import type { TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useOnAdd } from '@/lib/fab';
 import { textareaClass } from './plan/fields';
 
 type Visibility = 'public' | 'private';
@@ -29,6 +30,11 @@ export function NotesTab({ trip }: { trip: TripDetail }) {
   const queryClient = useQueryClient();
   const { data: notes } = useQuery(trpc.notes.list.queryOptions({ tripId: trip.id }));
   const [draft, setDraft] = useState<Draft>(EMPTY);
+  useOnAdd('notes', () => {
+    const el = document.getElementById('note-new');
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el?.focus();
+  });
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: trpc.notes.list.queryKey({ tripId: trip.id }) });
   const onError = () => toast.error(t('common.error'));
@@ -72,6 +78,7 @@ export function NotesTab({ trip }: { trip: TripDetail }) {
             aria-label={t('notes.title')}
           />
           <textarea
+            id="note-new"
             className={cn(textareaClass, 'min-h-28')}
             placeholder={t('notes.placeholder')}
             required

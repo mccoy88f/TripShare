@@ -9,11 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Step, StepForm } from '@/components/ui/steps';
 import { Field, Input, Select } from '@/components/ui/input';
 import { money, shortDate } from '@/lib/format';
 import { BOOKING_EMOJI, usePlan, usePlanOps } from '@/lib/plan';
 import { useTRPC } from '@/lib/trpc';
 import type { ExpenseT, TripDetail } from '@/lib/types';
+import { useOnAdd } from '@/lib/fab';
 import { ExpenseDialog, type ExpensePreset } from '../expense-dialog';
 import { BookingImportButton } from './booking-import';
 import { TicketsDialog, TicketViewer, useTickets, type Ticket } from './tickets';
@@ -74,6 +76,7 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
   const { t } = useTranslation();
   const { data } = usePlan(trip.id);
   const [editing, setEditing] = useState<Booking | 'new' | null>(null);
+  useOnAdd('bookings', () => setEditing('new'));
   const [expense, setExpense] = useState<ExpensePreset | null>(null);
   const [editingExpense, setEditingExpense] = useState<ExpenseT | undefined>();
   const trpc = useTRPC();
@@ -312,172 +315,14 @@ function BookingDialog({
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent title={booking ? t('plan.booking.editTitle') : t('plan.booking.add')}>
-        <form onSubmit={submit} className="grid grid-cols-1 gap-4 pt-2">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label={t('plan.booking.type')} htmlFor="bk-type">
-              <Select
-                id="bk-type"
-                value={d.type}
-                onChange={(e) => set('type', e.target.value as Booking['type'])}
-              >
-                {BOOKING_TYPES.map((x) => (
-                  <option key={x} value={x}>
-                    {BOOKING_EMOJI[x]} {t(`plan.bookingTypes.${x}`)}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label={t('plan.booking.status')} htmlFor="bk-status">
-              <Select
-                id="bk-status"
-                value={d.status}
-                onChange={(e) => set('status', e.target.value as Booking['status'])}
-              >
-                {(['booked', 'to_book', 'optional'] as const).map((x) => (
-                  <option key={x} value={x}>
-                    {t(`plan.bookingStatus.${x}`)}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          </div>
-          <Field label={t('plan.booking.title')} htmlFor="bk-title">
-            <Input
-              id="bk-title"
-              required
-              maxLength={160}
-              value={d.title}
-              onChange={(e) => set('title', e.target.value)}
-            />
-          </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label={t('plan.booking.provider')} htmlFor="bk-prov">
-              <Input
-                id="bk-prov"
-                maxLength={120}
-                value={d.provider}
-                onChange={(e) => set('provider', e.target.value)}
-              />
-            </Field>
-            <Field label={t('plan.booking.code')} htmlFor="bk-code">
-              <Input
-                id="bk-code"
-                maxLength={80}
-                value={d.code}
-                onChange={(e) => set('code', e.target.value)}
-              />
-            </Field>
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label={t('plan.booking.start')} htmlFor="bk-sd">
-              <div className="flex gap-2">
-                <Input
-                  id="bk-sd"
-                  className="min-w-0 flex-1"
-                  type="date"
-                  required
-                  value={d.startDate}
-                  onChange={(e) => set('startDate', e.target.value)}
-                />
-                <Input
-                  type="time"
-                  className="w-28"
-                  value={d.startTime}
-                  onChange={(e) => set('startTime', e.target.value)}
-                  aria-label={t('plan.activity.time')}
-                />
-              </div>
-            </Field>
-            <Field label={t('plan.booking.end')} htmlFor="bk-ed">
-              <div className="flex gap-2">
-                <Input
-                  id="bk-ed"
-                  className="min-w-0 flex-1"
-                  type="date"
-                  min={d.startDate}
-                  value={d.endDate}
-                  onChange={(e) => set('endDate', e.target.value)}
-                />
-                <Input
-                  type="time"
-                  className="w-28"
-                  value={d.endTime}
-                  onChange={(e) => set('endTime', e.target.value)}
-                  aria-label={t('plan.activity.endTime')}
-                />
-              </div>
-            </Field>
-          </div>
-          {d.type === 'flight' && (
-            <div className="grid grid-cols-3 gap-3">
-              <Input
-                placeholder="FR5590"
-                value={d.flightNumber}
-                onChange={(e) => set('flightNumber', e.target.value)}
-                aria-label={t('plan.booking.flightNumber')}
-              />
-              <Input
-                placeholder={t('plan.booking.from')}
-                value={d.flightFrom}
-                onChange={(e) => set('flightFrom', e.target.value)}
-              />
-              <Input
-                placeholder={t('plan.booking.to')}
-                value={d.flightTo}
-                onChange={(e) => set('flightTo', e.target.value)}
-              />
-            </div>
-          )}
-          {plan.places.length > 0 && (
-            <Field label={t('plan.booking.place')} htmlFor="bk-place">
-              <Select
-                id="bk-place"
-                value={d.placeId}
-                onChange={(e) => set('placeId', e.target.value)}
-              >
-                <option value="">—</option>
-                {plan.places.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          )}
-          <MoneyFields
-            idPrefix="bk"
-            label={t('plan.booking.cost')}
-            value={d.cost}
-            onChange={(v) => set('cost', v)}
-          />
-          <Field label={t('plan.booking.paid')} htmlFor="bk-paid">
-            <Select id="bk-paid" value={d.paid} onChange={(e) => set('paid', e.target.value)}>
-              <option value="">—</option>
-              <option value="yes">{t('plan.booking.paidYes')}</option>
-              <option value="no">{t('plan.booking.payOnSite')}</option>
-            </Select>
-          </Field>
-          <Field label={t('expense.notes')} htmlFor="bk-notes">
-            <textarea
-              id="bk-notes"
-              rows={2}
-              maxLength={600}
-              className={textareaClass}
-              value={d.notes}
-              onChange={(e) => set('notes', e.target.value)}
-            />
-          </Field>
-          <Field label={`🔗 ${t('plan.links')}`} htmlFor="bk-links" hint={t('plan.linksHint')}>
-            <textarea
-              id="bk-links"
-              rows={2}
-              className={textareaClass}
-              value={d.links}
-              onChange={(e) => set('links', e.target.value)}
-            />
-          </Field>
-          <div className="flex items-center gap-3">
-            {booking && (
+        <StepForm
+          onSubmit={submit}
+          freeNavigation={!!booking}
+          pending={pending}
+          submitLabel={t('common.save')}
+          submitDisabled={!d.title.trim() || !d.startDate}
+          leading={
+            booking && (
               <Button
                 type="button"
                 variant="ghost"
@@ -490,16 +335,179 @@ function BookingDialog({
                 }}
               >
                 <Trash2 />
-                {t('expense.delete')}
+                <span className="hidden sm:inline">{t('expense.delete')}</span>
               </Button>
+            )
+          }
+        >
+          <Step title={t('plan.booking.stepWhat')}>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={t('plan.booking.type')} htmlFor="bk-type">
+                <Select
+                  id="bk-type"
+                  value={d.type}
+                  onChange={(e) => set('type', e.target.value as Booking['type'])}
+                >
+                  {BOOKING_TYPES.map((x) => (
+                    <option key={x} value={x}>
+                      {BOOKING_EMOJI[x]} {t(`plan.bookingTypes.${x}`)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label={t('plan.booking.status')} htmlFor="bk-status">
+                <Select
+                  id="bk-status"
+                  value={d.status}
+                  onChange={(e) => set('status', e.target.value as Booking['status'])}
+                >
+                  {(['booked', 'to_book', 'optional'] as const).map((x) => (
+                    <option key={x} value={x}>
+                      {t(`plan.bookingStatus.${x}`)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            <Field label={t('plan.booking.title')} htmlFor="bk-title">
+              <Input
+                id="bk-title"
+                required
+                maxLength={160}
+                value={d.title}
+                onChange={(e) => set('title', e.target.value)}
+              />
+            </Field>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field label={t('plan.booking.start')} htmlFor="bk-sd">
+                <div className="flex gap-2">
+                  <Input
+                    id="bk-sd"
+                    className="min-w-0 flex-1"
+                    type="date"
+                    required
+                    value={d.startDate}
+                    onChange={(e) => set('startDate', e.target.value)}
+                  />
+                  <Input
+                    type="time"
+                    className="w-28"
+                    value={d.startTime}
+                    onChange={(e) => set('startTime', e.target.value)}
+                    aria-label={t('plan.activity.time')}
+                  />
+                </div>
+              </Field>
+              <Field label={t('plan.booking.end')} htmlFor="bk-ed">
+                <div className="flex gap-2">
+                  <Input
+                    id="bk-ed"
+                    className="min-w-0 flex-1"
+                    type="date"
+                    min={d.startDate}
+                    value={d.endDate}
+                    onChange={(e) => set('endDate', e.target.value)}
+                  />
+                  <Input
+                    type="time"
+                    className="w-28"
+                    value={d.endTime}
+                    onChange={(e) => set('endTime', e.target.value)}
+                    aria-label={t('plan.activity.endTime')}
+                  />
+                </div>
+              </Field>
+            </div>
+            {d.type === 'flight' && (
+              <div className="grid grid-cols-3 gap-3">
+                <Input
+                  placeholder="FR5590"
+                  value={d.flightNumber}
+                  onChange={(e) => set('flightNumber', e.target.value)}
+                  aria-label={t('plan.booking.flightNumber')}
+                />
+                <Input
+                  placeholder={t('plan.booking.from')}
+                  value={d.flightFrom}
+                  onChange={(e) => set('flightFrom', e.target.value)}
+                />
+                <Input
+                  placeholder={t('plan.booking.to')}
+                  value={d.flightTo}
+                  onChange={(e) => set('flightTo', e.target.value)}
+                />
+              </div>
             )}
-            <div className="flex-1" />
-            <Button type="submit" disabled={pending || !d.title.trim() || !d.startDate}>
-              {pending && <Loader2 className="animate-spin" />}
-              {t('common.save')}
-            </Button>
-          </div>
-        </form>
+          </Step>
+          <Step title={t('plan.booking.stepDetails')}>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={t('plan.booking.provider')} htmlFor="bk-prov">
+                <Input
+                  id="bk-prov"
+                  maxLength={120}
+                  value={d.provider}
+                  onChange={(e) => set('provider', e.target.value)}
+                />
+              </Field>
+              <Field label={t('plan.booking.code')} htmlFor="bk-code">
+                <Input
+                  id="bk-code"
+                  maxLength={80}
+                  value={d.code}
+                  onChange={(e) => set('code', e.target.value)}
+                />
+              </Field>
+            </div>
+            {plan.places.length > 0 && (
+              <Field label={t('plan.booking.place')} htmlFor="bk-place">
+                <Select
+                  id="bk-place"
+                  value={d.placeId}
+                  onChange={(e) => set('placeId', e.target.value)}
+                >
+                  <option value="">—</option>
+                  {plan.places.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            )}
+            <MoneyFields
+              idPrefix="bk"
+              label={t('plan.booking.cost')}
+              value={d.cost}
+              onChange={(v) => set('cost', v)}
+            />
+            <Field label={t('plan.booking.paid')} htmlFor="bk-paid">
+              <Select id="bk-paid" value={d.paid} onChange={(e) => set('paid', e.target.value)}>
+                <option value="">—</option>
+                <option value="yes">{t('plan.booking.paidYes')}</option>
+                <option value="no">{t('plan.booking.payOnSite')}</option>
+              </Select>
+            </Field>
+            <Field label={t('expense.notes')} htmlFor="bk-notes">
+              <textarea
+                id="bk-notes"
+                rows={2}
+                maxLength={600}
+                className={textareaClass}
+                value={d.notes}
+                onChange={(e) => set('notes', e.target.value)}
+              />
+            </Field>
+            <Field label={`🔗 ${t('plan.links')}`} htmlFor="bk-links" hint={t('plan.linksHint')}>
+              <textarea
+                id="bk-links"
+                rows={2}
+                className={textareaClass}
+                value={d.links}
+                onChange={(e) => set('links', e.target.value)}
+              />
+            </Field>
+          </Step>
+        </StepForm>
       </DialogContent>
     </Dialog>
   );

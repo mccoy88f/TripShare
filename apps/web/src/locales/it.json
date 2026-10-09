@@ -373,7 +373,9 @@
     "willPay": "Pagherà",
     "willPayName": "pagherà {{name}}",
     "markPaid": "Segna pagata",
-    "markedPaid": "Spesa segnata come pagata"
+    "markedPaid": "Spesa segnata come pagata",
+    "stepWhat": "Spesa",
+    "stepSplit": "Chi paga e divisione"
   },
   "invite": {
     "from": "{{name}} ti invita",
@@ -487,6 +489,19 @@
       "list": "Spese",
       "balances": "Saldi",
       "budget": "Budget"
+    },
+    "fab": {
+      "plan": "Aggiungi attività",
+      "assistant": "Chiedi all'assistente",
+      "expenses": "Aggiungi spesa",
+      "budget": "Aggiungi voce di budget",
+      "bookings": "Aggiungi prenotazione",
+      "tickets": "Aggiungi biglietti",
+      "places": "Aggiungi luogo",
+      "packing": "Aggiungi ai bagagli",
+      "notes": "Aggiungi nota",
+      "members": "Invita qualcuno",
+      "noDays": "Crea prima i giorni del viaggio (o generali con l'AI)."
     }
   },
   "models": {
@@ -569,7 +584,10 @@
       "cost": "Costo",
       "warnings": "Avvisi",
       "tips": "Consigli",
-      "confirmDelete": "Eliminare questa attività?"
+      "confirmDelete": "Eliminare questa attività?",
+      "stepWhat": "Attività",
+      "stepWhere": "Luoghi e spostamenti",
+      "stepMore": "Costi e consigli"
     },
     "activityTypes": {
       "travel": "Spostamento",
@@ -637,7 +655,10 @@
       "checkedAt": "Controllato il",
       "sources": "Fonti",
       "map": "Mappa",
-      "confirmDelete": "Eliminare il luogo? Verrà tolto anche dalle attività."
+      "confirmDelete": "Eliminare il luogo? Verrà tolto anche dalle attività.",
+      "stepWhat": "Luogo",
+      "stepInfo": "Orari e prezzi",
+      "stepMore": "Note e fonti"
     },
     "placeKinds": {
       "sight": "Attrazione",
@@ -677,7 +698,9 @@
       "paidYes": "Già pagato",
       "payOnSite": "Da pagare sul posto",
       "toExpense": "Registra spesa",
-      "confirmDelete": "Eliminare la prenotazione?"
+      "confirmDelete": "Eliminare la prenotazione?",
+      "stepWhat": "Prenotazione",
+      "stepDetails": "Dettagli e costo"
     },
     "bookingStatus": {
       "booked": "Prenotato",
@@ -718,7 +741,9 @@
       "pending": "Importo da inserire",
       "estimate": "Stima"
     },
-    "amountRequired": "Serve un importo, tranne per le voci con importo da inserire."
+    "amountRequired": "Serve un importo, tranne per le voci con importo da inserire.",
+    "stepWhat": "Voce",
+    "stepMore": "Note"
   },
   "packing": {
     "progress": "{{done}} di {{total}} pronti",
@@ -771,7 +796,9 @@
     "emptyTab": "Ancora nessun biglietto",
     "emptyTabText": "Carica biglietti, QR e pass Wallet dalle prenotazioni: compariranno qui, con a chi sono assegnati.",
     "all": "Tutti i biglietti",
-    "manage": "Gestisci biglietti"
+    "manage": "Gestisci biglietti",
+    "needBooking": "Aggiungi prima una prenotazione: i biglietti si collegano a una prenotazione.",
+    "chooseBooking": "A quale prenotazione?"
   },
   "notes": {
     "title": "Titolo",
@@ -888,7 +915,8 @@
         "deletePackingItem": "Rimuovi dai bagagli",
         "deleteAlternative": "Rimuovi alternativa",
         "setExchangeRates": "Tassi di cambio"
-      }
+      },
+      "addExpense": "Aggiungi"
     },
     "verify": {
       "button": "Verifica",
@@ -914,5 +942,10 @@
     "none": "Nessuna foto trovata.",
     "credit": "Foto gratuite da",
     "photoBy": "Foto di"
+  },
+  "steps": {
+    "label": "Passaggi",
+    "back": "Indietro",
+    "next": "Avanti"
   }
 }
