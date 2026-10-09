@@ -155,4 +155,57 @@ run('notes and planned expenses (integration)', () => {
     );
     expect(detail.data.ledger.balances[me]).toBe(10150);
   });
+
+  it('pays a planned expense partially, then the rest by everyone', async () => {
+    const { marco, sara, tripId } = await setup();
+    // Sara deve poter essere tra chi divide: la si rende editor.
+    const trip = await t.trpc<{
+      myMemberId: string;
+      members: { id: string; userId: string | null }[];
+    }>('trips.get', marco, { id: tripId }, 'query');
+    void sara;
+    const me = trip.data.myMemberId;
+    const all = trip.data.members.map((m) => m.id);
+    const other = all.find((id) => id !== me)!;
+    const { data: created } = await t.trpc<{ id: string }>('expenses.create', marco, {
+      tripId,
+      title: 'Noleggio auto',
+      category: 'car',
+      amount: 40000,
+      currency: 'EUR',
+      date: '2026-10-12',
+      payers: [{ memberId: me, amount: 40000 }],
+      split: { method: 'equal', members: all },
+      status: 'planned',
+    });
+    // Acconto di 100 € pagato da Marco.
+    const first = await t.trpc<{ paidId: string; remainingId: string }>('expenses.pay', marco, {
+      tripId,
+      id: created.id,
+      amount: 10000,
+      payer: me,
+    });
+    expect(first.status).toBe(200);
+    expect(first.data.remainingId).toBe(created.id);
+    type Ledger = { ledger: { total: number; planned: number; balances: Record<string, number> } };
+    let detail = await t.trpc<Ledger>('trips.get', marco, { id: tripId }, 'query');
+    expect(detail.data.ledger).toMatchObject({ total: 10000, planned: 30000 });
+    expect(detail.data.ledger.balances[me]).toBe(5000);
+
+    // Il resto lo paga ognuno per la sua quota: i saldi non cambiano.
+    const rest = await t.trpc('expenses.pay', marco, { tripId, id: created.id, payer: 'all' });
+    expect(rest.status).toBe(200);
+    detail = await t.trpc<Ledger>('trips.get', marco, { id: tripId }, 'query');
+    expect(detail.data.ledger).toMatchObject({ total: 40000, planned: 0 });
+    expect(detail.data.ledger.balances[me]).toBe(5000);
+    expect(detail.data.ledger.balances[other]).toBe(-5000);
+
+    const tooMuch = await t.trpc('expenses.pay', marco, {
+      tripId,
+      id: created.id,
+      amount: 99999,
+      payer: me,
+    });
+    expect(tooMuch.status).toBe(400);
+  });
 });

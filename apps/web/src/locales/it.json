@@ -380,7 +380,16 @@
     "markPaid": "Segna pagata",
     "markedPaid": "Spesa segnata come pagata",
     "stepWhat": "Spesa",
-    "stepSplit": "Chi paga e divisione"
+    "stepSplit": "Chi paga e divisione",
+    "everyone": "Tutti (ognuno la sua quota)",
+    "paidByEveryone": "Pagata da tutti, ognuno la sua quota",
+    "payTitle": "Registra pagamento",
+    "payAmount": "Importo pagato",
+    "payFull": "Importo intero: la spesa diventa pagata.",
+    "payRemaining": "Pagamento parziale: restano da pagare {{amount}}.",
+    "payInvalid": "L'importo deve essere maggiore di zero e non superare il totale.",
+    "payPartial": "Registra acconto",
+    "partialPaid": "Acconto registrato: il resto rimane da pagare"
   },
   "invite": {
     "from": "{{name}} ti invita",

@@ -287,6 +287,152 @@ export const expensesRouter = router({
     }),
 
   /**
+   * Registra il pagamento (anche parziale) di una spesa "da pagare". Con un importo minore
+   * del totale la spesa si divide: la parte pagata diventa una spesa pagata (con le stesse
+   * quote, in proporzione) e il resto rimane da pagare. `payer: "all"` = ognuno ha pagato la
+   * propria quota, quindi la parte pagata non sposta i saldi.
+   */
+  pay: authedProcedure
+    .input(
+      z.object({
+        tripId: z.uuid(),
+        id: z.uuid(),
+        amount: Minor.optional(),
+        payer: z.union([z.uuid(), z.literal('all')]),
+        date: z.iso.date().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { trip } = await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
+      const [row] = await ctx.db
+        .select()
+        .from(expense)
+        .where(
+          and(
+            eq(expense.id, input.id),
+            eq(expense.tripId, input.tripId),
+            isNull(expense.deletedAt),
+          ),
+        );
+      if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+      const total = row.amount;
+      const paid = input.amount ?? total;
+      if (paid > total) throw new TRPCError({ code: 'BAD_REQUEST', message: 'AMOUNT_TOO_LARGE' });
+      if (input.payer !== 'all') {
+        const { all } = await activeMemberIds(ctx.db, input.tripId);
+        if (!all.has(input.payer))
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'UNKNOWN_MEMBER' });
+      }
+      const shares = await ctx.db
+        .select()
+        .from(expenseShare)
+        .where(eq(expenseShare.expenseId, row.id));
+      /** Quote ripartite su un nuovo totale, nelle stesse proporzioni. */
+      const rescale = (amount: number) => {
+        const parts = shares.some((s) => s.amount > 0)
+          ? allocate(
+              amount,
+              shares.map((s) => s.amount),
+            )
+          : shares.map(() => 0);
+        return shares.map((s, i) => ({
+          memberId: s.memberId,
+          weight: s.weight,
+          amount: parts[i]!,
+        }));
+      };
+      const payersFor = (amount: number, part: { memberId: string; amount: number }[]) =>
+        input.payer === 'all'
+          ? part
+              .filter((p) => p.amount > 0)
+              .map((p) => ({ memberId: p.memberId, amount: p.amount }))
+          : [{ memberId: input.payer, amount }];
+      const toTrip = (amount: number) =>
+        convertMinor(amount, row.currency as CurrencyCode, trip.currency as CurrencyCode, row.rate);
+      const date = input.date ?? row.date;
+
+      return ctx.db.transaction(async (tx) => {
+        const writePayers = async (
+          expenseId: string,
+          payers: { memberId: string; amount: number }[],
+        ) => {
+          await tx.delete(expensePayer).where(eq(expensePayer.expenseId, expenseId));
+          if (payers.length)
+            await tx.insert(expensePayer).values(payers.map((p) => ({ expenseId, ...p })));
+        };
+        if (paid === total) {
+          await tx
+            .update(expense)
+            .set({ status: 'paid', date, updatedAt: new Date() })
+            .where(eq(expense.id, row.id));
+          await writePayers(row.id, payersFor(total, rescale(total)));
+          return { paidId: row.id, remainingId: null };
+        }
+        // Pagamento parziale: nuova spesa pagata + spesa originale ridotta al residuo.
+        const paidShares = rescale(paid);
+        const restShares = shares.map((s, i) => ({
+          ...s,
+          amount: s.amount - paidShares[i]!.amount,
+        }));
+        const [created] = await tx
+          .insert(expense)
+          .values({
+            tripId: row.tripId,
+            title: row.title,
+            emoji: row.emoji,
+            category: row.category,
+            amount: paid,
+            currency: row.currency,
+            rate: row.rate,
+            amountTrip: toTrip(paid),
+            date,
+            splitMethod: row.splitMethod,
+            notes: row.notes,
+            receipt: row.receipt,
+            bookingId: row.bookingId,
+            status: 'paid',
+            createdBy: ctx.user.id,
+          })
+          .returning({ id: expense.id });
+        const newId = created!.id;
+        await tx.insert(expenseShare).values(
+          paidShares.map((s) => ({
+            expenseId: newId,
+            memberId: s.memberId,
+            amount: s.amount,
+            weight: s.weight,
+          })),
+        );
+        await writePayers(newId, payersFor(paid, paidShares));
+        const rest = total - paid;
+        for (const s of restShares)
+          await tx
+            .update(expenseShare)
+            .set({ amount: s.amount })
+            .where(and(eq(expenseShare.expenseId, row.id), eq(expenseShare.memberId, s.memberId)));
+        const oldPayers = await tx
+          .select()
+          .from(expensePayer)
+          .where(eq(expensePayer.expenseId, row.id));
+        const payerParts = oldPayers.some((p) => p.amount > 0)
+          ? allocate(
+              rest,
+              oldPayers.map((p) => p.amount),
+            )
+          : oldPayers.map(() => 0);
+        await writePayers(
+          row.id,
+          oldPayers.map((p, i) => ({ memberId: p.memberId, amount: payerParts[i]! })),
+        );
+        await tx
+          .update(expense)
+          .set({ amount: rest, amountTrip: toTrip(rest), updatedAt: new Date() })
+          .where(eq(expense.id, row.id));
+        return { paidId: newId, remainingId: row.id };
+      });
+    }),
+
+  /**
    * Integra una spesa esistente con un documento (ricevuta, conferma di pagamento): stato,
    * scontrino, data e, se diverso, l'importo, ripartendo pagatori e quote in proporzione.
    */

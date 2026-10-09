@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
   EXPENSE_CATEGORIES,
+  computeShares,
   isCurrencyCode,
   toMinor,
   type CurrencyCode,
@@ -31,6 +32,7 @@ import { money, shortDate, todayIso } from '@/lib/format';
 import { BOOKING_EMOJI, PLACE_KIND_EMOJI, usePlan, usePlanOps } from '@/lib/plan';
 import { useTRPC } from '@/lib/trpc';
 import type { ExpenseT, TripDetail } from '@/lib/types';
+import { ALL } from './expense-dialog';
 import { useTickets } from './plan/tickets';
 import { cn } from '@/lib/utils';
 
@@ -451,7 +453,13 @@ function Review({
           amount,
           currency,
           date,
-          payers: [{ memberId: payer, amount }],
+          // "Tutti": ognuno ha pagato la propria quota.
+          payers:
+            payer === ALL
+              ? Object.entries(
+                  computeShares(amount, { method: 'equal', members: active.map((m) => m.id) }),
+                ).map(([memberId, v]) => ({ memberId, amount: v }))
+              : [{ memberId: payer, amount }],
           split: { method: 'equal', members: active.map((m) => m.id) },
           status,
           bookingId: bookingAvailable(expense.bookingRef) ? (expenseBooking ?? null) : null,
@@ -587,6 +595,7 @@ function Review({
                       onChange={(e) => setPayer(e.target.value)}
                       aria-label={t('expense.paidBy')}
                     >
+                      <option value={ALL}>👥 {t('expense.everyone')}</option>
                       {active.map((m) => (
                         <option key={m.id} value={m.id}>
                           {m.id === trip.myMemberId ? t('expense.me', { name: m.name }) : m.name}

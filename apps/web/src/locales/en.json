@@ -380,7 +380,16 @@
     "markPaid": "Mark paid",
     "markedPaid": "Expense marked as paid",
     "stepWhat": "Expense",
-    "stepSplit": "Who pays and split"
+    "stepSplit": "Who pays and split",
+    "everyone": "Everyone (each their share)",
+    "paidByEveryone": "Paid by everyone, each their share",
+    "payTitle": "Record payment",
+    "payAmount": "Amount paid",
+    "payFull": "Full amount: the expense becomes paid.",
+    "payRemaining": "Partial payment: {{amount}} still to pay.",
+    "payInvalid": "The amount must be greater than zero and not exceed the total.",
+    "payPartial": "Record deposit",
+    "partialPaid": "Deposit recorded: the rest is still to pay"
   },
   "invite": {
     "from": "{{name}} invites you",

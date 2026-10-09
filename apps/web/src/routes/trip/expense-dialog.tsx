@@ -137,7 +137,7 @@ function initialState(trip: TripDetail, expense?: ExpenseT, preset?: ExpensePres
     rate: String(expense.rate),
     rateTouched: true,
     date: expense.date,
-    payerId: expense.payers[0]?.memberId ?? trip.myMemberId,
+    payerId: paidByEveryone(expense) ? ALL : (expense.payers[0]?.memberId ?? trip.myMemberId),
     method: expense.splitMethod as Method,
     members: ids.filter(
       (id) =>
@@ -156,6 +156,19 @@ function initialState(trip: TripDetail, expense?: ExpenseT, preset?: ExpensePres
     items: [],
     byItems: false,
   };
+}
+
+/** Valore del menu "chi ha pagato" per "tutti, ognuno la sua quota". */
+export const ALL = '__all__';
+
+/** Spesa pagata da tutti: ognuno ha pagato esattamente la propria quota. */
+export function paidByEveryone(e: Pick<ExpenseT, 'payers' | 'shares'>) {
+  const owed = e.shares.filter((x) => x.amount > 0);
+  return (
+    e.payers.length > 1 &&
+    owed.length === e.payers.length &&
+    owed.every((x) => e.payers.find((p) => p.memberId === x.memberId)?.amount === x.amount)
+  );
 }
 
 function clampDate(date: string, trip: TripDetail) {
@@ -286,7 +299,13 @@ export function ExpenseDialog({
       currency: s.currency,
       rate: foreign ? rate : undefined,
       date: s.date,
-      payers: [{ memberId: s.payerId, amount }],
+      // "Tutti": ognuno ha pagato la propria quota, la spesa è già pareggiata.
+      payers:
+        s.payerId === ALL
+          ? Object.entries(split.preview)
+              .filter(([, v]) => v > 0)
+              .map(([memberId, v]) => ({ memberId, amount: v }))
+          : [{ memberId: s.payerId, amount }],
       split: split.input,
       notes: s.notes.trim() || null,
       status: s.status,
@@ -560,6 +579,7 @@ export function ExpenseDialog({
                 value={s.payerId}
                 onChange={(e) => set('payerId', e.target.value)}
               >
+                <option value={ALL}>👥 {t('expense.everyone')}</option>
                 {members.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.id === trip.myMemberId ? t('expense.me', { name: m.name }) : m.name}

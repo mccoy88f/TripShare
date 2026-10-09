@@ -1,37 +1,31 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { EXPENSE_CATEGORIES, type ExpenseCategory } from '@tripshare/shared';
+import {
+  EXPENSE_CATEGORIES,
+  fromMinor,
+  isCurrencyCode,
+  toMinor,
+  type CurrencyCode,
+  type ExpenseCategory,
+} from '@tripshare/shared';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Field, Input, Select } from '@/components/ui/input';
 import { longDate, money, todayIso } from '@/lib/format';
 import { useTRPC } from '@/lib/trpc';
 import type { ExpenseT, TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { ExpenseDialog } from './expense-dialog';
+import { ALL, ExpenseDialog, paidByEveryone } from './expense-dialog';
 
 export function ExpensesTab({ trip }: { trip: TripDetail }) {
   const { t } = useTranslation();
   const trpc = useTRPC();
   const { data: expenses } = useQuery(trpc.expenses.list.queryOptions({ tripId: trip.id }));
-  const queryClient = useQueryClient();
   const [editing, setEditing] = useState<ExpenseT | undefined>();
-  const setStatus = useMutation(
-    trpc.expenses.setStatus.mutationOptions({
-      onSuccess: async () => {
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: trpc.expenses.list.queryKey({ tripId: trip.id }),
-          }),
-          queryClient.invalidateQueries({ queryKey: trpc.trips.get.queryKey({ id: trip.id }) }),
-          queryClient.invalidateQueries({ queryKey: trpc.trips.list.queryKey() }),
-        ]);
-        toast.success(t('expense.markedPaid'));
-      },
-      onError: () => toast.error(t('common.error')),
-    }),
-  );
+  const [paying, setPaying] = useState<ExpenseT | null>(null);
   const canEdit = trip.role !== 'viewer';
   const names = Object.fromEntries(
     trip.members.map((m) => [m.id, m.id === trip.myMemberId ? t('expense.you') : m.name]),
@@ -94,15 +88,9 @@ export function ExpensesTab({ trip }: { trip: TripDetail }) {
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={setStatus.isPending}
-                    onClick={() =>
-                      setStatus.mutate({
-                        tripId: trip.id,
-                        id: e.id,
-                        status: 'paid',
-                        date: todayIso(),
-                      })
-                    }
+                    onClick={() => setPaying(e)}
+                    aria-label={t('expense.markPaid')}
+                    title={t('expense.markPaid')}
                   >
                     <Check />
                     <span className="hidden sm:inline">{t('expense.markPaid')}</span>
@@ -137,9 +125,11 @@ export function ExpensesTab({ trip }: { trip: TripDetail }) {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{e.title}</p>
                     <p className="truncate text-sm text-muted-foreground">
-                      {e.payers.length === 1 && e.payers[0]!.memberId === trip.myMemberId
-                        ? t('expense.paidByYou')
-                        : t('expense.paidByName', { name: payers })}
+                      {paidByEveryone(e)
+                        ? t('expense.paidByEveryone')
+                        : e.payers.length === 1 && e.payers[0]!.memberId === trip.myMemberId
+                          ? t('expense.paidByYou')
+                          : t('expense.paidByName', { name: payers })}
                     </p>
                   </div>
                   <div className="text-right">
@@ -168,6 +158,7 @@ export function ExpensesTab({ trip }: { trip: TripDetail }) {
           </div>
         </section>
       ))}
+      {paying && <PayDialog trip={trip} expense={paying} onClose={() => setPaying(null)} />}
       <ExpenseDialog
         trip={trip}
         expense={editing}
@@ -175,5 +166,119 @@ export function ExpensesTab({ trip }: { trip: TripDetail }) {
         onOpenChange={(open) => !open && setEditing(undefined)}
       />
     </div>
+  );
+}
+
+/** Pagamento di una spesa "da pagare": tutto o una parte (acconto), da una persona o da tutti. */
+function PayDialog({
+  trip,
+  expense,
+  onClose,
+}: {
+  trip: TripDetail;
+  expense: ExpenseT;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const currency = (isCurrencyCode(expense.currency) ? expense.currency : 'EUR') as CurrencyCode;
+  const [amount, setAmount] = useState(String(fromMinor(expense.amount, currency)));
+  const [payer, setPayer] = useState(expense.payers[0]?.memberId ?? trip.myMemberId);
+  const [date, setDate] = useState(todayIso());
+  const pay = useMutation(trpc.expenses.pay.mutationOptions());
+  const minor = /^\s*\d+([.,]\d{0,4})?\s*$/.test(amount)
+    ? toMinor(Number(amount.trim().replace(',', '.')), currency)
+    : 0;
+  const valid = minor > 0 && minor <= expense.amount;
+  const partial = valid && minor < expense.amount;
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!valid) return;
+    try {
+      await pay.mutateAsync({
+        tripId: trip.id,
+        id: expense.id,
+        amount: minor,
+        payer: payer === ALL ? 'all' : payer,
+        date,
+      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: trpc.expenses.list.queryKey({ tripId: trip.id }),
+        }),
+        queryClient.invalidateQueries({ queryKey: trpc.trips.get.queryKey({ id: trip.id }) }),
+        queryClient.invalidateQueries({ queryKey: trpc.trips.list.queryKey() }),
+      ]);
+      toast.success(partial ? t('expense.partialPaid') : t('expense.markedPaid'));
+      onClose();
+    } catch {
+      toast.error(t('common.error'));
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent
+        title={t('expense.payTitle')}
+        description={`${expense.title} · ${money(expense.amount, currency)}`}
+      >
+        <form onSubmit={submit} className="grid grid-cols-1 gap-4 pt-2">
+          <Field
+            label={t('expense.payAmount')}
+            htmlFor="pay-amount"
+            hint={
+              partial
+                ? t('expense.payRemaining', { amount: money(expense.amount - minor, currency) })
+                : t('expense.payFull')
+            }
+            error={amount && !valid ? t('expense.payInvalid') : null}
+          >
+            <div className="flex items-center gap-2">
+              <Input
+                id="pay-amount"
+                inputMode="decimal"
+                className="tabular text-lg font-semibold"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+              <span className="text-sm text-muted-foreground">{currency}</span>
+            </div>
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={t('expense.paidBy')} htmlFor="pay-payer">
+              <Select id="pay-payer" value={payer} onChange={(e) => setPayer(e.target.value)}>
+                <option value={ALL}>👥 {t('expense.everyone')}</option>
+                {trip.members
+                  .filter((m) => !m.removed)
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.id === trip.myMemberId ? t('expense.me', { name: m.name }) : m.name}
+                    </option>
+                  ))}
+              </Select>
+            </Field>
+            <Field label={t('expense.date')} htmlFor="pay-date">
+              <Input
+                id="pay-date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </Field>
+          </div>
+          <Button
+            type="submit"
+            size="lg"
+            className="justify-self-end"
+            disabled={!valid || pay.isPending}
+          >
+            {pay.isPending ? <Loader2 className="animate-spin" /> : <Check />}
+            {partial ? t('expense.payPartial') : t('expense.markPaid')}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
