@@ -19,6 +19,62 @@ run('place photos (integration)', () => {
       .toBuffer();
     const fakeFetch = (async (input: string | URL | Request, init?: RequestInit) => {
       const url = String(input);
+      if (url.startsWith('https://commons.wikimedia.org/w/api.php')) {
+        return Response.json({
+          query: {
+            pages: {
+              '2': {
+                index: 2,
+                title: 'File:Altro_castello.png',
+                imageinfo: [
+                  {
+                    thumburl: 'https://upload.wikimedia.org/thumb/a/ab/B.png/1200px-B.png',
+                    mime: 'image/png',
+                    extmetadata: {
+                      Artist: { value: '<a href="x">Mario Rossi</a>' },
+                      LicenseShortName: { value: 'CC BY-SA 4.0' },
+                    },
+                  },
+                ],
+              },
+              '1': {
+                index: 1,
+                title: 'File:Edinburgh_Castle.jpg',
+                imageinfo: [
+                  {
+                    thumburl: 'https://upload.wikimedia.org/thumb/a/aa/A.jpg/1200px-A.jpg',
+                    mime: 'image/jpeg',
+                    extmetadata: {
+                      Artist: { value: 'Ada &amp; Bob' },
+                      LicenseShortName: { value: 'CC BY 2.0' },
+                    },
+                  },
+                ],
+              },
+              '3': {
+                index: 3,
+                title: 'File:Mappa.svg',
+                imageinfo: [
+                  { thumburl: 'https://upload.wikimedia.org/x.png', mime: 'image/svg+xml' },
+                ],
+              },
+            },
+          },
+        });
+      }
+      if (url.startsWith('https://searx.example.org/search')) {
+        return Response.json({
+          results: [
+            {
+              title: 'Da SearXNG',
+              img_src: 'https://93.184.216.34/castello.jpg',
+              thumbnail_src: 'https://searx.example.org/t.jpg',
+              url: 'https://www.sito.it/p',
+            },
+            { title: 'http', img_src: 'http://insecure.example.com/y.jpg' },
+          ],
+        });
+      }
       if (url.startsWith('https://api.search.brave.com/')) {
         if (new Headers(init?.headers).get('x-subscription-token') === 'wrong-key-0000')
           return new Response('{}', { status: 401 });
@@ -64,28 +120,56 @@ run('place photos (integration)', () => {
     });
     const tripId = trip.id;
 
-    const off = await t.trpc(
+    // Wikimedia Commons: sempre disponibile, ordinata, con autore e licenza, solo jpeg/png/webp.
+    const commons = await t.trpc<{ full: string; title: string; credit: string }[]>(
       'plan.placePhotoSearch',
       owner,
-      { tripId, query: 'castello' },
+      { tripId, query: 'edinburgh castle' },
       'query',
     );
-    expect(off.error?.message).toBe('BRAVE_NOT_CONFIGURED');
+    expect(commons.data.map((p) => p.title)).toEqual(['Edinburgh Castle', 'Altro castello']);
+    expect(commons.data[0]!.credit).toBe('Ada & Bob · CC BY 2.0');
+    expect(commons.data[1]!.credit).toBe('Mario Rossi · CC BY-SA 4.0');
+
+    // Ricerca sul web: serve SearXNG o la chiave Brave.
+    const web = { tripId, query: 'castello', source: 'web' };
+    const off = await t.trpc('plan.placePhotoSearch', owner, web, 'query');
+    expect(off.error?.message).toBe('WEB_PHOTOS_NOT_CONFIGURED');
+    const before = await t.trpc<{ placePhotosWeb: boolean }>(
+      'public.config',
+      '',
+      undefined,
+      'query',
+    );
+    expect(before.data.placePhotosWeb).toBe(false);
+
+    await t.settings.set('searxng.url', 'https://searx.example.org/');
+    const searx = await t.trpc<{ full: string; source: string }[]>(
+      'plan.placePhotoSearch',
+      owner,
+      web,
+      'query',
+    );
+    expect(searx.data).toEqual([
+      expect.objectContaining({ full: 'https://93.184.216.34/castello.jpg', source: 'sito.it' }),
+    ]);
+    await t.settings.set('searxng.url', null);
+
     await t.settings.set('brave.apiKey', 'wrong-key-0000');
-    const bad = await t.trpc(
-      'plan.placePhotoSearch',
-      owner,
-      { tripId, query: 'castello' },
-      'query',
-    );
+    const bad = await t.trpc('plan.placePhotoSearch', owner, web, 'query');
     expect(bad.error?.message).toBe('BRAVE_INVALID_KEY');
     await t.settings.set('brave.apiKey', 'good-brave-key-123');
-    const config = await t.trpc<{ placePhotos: boolean }>('public.config', '', undefined, 'query');
-    expect(config.data.placePhotos).toBe(true);
+    const config = await t.trpc<{ placePhotosWeb: boolean }>(
+      'public.config',
+      '',
+      undefined,
+      'query',
+    );
+    expect(config.data.placePhotosWeb).toBe(true);
     const found = await t.trpc<{ thumb: string; full: string; source: string }[]>(
       'plan.placePhotoSearch',
       owner,
-      { tripId, query: 'castello' },
+      web,
       'query',
     );
     expect(found.data).toHaveLength(1);

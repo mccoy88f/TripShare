@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { appSetting, type Database } from '@tripshare/db';
 import { decrypt, encrypt, maskSecret, type EncryptedValue } from './crypto.js';
@@ -100,6 +100,15 @@ export const SETTINGS = {
     default: null,
     secret: true,
   },
+  /** Istanza SearXNG propria per cercare foto sul web senza chiavi a pagamento. */
+  'searxng.url': {
+    schema: z
+      .url({ protocol: /^https?$/ })
+      .max(300)
+      .nullable(),
+    default: null,
+    secret: false,
+  },
   'brave.apiKey': {
     schema: z.string().min(10).max(200).nullable(),
     default: null,
@@ -145,13 +154,15 @@ export class SettingsService {
     const stored =
       def.secret && parsed !== null ? encrypt(JSON.stringify(parsed), this.encryptionKey) : parsed;
     const encrypted = def.secret && parsed !== null;
+    // Un valore vuoto (null) si salva come JSON null: la colonna non accetta NULL di SQL.
+    const column = (stored === null ? sql`'null'::jsonb` : stored) as object;
     await this.db
       .insert(appSetting)
-      .values({ key, value: stored as object, encrypted, updatedBy: actorId ?? null })
+      .values({ key, value: column, encrypted, updatedBy: actorId ?? null })
       .onConflictDoUpdate({
         target: appSetting.key,
         set: {
-          value: stored as object,
+          value: column,
           encrypted,
           updatedBy: actorId ?? null,
           updatedAt: new Date(),

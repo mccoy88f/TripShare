@@ -14,11 +14,11 @@ export interface PlacePhoto {
   photoCredit?: string;
 }
 
-/** Ricerca di foto di luoghi disponibile (chiave Brave impostata dal super admin). */
-export function usePlacePhotoSearchEnabled() {
+/** Oltre a Wikimedia, la ricerca di foto sul web è disponibile (SearXNG o Brave). */
+function useWebPhotosEnabled() {
   const trpc = useTRPC();
   const { data } = useQuery({ ...trpc.public.config.queryOptions(), staleTime: 300_000 });
-  return !!data?.placePhotos;
+  return !!data?.placePhotosWeb;
 }
 
 /** Foto del luogo: anteprima, caricamento dal dispositivo, ricerca online e rimozione. */
@@ -34,7 +34,6 @@ export function PlacePhotoField({
   onChange: (next: PlacePhoto) => void;
 }) {
   const { t } = useTranslation();
-  const searchEnabled = usePlacePhotoSearchEnabled();
   const input = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -85,12 +84,10 @@ export function PlacePhotoField({
           {uploading ? <Loader2 className="animate-spin" /> : <Upload />}
           {t('placePhoto.upload')}
         </Button>
-        {searchEnabled && (
-          <Button type="button" size="sm" variant="outline" onClick={() => setSearching(true)}>
-            <Search />
-            {t('placePhoto.search')}
-          </Button>
-        )}
+        <Button type="button" size="sm" variant="outline" onClick={() => setSearching(true)}>
+          <Search />
+          {t('placePhoto.search')}
+        </Button>
         {value.photo && (
           <Button
             type="button"
@@ -143,10 +140,12 @@ function PhotoSearchDialog({
 }) {
   const { t } = useTranslation();
   const trpc = useTRPC();
+  const webEnabled = useWebPhotosEnabled();
+  const [source, setSource] = useState<'commons' | 'web'>('commons');
   const [draft, setDraft] = useState(initialQuery);
   const [query, setQuery] = useState(initialQuery.trim());
   const search = useQuery({
-    ...trpc.plan.placePhotoSearch.queryOptions({ tripId, query }),
+    ...trpc.plan.placePhotoSearch.queryOptions({ tripId, query, source }),
     enabled: query.length >= 2,
     staleTime: 600_000,
     retry: false,
@@ -160,9 +159,27 @@ function PhotoSearchDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent
         title={t('placePhoto.searchTitle')}
-        description={t('placePhoto.rights')}
+        description={t(source === 'commons' ? 'placePhoto.rightsCommons' : 'placePhoto.rights')}
         className="sm:max-w-2xl"
       >
+        {webEnabled && (
+          <div className="mt-2 inline-flex rounded-full bg-muted p-1">
+            {(['commons', 'web'] as const).map((x) => (
+              <button
+                key={x}
+                type="button"
+                onClick={() => setSource(x)}
+                className={
+                  source === x
+                    ? 'rounded-full bg-card px-3.5 py-1 text-sm font-medium shadow-sm'
+                    : 'rounded-full px-3.5 py-1 text-sm font-medium text-muted-foreground'
+                }
+              >
+                {t(`placePhoto.sources.${x}`)}
+              </button>
+            ))}
+          </div>
+        )}
         <form onSubmit={submit} className="flex gap-2 pt-2">
           <Input
             autoFocus
@@ -211,7 +228,11 @@ function PhotoSearchDialog({
                     const saved = await download
                       .mutateAsync({ tripId, url: p.full })
                       .catch(() => null);
-                    if (saved) onPick({ photo: saved.url, photoCredit: p.source || undefined });
+                    if (saved)
+                      onPick({
+                        photo: saved.url,
+                        photoCredit: p.credit ?? (p.source || undefined),
+                      });
                   }}
                   className="group relative aspect-[4/3] overflow-hidden rounded-lg bg-muted text-left"
                   title={p.title}
@@ -222,9 +243,9 @@ function PhotoSearchDialog({
                     loading="lazy"
                     className="size-full object-cover transition group-hover:scale-105"
                   />
-                  {p.source && (
+                  {(p.credit ?? p.source) && (
                     <span className="absolute inset-x-0 bottom-0 truncate bg-black/55 px-2 py-1 text-[11px] text-white">
-                      {p.source}
+                      {p.credit ?? p.source}
                     </span>
                   )}
                 </button>

@@ -288,11 +288,13 @@ function GeneralSettings() {
   const { settings, value, save } = useSettings();
   const [domains, setDomains] = useState('');
   const [appName, setAppName] = useState('');
+  const [searxng, setSearxng] = useState('');
   const [maxMb, setMaxMb] = useState('10');
   useEffect(() => {
     if (!settings) return;
     setDomains((value<string[]>('registration.allowedDomains') ?? []).join(', '));
     setAppName(value<string | null>('general.appName') ?? '');
+    setSearxng(value<string | null>('searxng.url') ?? '');
     setMaxMb(String(value<number>('uploads.maxMb') ?? 10));
   }, [settings]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!settings) return <Loader2 className="mx-auto mt-10 animate-spin text-muted-foreground" />;
@@ -383,6 +385,18 @@ function GeneralSettings() {
             settings={settings}
             save={save}
           />
+          <SaveRow onSave={() => save('searxng.url', searxng.trim() || null)}>
+            <Field label={t('admin.searxng')} htmlFor="searxng-url" hint={t('admin.searxngHint')}>
+              <Input
+                id="searxng-url"
+                type="url"
+                maxLength={300}
+                placeholder="http://searxng:8080"
+                value={searxng}
+                onChange={(e) => setSearxng(e.target.value)}
+              />
+            </Field>
+          </SaveRow>
           <SecretField
             label={t('admin.brave')}
             settingKey="brave.apiKey"

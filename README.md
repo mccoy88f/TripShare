@@ -82,12 +82,17 @@ o "mista" ognuno può aggiungere nel profilo la propria chiave OpenRouter o Gemi
 "Cerca foto" per scegliere la copertina dei viaggi; l'autore della foto viene citato sulla
 copertina come richiedono le regole di Unsplash.
 
-**Brave Search.** Facoltativo: con una chiave dell'API Brave Search (brave.com/search/api, piano
-"Search" con le immagini) nel pannello admin, nella scheda di un luogo compare "Cerca online"
-per scegliere una foto. La foto scelta viene scaricata e salvata su TripShare (solo da indirizzi
-https pubblici); si può anche caricare dal dispositivo. Le foto dei luoghi diventano lo sfondo
-delle card in Luoghi e l'icona delle attività nel Programma. Con `BRAVE_BASE_URL` si può puntare
-a un proxy o a un server di prova.
+**Foto dei luoghi.** Nella scheda di un luogo si può caricare una foto o usare "Cerca online".
+La foto scelta viene scaricata e salvata su TripShare (solo da indirizzi https pubblici) e
+diventa lo sfondo della card in Luoghi e l'icona delle attività nel Programma. Fonti:
+
+- **Wikimedia Commons**: sempre attiva, senza chiave; autore e licenza diventano il credito.
+- **Web** (facoltativa, nel pannello admin): l'indirizzo di una tua istanza **SearXNG**
+  (metamotore open source, gratuito; va abilitato il formato JSON nelle sue impostazioni) oppure
+  una chiave **Brave Search**. Con entrambe vince SearXNG. Le immagini del web sono di terzi:
+  chi le sceglie deve controllare di poterle usare.
+
+Con `COMMONS_BASE_URL` e `BRAVE_BASE_URL` si può puntare a un proxy o a un server di prova.
 
 ## Sviluppo
 

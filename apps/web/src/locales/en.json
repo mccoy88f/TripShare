@@ -303,7 +303,9 @@
     "aiTestOk": "Working · {{model}} · {{ms}} ms · answer: {{content}}",
     "aiTestError": "Error with {{model}}: {{error}}",
     "aiErrors": "Latest errors",
-    "brave": "Brave Search API key (place photos)"
+    "brave": "Brave Search key (web photos, alternative to SearXNG)",
+    "searxng": "SearXNG address (web photo search)",
+    "searxngHint": "Optional, e.g. http://searxng:8080. Free alternative to Brave."
   },
   "legal": {
     "privacyTitle": "Privacy policy",
@@ -1101,7 +1103,16 @@
       "NOT_AN_IMAGE": "The file is not an image.",
       "FILE_TOO_LARGE": "The image is too large.",
       "DOWNLOAD_FAILED": "Could not download the image.",
-      "INVALID_IMAGE": "Invalid image."
-    }
+      "INVALID_IMAGE": "Invalid image.",
+      "COMMONS_RATE_LIMIT": "Too many requests to Wikimedia: try again shortly.",
+      "WEB_PHOTOS_NOT_CONFIGURED": "Web search is not configured.",
+      "SEARXNG_JSON_DISABLED": "SearXNG does not allow JSON output: enable it in its settings.",
+      "SEARXNG_RATE_LIMIT": "SearXNG rate-limited the requests: try again shortly."
+    },
+    "sources": {
+      "commons": "Wikimedia",
+      "web": "Web"
+    },
+    "rightsCommons": "Free photos from Wikimedia Commons: the author and licence are saved as the credit."
   }
 }

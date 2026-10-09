@@ -10,7 +10,9 @@ export const publicRouter = router({
     currencies: CURRENCY_CODES,
     /** Ricerca delle copertine su Unsplash disponibile. */
     unsplash: !!(await ctx.settings.get('unsplash.accessKey')),
-    /** Ricerca delle foto dei luoghi con Brave Search disponibile. */
-    placePhotos: !!(await ctx.settings.get('brave.apiKey')),
+    /** Oltre a Wikimedia Commons (sempre attivo), ricerca di foto sul web (SearXNG o Brave). */
+    placePhotosWeb: !!(
+      (await ctx.settings.get('searxng.url')) || (await ctx.settings.get('brave.apiKey'))
+    ),
   })),
 });

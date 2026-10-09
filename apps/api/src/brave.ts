@@ -15,6 +15,8 @@ export interface BraveImage {
   title: string;
   /** Sito di provenienza (dominio). */
   source: string;
+  /** Autore e licenza, quando la fonte li fornisce (es. Wikimedia Commons). */
+  credit?: string;
 }
 
 interface RawResult {
