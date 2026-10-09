@@ -6,7 +6,10 @@
     "title": "Scozia 12-16 ottobre",
     "emoji": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
     "summary": "Scozia in auto: Edimburgo, il viadotto di Glenfinnan, Loch Ness e Glencoe.",
-    "destination": { "name": "Scozia", "countryCodes": ["GB"] },
+    "destination": {
+      "name": "Scozia",
+      "countryCodes": ["GB"]
+    },
     "startDate": "2026-10-12",
     "endDate": "2026-10-16",
     "timezone": "Europe/London",
@@ -23,7 +26,11 @@
       "address": "Via Enzo Ferrari 93, Ciampino",
       "mapsQuery": "Best Parking Ciampino, Via Enzo Ferrari 93, Ciampino",
       "openingHours": "Tutti i giorni 4:00–24:00. Supplemento di 10 € per uscite dopo le 00:00.",
-      "verification": { "status": "verified", "checkedAt": "2026-10-08", "sources": [] },
+      "verification": {
+        "status": "verified",
+        "checkedAt": "2026-10-08",
+        "sources": []
+      },
       "links": [
         {
           "title": "Pagina del parcheggio",
@@ -36,8 +43,21 @@
       "name": "Aeroporto di Edimburgo",
       "kind": "airport",
       "mapsQuery": "Edinburgh Airport",
-      "tips": ["Il tram arriva in centro in circa 35 minuti."],
-      "links": [{ "title": "Edinburgh Trams", "url": "https://edinburghtrams.com/" }]
+      "tips": [
+        "Il tram arriva in centro in circa 35 minuti.",
+        "Controllate tariffe e orari sul sito del tram."
+      ],
+      "links": [
+        {
+          "title": "Edinburgh Trams",
+          "url": "https://edinburghtrams.com/"
+        },
+        {
+          "title": "Autobus Airlink 100",
+          "url": "https://www.lothianbuses.com/"
+        }
+      ],
+      "openingHours": "Volo di ritorno FR5589 alle 17:45: arrivate circa 2 ore prima."
     },
     {
       "id": "the-spires",
@@ -51,21 +71,56 @@
       "kind": "neighborhood",
       "mapsQuery": "Royal Mile, Edinburgh",
       "openingHours": "Strada pubblica, sempre accessibile.",
-      "description": "Collega il castello a Holyrood."
+      "description": "Collega il castello a Holyrood.",
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "links": [
+        {
+          "title": "Edimburgo, VisitScotland",
+          "url": "https://www.visitscotland.com/it-it/places-to-go/edinburgh"
+        },
+        {
+          "title": "Info in italiano",
+          "url": "https://it.wikipedia.org/w/index.php?search=Royal%20Mile"
+        }
+      ],
+      "tips": []
     },
     {
       "id": "calton-hill",
       "name": "Calton Hill",
       "kind": "viewpoint",
       "mapsQuery": "Calton Hill, Edinburgh",
-      "openingHours": "Collina pubblica, sempre accessibile."
+      "openingHours": "Collina pubblica, sempre accessibile.",
+      "description": "Panorama sulla città. Per il tramonto del 15 c'è anche Arthur's Seat.",
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "links": [
+        {
+          "title": "Info in italiano",
+          "url": "https://it.wikipedia.org/w/index.php?search=Calton%20Hill"
+        }
+      ],
+      "tips": []
     },
     {
       "id": "greenside-place",
       "name": "Noleggio auto, Greenside Place",
       "kind": "car_rental",
       "address": "Greenside Place, Edinburgh EH1 3AU",
-      "mapsQuery": "Greenside Place, Edinburgh EH1 3AU"
+      "mapsQuery": "Greenside Place, Edinburgh EH1 3AU",
+      "openingHours": "Ritiro martedì 13 alle 12:00. Riconsegna giovedì 15 alle 12:00.",
+      "verification": {
+        "status": "verified",
+        "checkedAt": "2026-10-08",
+        "sources": []
+      },
+      "links": [],
+      "tips": ["Fate prima il check-in online per scegliere l'auto."]
     },
     {
       "id": "real-food-cafe-tyndrum",
@@ -73,8 +128,26 @@
       "kind": "restaurant",
       "mapsQuery": "The Real Food Cafe, Tyndrum",
       "priceLevel": 1,
-      "meals": ["lunch"],
-      "verification": { "status": "unverified", "sources": [] }
+      "meals": ["breakfast", "lunch"],
+      "verification": {
+        "status": "verified",
+        "checkedAt": "2026-10-08",
+        "sources": [
+          {
+            "title": "Sito ufficiale",
+            "url": "https://therealfoodcafe.com/"
+          }
+        ]
+      },
+      "openingHours": "Tutti i giorni 8:00–20:00.",
+      "description": "Fish and chips premiati e colazione scozzese. Prezzi non pubblicati.",
+      "links": [
+        {
+          "title": "Sito ufficiale",
+          "url": "https://therealfoodcafe.com/"
+        }
+      ],
+      "tips": []
     },
     {
       "id": "glencoe",
@@ -97,13 +170,35 @@
             "url": "https://www.nts.org.uk/visit/places/glencoe/planning-your-visit"
           }
         ]
-      }
+      },
+      "links": [
+        {
+          "title": "Sito ufficiale",
+          "url": "https://www.nts.org.uk/visit/places/glencoe/planning-your-visit"
+        },
+        {
+          "title": "Glencoe, VisitScotland",
+          "url": "https://www.visitscotland.com/it-it/places-to-go/glencoe"
+        },
+        {
+          "title": "Info in italiano",
+          "url": "https://it.wikipedia.org/w/index.php?search=Glen%20Coe"
+        }
+      ],
+      "tips": []
     },
     {
       "id": "waterfront-lodge",
       "name": "Waterfront Lodge",
       "kind": "lodging",
-      "mapsQuery": "Waterfront Lodge Fort William"
+      "mapsQuery": "Waterfront Lodge Fort William",
+      "links": [
+        {
+          "title": "Fort William, VisitScotland",
+          "url": "https://www.visitscotland.com/it-it/places-to-go/fort-william"
+        }
+      ],
+      "tips": []
     },
     {
       "id": "glenfinnan-viaduct",
@@ -111,14 +206,31 @@
       "kind": "sight",
       "mapsQuery": "Glenfinnan Viaduct",
       "openingHours": "Sempre accessibile. Il Jacobite parte da Fort William alle 10:15 e passa sul viadotto poco prima delle 11:00, fino al 23 ottobre.",
-      "price": { "amount": 0, "currency": "GBP" },
+      "price": {
+        "amount": 0,
+        "currency": "GBP"
+      },
       "verification": {
         "status": "verified",
         "checkedAt": "2026-10-08",
         "sources": [
-          { "title": "Orari del Jacobite", "url": "https://jacobitetrail.co.uk/jacobite-train" }
+          {
+            "title": "Orari del Jacobite",
+            "url": "https://jacobitetrail.co.uk/jacobite-train"
+          }
         ]
-      }
+      },
+      "links": [
+        {
+          "title": "Orari del Jacobite",
+          "url": "https://jacobitetrail.co.uk/jacobite-train"
+        },
+        {
+          "title": "Info in italiano",
+          "url": "https://it.wikipedia.org/w/index.php?search=Viadotto%20di%20Glenfinnan"
+        }
+      ],
+      "tips": []
     },
     {
       "id": "glenfinnan-monument",
@@ -126,7 +238,12 @@
       "kind": "sight",
       "mapsQuery": "Glenfinnan Monument",
       "openingHours": "Dal 5 al 25 ottobre 9:30–17:00. Caffè 9:30–16:30.",
-      "price": { "amount": 5, "currency": "GBP", "basis": "per_vehicle", "note": "Parcheggio" },
+      "price": {
+        "amount": 5,
+        "currency": "GBP",
+        "basis": "per_vehicle",
+        "note": "Parcheggio"
+      },
       "verification": {
         "status": "verified",
         "checkedAt": "2026-10-08",
@@ -136,14 +253,41 @@
             "url": "https://www.nts.org.uk/visit/places/glenfinnan-monument/planning-your-visit"
           }
         ]
-      }
+      },
+      "links": [
+        {
+          "title": "Sito ufficiale",
+          "url": "https://www.nts.org.uk/visit/places/glenfinnan-monument/planning-your-visit?lang=en_gb"
+        },
+        {
+          "title": "Info in italiano",
+          "url": "https://it.wikipedia.org/w/index.php?search=Glenfinnan"
+        }
+      ],
+      "tips": []
     },
     {
       "id": "fort-augustus",
       "name": "Fort Augustus e le chiuse del Caledonian Canal",
       "kind": "city",
       "mapsQuery": "Fort Augustus Locks, Caledonian Canal",
-      "description": "Punta sud di Loch Ness."
+      "description": "Punta sud di Loch Ness.",
+      "openingHours": "Chiuse visibili all'aperto, orari dei locali variabili.",
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "links": [
+        {
+          "title": "Loch Ness, VisitScotland",
+          "url": "https://www.visitscotland.com/it-it/places-to-go/loch-ness"
+        },
+        {
+          "title": "Info in italiano",
+          "url": "https://it.wikipedia.org/w/index.php?search=Fort%20Augustus"
+        }
+      ],
+      "tips": []
     },
     {
       "id": "urquhart-castle",
@@ -166,7 +310,22 @@
             "url": "https://www.historicenvironment.scot/visit-a-place/places/urquhart-castle/prices-times/"
           }
         ]
-      }
+      },
+      "links": [
+        {
+          "title": "Sito ufficiale",
+          "url": "https://www.historicenvironment.scot/visit-a-place/places/urquhart-castle/prices-times/"
+        },
+        {
+          "title": "Loch Ness, VisitScotland",
+          "url": "https://www.visitscotland.com/it-it/places-to-go/loch-ness"
+        },
+        {
+          "title": "Info in italiano",
+          "url": "https://it.wikipedia.org/w/index.php?search=Castello%20di%20Urquhart"
+        }
+      ],
+      "tips": []
     },
     {
       "id": "steall-falls",
@@ -174,7 +333,16 @@
       "kind": "nature",
       "mapsQuery": "Steall Falls, Glen Nevis",
       "tips": ["Il sentiero ha un tratto roccioso e bagnato: servono scarpe da trekking."],
-      "verification": { "status": "unverified", "sources": [] }
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "links": [
+        {
+          "title": "Info in italiano",
+          "url": "https://it.wikipedia.org/w/index.php?search=Glen%20Nevis"
+        }
+      ]
     },
     {
       "id": "viewcraig",
@@ -203,7 +371,22 @@
             "url": "https://www.edinburghcastle.scot/plan-your-visit/opening-times"
           }
         ]
-      }
+      },
+      "links": [
+        {
+          "title": "Orari ufficiali",
+          "url": "https://www.edinburghcastle.scot/plan-your-visit/opening-times"
+        },
+        {
+          "title": "Biglietti",
+          "url": "https://www.edinburghcastle.scot/plan-your-visit/tickets/"
+        },
+        {
+          "title": "Info in italiano",
+          "url": "https://it.wikipedia.org/w/index.php?search=Castello%20di%20Edimburgo"
+        }
+      ],
+      "tips": []
     },
     {
       "id": "st-giles",
@@ -211,20 +394,50 @@
       "kind": "sight",
       "mapsQuery": "St Giles' Cathedral, Edinburgh",
       "openingHours": "Lunedì–venerdì 9:00–19:00. Ingresso gratuito, permesso foto 2 £.",
-      "price": { "amount": 0, "currency": "GBP" },
+      "price": {
+        "amount": 0,
+        "currency": "GBP"
+      },
       "verification": {
         "status": "verified",
         "checkedAt": "2026-10-08",
         "sources": [
-          { "title": "Sito ufficiale", "url": "https://www.stgilescathedral.org.uk/visit/" }
+          {
+            "title": "Sito ufficiale",
+            "url": "https://www.stgilescathedral.org.uk/visit/"
+          }
         ]
-      }
+      },
+      "links": [
+        {
+          "title": "Sito ufficiale",
+          "url": "https://www.stgilescathedral.org.uk/visit/"
+        },
+        {
+          "title": "Info in italiano",
+          "url": "https://it.wikipedia.org/w/index.php?search=Cattedrale%20di%20St%20Giles"
+        }
+      ],
+      "tips": []
     },
     {
       "id": "dean-village",
       "name": "Dean Village",
       "kind": "neighborhood",
-      "mapsQuery": "Dean Village, Edinburgh"
+      "mapsQuery": "Dean Village, Edinburgh",
+      "openingHours": "Quartiere lungo il Water of Leith, sempre accessibile.",
+      "description": "A pochi minuti dal centro a piedi.",
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "links": [
+        {
+          "title": "Info in italiano",
+          "url": "https://it.wikipedia.org/w/index.php?search=Dean%20Village"
+        }
+      ],
+      "tips": []
     },
     {
       "id": "national-museum",
@@ -232,13 +445,437 @@
       "kind": "museum",
       "mapsQuery": "National Museum of Scotland, Chambers Street, Edinburgh",
       "openingHours": "Tutti i giorni 10:00–17:00.",
-      "price": { "amount": 0, "currency": "GBP" },
+      "price": {
+        "amount": 0,
+        "currency": "GBP"
+      },
       "verification": {
         "status": "verified",
         "checkedAt": "2026-10-08",
         "sources": [
-          { "title": "Sito ufficiale", "url": "https://www.nms.ac.uk/national-museum-of-scotland/" }
+          {
+            "title": "Sito ufficiale",
+            "url": "https://www.nms.ac.uk/national-museum-of-scotland/"
+          }
         ]
+      },
+      "links": [
+        {
+          "title": "Sito ufficiale",
+          "url": "https://www.nms.ac.uk/national-museum-of-scotland/"
+        }
+      ],
+      "tips": []
+    },
+    {
+      "id": "victoria-street",
+      "name": "Victoria Street e Grassmarket",
+      "kind": "neighborhood",
+      "mapsQuery": "Victoria Street, Edinburgh",
+      "openingHours": "Strade con negozi e locali, orari dei singoli esercizi.",
+      "description": "Colazione e acquisti prima del ritiro auto.",
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "links": [
+        {
+          "title": "Edimburgo, VisitScotland",
+          "url": "https://www.visitscotland.com/it-it/places-to-go/edinburgh"
+        }
+      ],
+      "tips": []
+    },
+    {
+      "id": "starbucks-princes-street",
+      "name": "Starbucks, 118 Princes Street",
+      "kind": "cafe",
+      "address": "118 Princes Street, Edinburgh",
+      "mapsQuery": "Starbucks, 118 Princes Street, Edinburgh",
+      "meals": ["snack"],
+      "openingHours": "Orari da controllare.",
+      "description": "La sala principale è al primo piano, con vista sul castello e sui Princes Street Gardens.",
+      "tips": [
+        "Fonte: articolo di novembre 2023 sull'apertura del locale, controllate che sia ancora aperto."
+      ],
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "links": [
+        {
+          "title": "Articolo",
+          "url": "https://365retail.co.uk/starbucks-opens-new-store-on-edinburghs-princes-street-blending-coffee-culture-with-historic-views/"
+        }
+      ]
+    },
+    {
+      "id": "rannoch-moor",
+      "name": "Rannoch Moor",
+      "kind": "nature",
+      "mapsQuery": "Rannoch Moor, Scotland",
+      "openingHours": "Paesaggio aperto lungo la A82, sempre accessibile.",
+      "description": "Parcheggi panoramici lungo la strada.",
+      "tips": ["Il segnale è debole: scaricate le mappe offline."],
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "links": [
+        {
+          "title": "Info in italiano",
+          "url": "https://it.wikipedia.org/w/index.php?search=Rannoch%20Moor"
+        }
+      ]
+    },
+    {
+      "id": "fort-william",
+      "name": "Fort William",
+      "kind": "city",
+      "mapsQuery": "Fort William, Scotland",
+      "openingHours": "Città con negozi e locali, orari dei singoli esercizi.",
+      "description": "Base per due notti al Waterfront Lodge, dal 13 al 15 ottobre.",
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "links": [
+        {
+          "title": "Fort William, VisitScotland",
+          "url": "https://www.visitscotland.com/it-it/places-to-go/fort-william"
+        }
+      ],
+      "tips": []
+    },
+    {
+      "id": "glenfinnan-station-museum",
+      "name": "Glenfinnan Station Museum",
+      "kind": "museum",
+      "mapsQuery": "Glenfinnan Station Museum",
+      "openingHours": "Fino a fine ottobre 9:00–17:00, la domenica dalle 10:00. Il mercoledì è aperto.",
+      "price": {
+        "amount": 1,
+        "currency": "GBP",
+        "basis": "per_person",
+        "note": "Ingresso minimo 1 £ a persona"
+      },
+      "description": "Museo della stazione con il vagone dell'Hogwarts Express.",
+      "tips": ["Il vagone caffè ha orari propri, aperto dal martedì al sabato."],
+      "verification": {
+        "status": "verified",
+        "checkedAt": "2026-10-08",
+        "sources": [
+          {
+            "title": "Sito ufficiale",
+            "url": "https://glenfinnanstationmuseum.co.uk/facilities/plan-your-visit"
+          }
+        ]
+      },
+      "links": [
+        {
+          "title": "Sito ufficiale",
+          "url": "https://glenfinnanstationmuseum.co.uk/facilities/plan-your-visit"
+        }
+      ]
+    },
+    {
+      "id": "arthurs-seat",
+      "name": "Arthur's Seat",
+      "kind": "viewpoint",
+      "mapsQuery": "Arthur's Seat, Edinburgh",
+      "openingHours": "Collina pubblica, sempre accessibile.",
+      "description": "Salita di circa un'ora. Calton Hill è più breve.",
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "links": [
+        {
+          "title": "Info in italiano",
+          "url": "https://it.wikipedia.org/w/index.php?search=Arthur%27s%20Seat"
+        }
+      ],
+      "tips": []
+    },
+    {
+      "id": "whiski-bar",
+      "name": "Whiski Bar & Restaurant",
+      "kind": "bar",
+      "mapsQuery": "Whiski Bar & Restaurant, Royal Mile, Edinburgh",
+      "meals": ["dinner"],
+      "description": "Pub molto tipico con haggis, neeps e tatties e una grande scelta di whisky. Fascia pub 15–25 £.",
+      "tips": [],
+      "links": [
+        {
+          "title": "Scheda",
+          "url": "https://edinburgh.org/point-of-interest/whiski-bar-restaurant"
+        }
+      ],
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "address": "Royal Mile, Edimburgo",
+      "openingHours": "Orari da controllare.",
+      "priceLevel": 2
+    },
+    {
+      "id": "edinburgh-larder",
+      "name": "Edinburgh Larder",
+      "kind": "cafe",
+      "mapsQuery": "Edinburgh Larder, 15 Blackfriars Street, Edinburgh",
+      "meals": ["breakfast"],
+      "description": "Colazione scozzese completa, porridge e baps. Fascia economica.",
+      "tips": [
+        "Se è pieno, il Little Larder accanto (11 Blackfriars Street) apre alle 8:00 e non prende prenotazioni."
+      ],
+      "links": [
+        {
+          "title": "Sito ufficiale",
+          "url": "https://www.edinburghlarder.co.uk/"
+        }
+      ],
+      "verification": {
+        "status": "verified",
+        "checkedAt": "2026-10-08",
+        "sources": [
+          {
+            "title": "Sito ufficiale",
+            "url": "https://www.edinburghlarder.co.uk/"
+          }
+        ]
+      },
+      "address": "15 Blackfriars Street, vicino alla Royal Mile",
+      "openingHours": "Lunedì–venerdì 7:30–15:00.",
+      "priceLevel": 1
+    },
+    {
+      "id": "little-larder",
+      "name": "Little Larder",
+      "kind": "cafe",
+      "mapsQuery": "Little Larder, 11 Blackfriars Street, Edinburgh",
+      "meals": ["breakfast"],
+      "description": "Panini da colazione, porridge e caffè. Solo senza prenotazione.",
+      "tips": ["L'Edinburgh Larder accanto apre alle 7:30."],
+      "links": [
+        {
+          "title": "Sito ufficiale",
+          "url": "https://www.edinburghlarder.co.uk/"
+        }
+      ],
+      "verification": {
+        "status": "verified",
+        "checkedAt": "2026-10-08",
+        "sources": [
+          {
+            "title": "Sito ufficiale",
+            "url": "https://www.edinburghlarder.co.uk/"
+          }
+        ]
+      },
+      "address": "11 Blackfriars Street, Edimburgo",
+      "openingHours": "Venerdì 8:00–15:00.",
+      "priceLevel": 1
+    },
+    {
+      "id": "grog-and-gruel",
+      "name": "The Grog & Gruel",
+      "kind": "bar",
+      "mapsQuery": "The Grog and Gruel, Fort William",
+      "meals": ["dinner"],
+      "description": "Alehouse tradizionale con birre, whisky, haggis e burger.",
+      "tips": ["Alternativa: Ben Nevis Bar, sempre in centro."],
+      "links": [
+        {
+          "title": "Scheda",
+          "url": "https://visitscotland.com/info/food-drink/the-grog-gruel-p302281"
+        }
+      ],
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "address": "High Street, Fort William",
+      "openingHours": "Orari da controllare.",
+      "priceLevel": 2,
+      "price": {
+        "amount": 18,
+        "currency": "GBP",
+        "basis": "per_person",
+        "approximate": true,
+        "note": "Piatti principali 10–18 £"
+      }
+    },
+    {
+      "id": "nevis-bakery",
+      "name": "Nevis Bakery Café",
+      "kind": "cafe",
+      "mapsQuery": "Nevis Bakery Cafe, Fort William",
+      "meals": ["breakfast"],
+      "description": "Dolci, pasticcini e panini del forno locale.",
+      "tips": [
+        "Se è chiuso, ripiegate su un supermercato del centro. Partite per Glenfinnan alle 9:15."
+      ],
+      "links": [],
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "address": "Fort William",
+      "openingHours": "Orari da controllare.",
+      "priceLevel": 1
+    },
+    {
+      "id": "cobbs-cafe",
+      "name": "Cobbs Café Bistro",
+      "kind": "cafe",
+      "mapsQuery": "Cobbs Cafe Bistro, Fort Augustus",
+      "meals": ["lunch"],
+      "description": "Caffè sul canale con dolci fatti in casa e posti all'aperto.",
+      "tips": ["Alternativa: Monster Fish & Chips Co. sulla A82."],
+      "links": [],
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "address": "Canal Side, Fort Augustus",
+      "openingHours": "Tutti i giorni dalle 9:00 (da controllare).",
+      "priceLevel": 1
+    },
+    {
+      "id": "monster-fish-chips",
+      "name": "Monster Fish & Chips Co.",
+      "kind": "restaurant",
+      "mapsQuery": "Monster Fish & Chips Co, Fort Augustus",
+      "meals": ["lunch"],
+      "description": "Chiosco tradizionale di fish and chips sulla A82.",
+      "tips": [],
+      "links": [],
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "address": "A82, Fort Augustus",
+      "openingHours": "Orari da controllare.",
+      "priceLevel": 1
+    },
+    {
+      "id": "ben-nevis-bar",
+      "name": "Ben Nevis Bar",
+      "kind": "bar",
+      "mapsQuery": "Ben Nevis Bar, Fort William",
+      "meals": ["dinner"],
+      "description": "Pub nel centro con cucina da bar.",
+      "tips": [
+        "Per una cena speciale c'è il Crannog al Garrison West (Cameron Square), da prenotare."
+      ],
+      "links": [
+        {
+          "title": "Scheda",
+          "url": "https://www.visitscotland.com/info/food-drink/ben-nevis-bar-p3007371"
+        }
+      ],
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "address": "High Street, Fort William",
+      "openingHours": "Orari da controllare.",
+      "priceLevel": 2
+    },
+    {
+      "id": "crannog",
+      "name": "Crannog",
+      "kind": "restaurant",
+      "mapsQuery": "Crannog, Garrison West, Cameron Square, Fort William",
+      "meals": ["dinner"],
+      "description": "Pesce fresco, ora al Garrison West. Fascia 20–35 £, da prenotare.",
+      "tips": [],
+      "links": [
+        {
+          "title": "Sito ufficiale",
+          "url": "https://www.crannog.net/"
+        }
+      ],
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "address": "Garrison West, Cameron Square, Fort William",
+      "openingHours": "Orari da controllare.",
+      "priceLevel": 3
+    },
+    {
+      "id": "haggis-box",
+      "name": "The Haggis Box",
+      "kind": "restaurant",
+      "mapsQuery": "The Haggis Box, Scottish Storytelling Centre, 43-45 High Street, Edinburgh",
+      "meals": ["lunch"],
+      "description": "Haggis, neeps e tatties tradizionale o vegetariano, zuppa del giorno e light lunch.",
+      "tips": ["A pochi passi dal castello, ottimo prima delle 14:00."],
+      "links": [
+        {
+          "title": "Scheda",
+          "url": "https://edinburgh.org/point-of-interest/the-haggis-box"
+        }
+      ],
+      "verification": {
+        "status": "verified",
+        "checkedAt": "2026-10-08",
+        "sources": [
+          {
+            "title": "Scheda",
+            "url": "https://edinburgh.org/point-of-interest/the-haggis-box"
+          }
+        ]
+      },
+      "address": "Scottish Storytelling Centre, 43-45 High Street, Edimburgo",
+      "openingHours": "Tutti i giorni 10:00–17:00.",
+      "priceLevel": 1
+    },
+    {
+      "id": "tolbooth-tavern",
+      "name": "Tolbooth Tavern",
+      "kind": "bar",
+      "mapsQuery": "Tolbooth Tavern, Canongate, Edinburgh",
+      "meals": ["dinner"],
+      "description": "Pub attivo dal 1820 con la torre di haggis, neeps e tatties e il cullen skink. Fascia pub 15–25 £.",
+      "tips": ["In fondo alla Royal Mile, comodo dopo il tramonto da Calton Hill."],
+      "links": [],
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "address": "Canongate, Royal Mile, Edimburgo",
+      "openingHours": "Orari da controllare.",
+      "priceLevel": 2
+    },
+    {
+      "id": "howies-victoria-street",
+      "name": "Howies Victoria Street",
+      "kind": "restaurant",
+      "mapsQuery": "Howies Victoria Street, Edinburgh",
+      "meals": ["lunch", "dinner"],
+      "description": "Cucina scozzese di stagione, aperto sette giorni su sette per pranzo e cena, fascia 25 £ o meno.",
+      "tips": ["Non è prenotabile su OpenTable, contattate direttamente il locale."],
+      "links": [
+        {
+          "title": "Scheda",
+          "url": "https://www.opentable.co.uk/howies-victoria-street"
+        }
+      ],
+      "verification": {
+        "status": "unverified",
+        "sources": []
+      },
+      "address": "Victoria Street, Edimburgo",
+      "openingHours": "Orari esatti da controllare.",
+      "priceLevel": 2,
+      "price": {
+        "amount": 10.95,
+        "currency": "GBP",
+        "basis": "per_person",
+        "note": "Menu pranzo di due portate"
       }
     }
   ],
@@ -249,10 +886,19 @@
       "title": "Best Parking Ciampino",
       "status": "booked",
       "provider": "MyParking",
-      "start": { "date": "2026-10-12", "time": "10:30" },
-      "end": { "date": "2026-10-16", "time": "23:30" },
+      "start": {
+        "date": "2026-10-12",
+        "time": "10:30"
+      },
+      "end": {
+        "date": "2026-10-16",
+        "time": "23:30"
+      },
       "placeId": "best-parking-ciampino",
-      "cost": { "amount": 34, "currency": "EUR" },
+      "cost": {
+        "amount": 34,
+        "currency": "EUR"
+      },
       "paid": false,
       "notes": "Da pagare in loco. Mostrare il voucher all'ingresso."
     },
@@ -262,27 +908,50 @@
       "title": "Volo Ryanair FR5590 Ciampino → Edimburgo",
       "status": "booked",
       "provider": "Ryanair",
-      "start": { "date": "2026-10-12", "time": "12:50" },
-      "end": { "date": "2026-10-12", "time": "15:00" },
-      "flight": { "number": "FR5590", "from": "CIA Roma Ciampino", "to": "EDI Edimburgo" }
+      "start": {
+        "date": "2026-10-12",
+        "time": "12:50"
+      },
+      "end": {
+        "date": "2026-10-12",
+        "time": "15:00"
+      },
+      "flight": {
+        "number": "FR5590",
+        "from": "CIA Roma Ciampino",
+        "to": "EDI Edimburgo"
+      }
     },
     {
       "id": "stay-spires",
       "type": "lodging",
       "title": "The Spires Serviced Apartments",
       "status": "booked",
-      "start": { "date": "2026-10-12" },
-      "end": { "date": "2026-10-13" },
+      "start": {
+        "date": "2026-10-12"
+      },
+      "end": {
+        "date": "2026-10-13"
+      },
       "placeId": "the-spires",
-      "cost": { "amount": 203, "currency": "EUR" }
+      "cost": {
+        "amount": 203,
+        "currency": "EUR"
+      }
     },
     {
       "id": "car-rental",
       "type": "car_rental",
       "title": "Noleggio auto Edimburgo Waverley",
       "status": "booked",
-      "start": { "date": "2026-10-13", "time": "12:00" },
-      "end": { "date": "2026-10-15", "time": "12:00" },
+      "start": {
+        "date": "2026-10-13",
+        "time": "12:00"
+      },
+      "end": {
+        "date": "2026-10-15",
+        "time": "12:00"
+      },
       "placeId": "greenside-place",
       "notes": "Fare il check-in online per scegliere l'auto."
     },
@@ -291,10 +960,17 @@
       "type": "lodging",
       "title": "Waterfront Lodge",
       "status": "booked",
-      "start": { "date": "2026-10-13" },
-      "end": { "date": "2026-10-15" },
+      "start": {
+        "date": "2026-10-13"
+      },
+      "end": {
+        "date": "2026-10-15"
+      },
       "placeId": "waterfront-lodge",
-      "cost": { "amount": 510, "currency": "EUR" },
+      "cost": {
+        "amount": 510,
+        "currency": "EUR"
+      },
       "notes": "Solo pernottamento."
     },
     {
@@ -302,10 +978,17 @@
       "type": "lodging",
       "title": "Viewcraig apartment",
       "status": "booked",
-      "start": { "date": "2026-10-15" },
-      "end": { "date": "2026-10-16" },
+      "start": {
+        "date": "2026-10-15"
+      },
+      "end": {
+        "date": "2026-10-16"
+      },
       "placeId": "viewcraig",
-      "cost": { "amount": 260, "currency": "EUR" }
+      "cost": {
+        "amount": 260,
+        "currency": "EUR"
+      }
     },
     {
       "id": "flight-back",
@@ -313,27 +996,51 @@
       "title": "Volo Ryanair FR5589 Edimburgo → Ciampino",
       "status": "booked",
       "provider": "Ryanair",
-      "start": { "date": "2026-10-16", "time": "17:45" },
-      "end": { "date": "2026-10-16", "time": "21:45" },
-      "flight": { "number": "FR5589", "from": "EDI Edimburgo", "to": "CIA Roma Ciampino" }
+      "start": {
+        "date": "2026-10-16",
+        "time": "17:45"
+      },
+      "end": {
+        "date": "2026-10-16",
+        "time": "21:45"
+      },
+      "flight": {
+        "number": "FR5589",
+        "from": "EDI Edimburgo",
+        "to": "CIA Roma Ciampino"
+      }
     },
     {
       "id": "ticket-urquhart",
       "type": "ticket",
       "title": "Biglietti Urquhart Castle",
       "status": "to_book",
-      "start": { "date": "2026-10-14", "time": "15:00" },
+      "start": {
+        "date": "2026-10-14",
+        "time": "15:00"
+      },
       "placeId": "urquhart-castle",
-      "cost": { "amount": 14, "currency": "GBP", "basis": "per_person" }
+      "cost": {
+        "amount": 14,
+        "currency": "GBP",
+        "basis": "per_person"
+      }
     },
     {
       "id": "ticket-edinburgh-castle",
       "type": "ticket",
       "title": "Biglietti Edinburgh Castle",
       "status": "optional",
-      "start": { "date": "2026-10-15", "time": "14:00" },
+      "start": {
+        "date": "2026-10-15",
+        "time": "14:00"
+      },
       "placeId": "edinburgh-castle",
-      "cost": { "amount": 23.5, "currency": "GBP", "basis": "per_person" }
+      "cost": {
+        "amount": 23.5,
+        "currency": "GBP",
+        "basis": "per_person"
+      }
     }
   ],
   "days": [
@@ -364,6 +1071,16 @@
           }
         },
         {
+          "id": "d1-meal-before",
+          "time": "10:00",
+          "type": "meal",
+          "emoji": "🥪",
+          "title": "Colazione e pranzo prima del volo",
+          "description": "Mangiate a casa o a Ciampino prima delle 10:30. Il volo è alle 12:50 e atterrate alle 15:00 ora locale.",
+          "placeIds": [],
+          "tips": ["In aeroporto i prezzi sono più alti."]
+        },
+        {
           "id": "d1-parking",
           "time": "10:30",
           "type": "checkin",
@@ -392,12 +1109,21 @@
           "transport": {
             "mode": "tram",
             "durationMinutes": 35,
-            "cost": { "amount": 8, "currency": "GBP", "basis": "per_person", "approximate": true },
+            "cost": {
+              "amount": 8,
+              "currency": "GBP",
+              "basis": "per_person",
+              "approximate": true
+            },
             "alternatives": [
               {
                 "mode": "rideshare",
                 "durationMinutes": 30,
-                "cost": { "amount": 30, "currency": "GBP", "approximate": true },
+                "cost": {
+                  "amount": 30,
+                  "currency": "GBP",
+                  "approximate": true
+                },
                 "notes": "Uber in 4, porta alla porta."
               }
             ]
@@ -412,8 +1138,26 @@
           "description": "Cena in zona Old Town o Victoria Street.",
           "placeIds": ["the-spires", "royal-mile"],
           "warnings": ["Il sole tramonta verso le 18:05."]
+        },
+        {
+          "id": "d1-dinner",
+          "time": "19:30",
+          "type": "meal",
+          "emoji": "🥃",
+          "title": "Cena al Whiski Bar & Restaurant",
+          "description": "Pub molto tipico sulla Royal Mile con haggis, neeps e tatties e tanti whisky.",
+          "placeIds": ["whiski-bar"],
+          "tips": [],
+          "cost": {
+            "amount": 20,
+            "currency": "GBP",
+            "basis": "per_person",
+            "approximate": true,
+            "note": "Fascia pub 15–25 £"
+          }
         }
-      ]
+      ],
+      "summary": "Volo per Edimburgo, check-in a The Spires e prima passeggiata sulla Royal Mile. Meteo previsto l'8 ottobre: Edimburgo 16,9° / 10,4°, pioggia 15%."
     },
     {
       "date": "2026-10-13",
@@ -422,12 +1166,37 @@
       "stayBookingId": "stay-waterfront",
       "activities": [
         {
+          "id": "d2-breakfast",
+          "time": "08:30",
+          "type": "meal",
+          "emoji": "🍳",
+          "title": "Colazione all'Edinburgh Larder",
+          "description": "Colazione scozzese completa, porridge e baps, a due passi dalla Royal Mile.",
+          "placeIds": ["edinburgh-larder"],
+          "tips": ["Se è pieno, il Little Larder accanto apre alle 8:00."],
+          "cost": {
+            "amount": 8,
+            "currency": "GBP",
+            "basis": "per_person",
+            "approximate": true
+          }
+        },
+        {
           "id": "d2-morning",
           "time": "09:30",
           "type": "free_time",
           "title": "Mattina libera in centro",
           "description": "Calton Hill per il panorama, poi Victoria Street e Grassmarket per colazione e acquisti.",
-          "placeIds": ["calton-hill"]
+          "placeIds": ["calton-hill", "victoria-street"]
+        },
+        {
+          "id": "d2-coffee",
+          "time": "10:45",
+          "type": "meal",
+          "emoji": "☕",
+          "title": "Caffè con vista sul castello",
+          "description": "Starbucks al 118 di Princes Street. La sala principale è al primo piano e guarda sul castello e sui Princes Street Gardens. Poi tornate a prendere i bagagli.",
+          "placeIds": ["starbucks-princes-street"]
         },
         {
           "id": "d2-car-pickup",
@@ -451,7 +1220,28 @@
             "durationMinutes": 225,
             "distanceKm": 215,
             "route": "A84 / A82",
-            "cost": { "amount": 25, "currency": "EUR", "approximate": true, "note": "Carburante" }
+            "cost": {
+              "amount": 25,
+              "currency": "EUR",
+              "approximate": true,
+              "note": "Carburante"
+            }
+          }
+        },
+        {
+          "id": "d2-lunch",
+          "time": "14:30",
+          "type": "meal",
+          "emoji": "🐟",
+          "title": "Pranzo al Real Food Café di Tyndrum",
+          "description": "Fish and chips premiati, ottima sosta a metà strada verso Fort William.",
+          "placeIds": ["real-food-cafe-tyndrum"],
+          "tips": [],
+          "cost": {
+            "amount": 12,
+            "currency": "GBP",
+            "basis": "per_person",
+            "approximate": true
           }
         },
         {
@@ -461,7 +1251,7 @@
           "emoji": "⛰️",
           "title": "Sosta a Rannoch Moor e Glencoe",
           "description": "Le Three Sisters si vedono dai parcheggi panoramici lungo la A82.",
-          "placeIds": ["glencoe"],
+          "placeIds": ["glencoe", "rannoch-moor"],
           "warnings": [
             "Il centro visitatori chiude alle 17:00.",
             "Il sole tramonta verso le 18:00: se la visita si allunga, si arriva al buio."
@@ -473,10 +1263,28 @@
           "type": "checkin",
           "title": "Check-in al Waterfront Lodge e cena",
           "description": "Cena in centro a Fort William, sulla High Street.",
-          "placeIds": ["waterfront-lodge"],
+          "placeIds": ["waterfront-lodge", "fort-william"],
           "bookingId": "stay-waterfront"
+        },
+        {
+          "id": "d2-dinner",
+          "time": "19:00",
+          "type": "meal",
+          "emoji": "🍺",
+          "title": "Cena al Grog & Gruel",
+          "description": "Alehouse tradizionale sulla High Street con birre, whisky, haggis e burger.",
+          "placeIds": ["grog-and-gruel"],
+          "tips": ["Alternativa: Ben Nevis Bar, sempre in centro."],
+          "cost": {
+            "amount": 18,
+            "currency": "GBP",
+            "basis": "per_person",
+            "approximate": true,
+            "note": "Piatti principali 10–18 £"
+          }
         }
-      ]
+      ],
+      "summary": "Mattina in centro, ritiro auto e strada per Fort William passando da Rannoch Moor e Glencoe. Meteo previsto: Edimburgo 14,7° / 11,7°, pioggia 65%; Fort William 11,7° / 9,8°, pioggia 75%. Pioggia probabile nelle Highlands."
     },
     {
       "date": "2026-10-14",
@@ -485,12 +1293,37 @@
       "stayBookingId": "stay-waterfront",
       "activities": [
         {
+          "id": "d3-breakfast",
+          "time": "08:30",
+          "type": "meal",
+          "emoji": "🥐",
+          "title": "Colazione al Nevis Bakery Café",
+          "description": "Dolci, pasticcini e panini del forno locale prima di partire per Glenfinnan.",
+          "placeIds": ["nevis-bakery"],
+          "tips": ["Se è chiuso, ripiegate su un supermercato del centro."],
+          "cost": {
+            "amount": 8,
+            "currency": "GBP",
+            "basis": "per_person",
+            "approximate": true
+          }
+        },
+        {
           "id": "d3-to-glenfinnan",
           "time": "09:15",
           "type": "travel",
           "title": "Verso Glenfinnan",
-          "transport": { "mode": "car", "durationMinutes": 30, "distanceKm": 24, "route": "A830" },
-          "cost": { "amount": 5, "currency": "GBP", "note": "Parcheggio del centro visitatori" }
+          "transport": {
+            "mode": "car",
+            "durationMinutes": 30,
+            "distanceKm": 24,
+            "route": "A830"
+          },
+          "cost": {
+            "amount": 5,
+            "currency": "GBP",
+            "note": "Parcheggio del centro visitatori"
+          }
         },
         {
           "id": "d3-viaduct",
@@ -507,7 +1340,7 @@
           "time": "11:30",
           "type": "visit",
           "title": "Glenfinnan Monument, Loch Shiel e Station Museum",
-          "placeIds": ["glenfinnan-monument"]
+          "placeIds": ["glenfinnan-monument", "glenfinnan-station-museum"]
         },
         {
           "id": "d3-to-fort-augustus",
@@ -527,7 +1360,15 @@
           "type": "meal",
           "emoji": "🍽️",
           "title": "Pranzo a Fort Augustus",
-          "placeIds": ["fort-augustus"]
+          "placeIds": ["fort-augustus", "cobbs-cafe", "monster-fish-chips"],
+          "description": "Cobbs Café Bistro sul canale, con dolci fatti in casa. Le chiuse sono a due passi: è la punta sud di Loch Ness.",
+          "tips": ["Alternativa: Monster Fish & Chips Co. sulla A82."],
+          "cost": {
+            "amount": 12,
+            "currency": "GBP",
+            "basis": "per_person",
+            "approximate": true
+          }
         },
         {
           "id": "d3-urquhart",
@@ -537,7 +1378,11 @@
           "title": "Urquhart Castle sul Loch Ness",
           "placeIds": ["urquhart-castle"],
           "bookingId": "ticket-urquhart",
-          "cost": { "amount": 14, "currency": "GBP", "basis": "per_person" },
+          "cost": {
+            "amount": 14,
+            "currency": "GBP",
+            "basis": "per_person"
+          },
           "warnings": [
             "Ultimo ingresso alle 16:00.",
             "Prenotate online: costa meno e i posti si esauriscono."
@@ -561,6 +1406,22 @@
             }
           },
           "warnings": ["Il sole tramonta verso le 17:55: si guida al crepuscolo."]
+        },
+        {
+          "id": "d3-dinner",
+          "time": "19:00",
+          "type": "meal",
+          "emoji": "🍻",
+          "title": "Cena al Ben Nevis Bar",
+          "description": "Pub nel centro di Fort William con cucina da bar.",
+          "placeIds": ["ben-nevis-bar", "crannog"],
+          "tips": ["Per una cena speciale c'è il Crannog al Garrison West, 20–35 £, da prenotare."],
+          "cost": {
+            "amount": 20,
+            "currency": "GBP",
+            "basis": "per_person",
+            "approximate": true
+          }
         }
       ],
       "alternatives": [
@@ -576,7 +1437,10 @@
               "time": "12:15",
               "type": "travel",
               "title": "Rientro a Fort William e pranzo in centro",
-              "transport": { "mode": "car", "durationMinutes": 30 }
+              "transport": {
+                "mode": "car",
+                "durationMinutes": 30
+              }
             },
             {
               "id": "d3-alt-hike",
@@ -590,7 +1454,8 @@
             }
           ]
         }
-      ]
+      ],
+      "summary": "Il Jacobite sul viadotto di Glenfinnan, poi Fort Augustus e Urquhart Castle sul Loch Ness. Meteo previsto: Fort William 12,5° / 9,9°, Glenfinnan 10,5° / 8,6°, Loch Ness 12,4° / 9,6°, pioggia 75%. Portate impermeabili per il sentiero di Glenfinnan."
     },
     {
       "date": "2026-10-15",
@@ -608,7 +1473,12 @@
             "durationMinutes": 225,
             "distanceKm": 215,
             "route": "A82 / A84",
-            "cost": { "amount": 25, "currency": "EUR", "approximate": true, "note": "Carburante" }
+            "cost": {
+              "amount": 25,
+              "currency": "EUR",
+              "approximate": true,
+              "note": "Carburante"
+            }
           },
           "warnings": ["L'auto va riconsegnata alle 12:00."]
         },
@@ -618,6 +1488,22 @@
           "type": "visit",
           "title": "Glencoe all'alba",
           "placeIds": ["glencoe"]
+        },
+        {
+          "id": "d4-breakfast",
+          "time": "09:45",
+          "type": "meal",
+          "emoji": "🍳",
+          "title": "Colazione al Real Food Café di Tyndrum",
+          "description": "Colazione scozzese completa, aperto dalle 8:00. Ci arrivate dopo Glencoe.",
+          "placeIds": ["real-food-cafe-tyndrum"],
+          "tips": ["Partendo alle 7:15 portatevi un caffè o un panino per la prima ora di strada."],
+          "cost": {
+            "amount": 8,
+            "currency": "GBP",
+            "basis": "per_person",
+            "approximate": true
+          }
         },
         {
           "id": "d4-car-return",
@@ -637,7 +1523,27 @@
           "transport": {
             "mode": "rideshare",
             "durationMinutes": 10,
-            "cost": { "amount": 10, "currency": "GBP", "approximate": true }
+            "cost": {
+              "amount": 10,
+              "currency": "GBP",
+              "approximate": true
+            }
+          }
+        },
+        {
+          "id": "d4-lunch",
+          "time": "13:15",
+          "type": "meal",
+          "emoji": "🥘",
+          "title": "Pranzo a The Haggis Box",
+          "description": "Haggis, neeps e tatties tradizionale o vegetariano allo Scottish Storytelling Centre, a pochi passi dal castello.",
+          "placeIds": ["haggis-box"],
+          "tips": [],
+          "cost": {
+            "amount": 12,
+            "currency": "GBP",
+            "basis": "per_person",
+            "approximate": true
           }
         },
         {
@@ -662,10 +1568,28 @@
           "time": "17:15",
           "type": "visit",
           "emoji": "🌅",
-          "title": "Tramonto da Calton Hill",
-          "placeIds": ["calton-hill"]
+          "title": "Tramonto da Calton Hill o Arthur's Seat",
+          "placeIds": ["calton-hill", "arthurs-seat"]
+        },
+        {
+          "id": "d4-dinner",
+          "time": "19:00",
+          "type": "meal",
+          "emoji": "🍽️",
+          "title": "Cena alla Tolbooth Tavern",
+          "description": "Pub del 1820 in fondo alla Royal Mile, con la torre di haggis e il cullen skink.",
+          "placeIds": ["tolbooth-tavern"],
+          "tips": [],
+          "cost": {
+            "amount": 20,
+            "currency": "GBP",
+            "basis": "per_person",
+            "approximate": true,
+            "note": "Fascia pub 15–25 £"
+          }
         }
-      ]
+      ],
+      "summary": "Rientro presto a Edimburgo, riconsegna auto, castello, St Giles e tramonto. Meteo previsto: Fort William 10,7° / 7,2°, pioggia 75%; Edimburgo 13,0° / 8,4°, pioggia 55%."
     },
     {
       "date": "2026-10-16",
@@ -673,11 +1597,27 @@
       "route": ["Edimburgo", "Ciampino", "Pontecorvo"],
       "activities": [
         {
+          "id": "d5-breakfast",
+          "time": "08:30",
+          "type": "meal",
+          "emoji": "🥯",
+          "title": "Colazione al Little Larder",
+          "description": "Panini da colazione, porridge e caffè. Il venerdì apre alle 8:00, senza prenotazione.",
+          "placeIds": ["little-larder"],
+          "tips": ["L'Edinburgh Larder accanto apre alle 7:30."],
+          "cost": {
+            "amount": 8,
+            "currency": "GBP",
+            "basis": "per_person",
+            "approximate": true
+          }
+        },
+        {
           "id": "d5-dean-village",
           "time": "09:30",
           "type": "visit",
           "title": "Dean Village e Victoria Street",
-          "placeIds": ["dean-village"]
+          "placeIds": ["dean-village", "victoria-street"]
         },
         {
           "id": "d5-museum",
@@ -688,6 +1628,23 @@
           "placeIds": ["national-museum"]
         },
         {
+          "id": "d5-lunch",
+          "time": "13:00",
+          "type": "meal",
+          "emoji": "🍲",
+          "title": "Pranzo da Howies Victoria Street",
+          "description": "Cucina scozzese di stagione con menu pranzo di due portate.",
+          "placeIds": ["howies-victoria-street"],
+          "tips": ["Non è prenotabile su OpenTable, contattate direttamente il locale."],
+          "cost": {
+            "amount": 10.95,
+            "currency": "GBP",
+            "basis": "per_person",
+            "approximate": true,
+            "note": "Menu pranzo 10,95 £"
+          }
+        },
+        {
           "id": "d5-to-airport",
           "time": "15:00",
           "type": "travel",
@@ -696,12 +1653,21 @@
           "transport": {
             "mode": "tram",
             "durationMinutes": 35,
-            "cost": { "amount": 8, "currency": "GBP", "basis": "per_person", "approximate": true },
+            "cost": {
+              "amount": 8,
+              "currency": "GBP",
+              "basis": "per_person",
+              "approximate": true
+            },
             "alternatives": [
               {
                 "mode": "rideshare",
                 "durationMinutes": 30,
-                "cost": { "amount": 30, "currency": "GBP", "approximate": true }
+                "cost": {
+                  "amount": 30,
+                  "currency": "GBP",
+                  "approximate": true
+                }
               }
             ]
           }
@@ -714,6 +1680,16 @@
           "emoji": "✈️",
           "title": "Volo Ryanair FR5589 Edimburgo → Ciampino",
           "bookingId": "flight-back"
+        },
+        {
+          "id": "d5-dinner",
+          "time": "19:30",
+          "type": "meal",
+          "emoji": "✈️",
+          "title": "Cena in aeroporto o a casa",
+          "description": "Il volo parte alle 17:45 e atterra a Ciampino alle 21:45. Mangiate dopo i controlli in aeroporto oppure a casa.",
+          "placeIds": ["edinburgh-airport"],
+          "tips": []
         },
         {
           "id": "d5-home",
@@ -733,7 +1709,8 @@
           },
           "warnings": ["Uscita dal parcheggio dopo le 00:00: supplemento di 10 €."]
         }
-      ]
+      ],
+      "summary": "Dean Village, National Museum e volo FR5589 alle 17:45. Previsioni meteo non ancora disponibili l'8 ottobre."
     }
   ],
   "budget": [
@@ -742,7 +1719,10 @@
       "title": "The Spires Serviced Apartments",
       "category": "lodging",
       "status": "booked",
-      "amount": { "amount": 203, "currency": "EUR" },
+      "amount": {
+        "amount": 203,
+        "currency": "EUR"
+      },
       "bookingId": "stay-spires"
     },
     {
@@ -750,7 +1730,10 @@
       "title": "Waterfront Lodge",
       "category": "lodging",
       "status": "booked",
-      "amount": { "amount": 510, "currency": "EUR" },
+      "amount": {
+        "amount": 510,
+        "currency": "EUR"
+      },
       "bookingId": "stay-waterfront"
     },
     {
@@ -758,7 +1741,10 @@
       "title": "Viewcraig apartment",
       "category": "lodging",
       "status": "booked",
-      "amount": { "amount": 260, "currency": "EUR" },
+      "amount": {
+        "amount": 260,
+        "currency": "EUR"
+      },
       "bookingId": "stay-viewcraig"
     },
     {
@@ -766,7 +1752,10 @@
       "title": "Best Parking Ciampino",
       "category": "parking",
       "status": "booked",
-      "amount": { "amount": 34, "currency": "EUR" },
+      "amount": {
+        "amount": 34,
+        "currency": "EUR"
+      },
       "bookingId": "parking-ciampino"
     },
     {
@@ -788,7 +1777,12 @@
       "title": "ETA Regno Unito",
       "category": "fees",
       "status": "estimate",
-      "amount": { "amount": 20, "currency": "GBP", "basis": "per_person" }
+      "amount": {
+        "amount": 20,
+        "currency": "GBP",
+        "basis": "per_person"
+      },
+      "notes": "20 £ a persona sul sito del governo britannico. Escludetela se l'avete già fatta."
     },
     {
       "id": "b-meals",
@@ -801,35 +1795,54 @@
         "basis": "per_person",
         "approximate": true,
         "note": "8 £ colazione, 12 £ pranzo, 18–20 £ cena a testa"
-      }
+      },
+      "notes": "Dalla cena del 12 al pranzo del 16. Bevande extra escluse."
     },
     {
       "id": "b-car-italy",
       "title": "Auto Pontecorvo–Ciampino A/R",
       "category": "fuel",
       "status": "estimate",
-      "amount": { "amount": 50, "currency": "EUR", "approximate": true }
+      "amount": {
+        "amount": 50,
+        "currency": "EUR",
+        "approximate": true
+      }
     },
     {
       "id": "b-airport",
       "title": "Aeroporto ↔ centro, due tratte",
       "category": "transport",
       "status": "estimate",
-      "amount": { "amount": 60, "currency": "GBP", "approximate": true }
+      "amount": {
+        "amount": 60,
+        "currency": "GBP",
+        "approximate": true
+      },
+      "notes": "Uber in 4 a circa 30 £ a tratta. Il tram costa quasi lo stesso."
     },
     {
       "id": "b-fuel",
       "title": "Carburante in Scozia",
       "category": "fuel",
       "status": "estimate",
-      "amount": { "amount": 80, "currency": "EUR", "approximate": true, "note": "Circa 680 km" }
+      "amount": {
+        "amount": 80,
+        "currency": "EUR",
+        "approximate": true,
+        "note": "Circa 680 km"
+      }
     },
     {
       "id": "b-urquhart",
       "title": "Urquhart Castle",
       "category": "tickets",
       "status": "estimate",
-      "amount": { "amount": 14, "currency": "GBP", "basis": "per_person" },
+      "amount": {
+        "amount": 14,
+        "currency": "GBP",
+        "basis": "per_person"
+      },
       "bookingId": "ticket-urquhart"
     },
     {
@@ -837,9 +1850,35 @@
       "title": "Edinburgh Castle",
       "category": "tickets",
       "status": "estimate",
-      "amount": { "amount": 23.5, "currency": "GBP", "basis": "per_person" },
+      "amount": {
+        "amount": 23.5,
+        "currency": "GBP",
+        "basis": "per_person"
+      },
       "included": false,
       "bookingId": "ticket-edinburgh-castle"
+    },
+    {
+      "id": "b-uber-viewcraig",
+      "title": "Uber breve per il Viewcraig",
+      "category": "transport",
+      "status": "estimate",
+      "amount": {
+        "amount": 10,
+        "currency": "GBP",
+        "approximate": true
+      }
+    },
+    {
+      "id": "b-glenfinnan-parking",
+      "title": "Parcheggio a Glenfinnan",
+      "category": "parking",
+      "status": "estimate",
+      "amount": {
+        "amount": 5,
+        "currency": "GBP",
+        "note": "Sito National Trust"
+      }
     }
   ],
   "packing": [
@@ -855,30 +1894,96 @@
       "perPerson": true,
       "reason": "Si chiede online, arriva di solito entro un giorno."
     },
-    { "item": "Check-in online Ryanair andata e ritorno", "group": "documents" },
+    {
+      "item": "Check-in online Ryanair andata e ritorno",
+      "group": "documents"
+    },
     {
       "item": "Patente e carta di credito del conducente",
       "group": "documents",
       "reason": "La carta serve per il deposito del noleggio."
     },
-    { "item": "Assicurazione sanitaria di viaggio", "group": "documents", "perPerson": true },
+    {
+      "item": "Assicurazione sanitaria di viaggio",
+      "group": "documents",
+      "perPerson": true
+    },
     {
       "item": "Giacca impermeabile con cappuccio",
       "group": "clothing",
       "perPerson": true,
       "reason": "Nelle Highlands piove spesso, 5–12 °C."
     },
-    { "item": "Scarpe impermeabili con buona suola", "group": "clothing", "perPerson": true },
-    { "item": "Vestiti a strati, cappello e guanti", "group": "clothing", "perPerson": true },
-    { "item": "Adattatore per prese britanniche (tipo G)", "group": "electronics" },
-    { "item": "Power bank e cavo per l'auto", "group": "electronics" },
-    { "item": "Supporto telefono per l'auto", "group": "gear" },
-    { "item": "Zaino piccolo impermeabile", "group": "gear" },
-    { "item": "Borraccia e snack per i tratti lunghi", "group": "food" },
-    { "item": "Medicine personali e kit di pronto soccorso", "group": "health" }
+    {
+      "item": "Scarpe impermeabili con buona suola",
+      "group": "clothing",
+      "perPerson": true
+    },
+    {
+      "item": "Vestiti a strati, cappello e guanti",
+      "group": "clothing",
+      "perPerson": true
+    },
+    {
+      "item": "Adattatore per prese britanniche (tipo G)",
+      "group": "electronics"
+    },
+    {
+      "item": "Power bank e cavo per l'auto",
+      "group": "electronics"
+    },
+    {
+      "item": "Supporto telefono per l'auto",
+      "group": "gear"
+    },
+    {
+      "item": "Zaino piccolo impermeabile",
+      "group": "gear"
+    },
+    {
+      "item": "Borraccia e snack per i tratti lunghi",
+      "group": "food"
+    },
+    {
+      "item": "Medicine personali e kit di pronto soccorso",
+      "group": "health"
+    },
+    {
+      "item": "Check-in online del noleggio auto",
+      "group": "documents",
+      "perPerson": false,
+      "reason": "Serve per scegliere l'auto prima del ritiro del 13 ottobre alle 12:00."
+    },
+    {
+      "item": "Voucher MyParking N5142921",
+      "group": "documents",
+      "perPerson": false,
+      "reason": "Da mostrare all'ingresso del Best Parking Ciampino."
+    },
+    {
+      "item": "Biglietto Urquhart Castle prenotato online",
+      "group": "documents",
+      "perPerson": false,
+      "reason": "14 £ online contro 16 £ in loco. Ultimo ingresso alle 16:00."
+    },
+    {
+      "item": "Biglietto Edinburgh Castle prenotato online",
+      "group": "documents",
+      "perPerson": false,
+      "reason": "23,50 £ online contro 26 £ in loco. Se i posti online finiscono, al castello non si vendono altri biglietti."
+    },
+    {
+      "item": "Orario del Jacobite per il 14 ottobre",
+      "group": "documents",
+      "perPerson": false,
+      "reason": "Fino al 23 ottobre c'è un solo servizio, la mattina da Fort William alle 10:15."
+    }
   ],
   "tips": [
-    { "title": "Un'ora indietro", "text": "In Scozia l'orologio è un'ora prima dell'Italia." },
+    {
+      "title": "Un'ora indietro",
+      "text": "In Scozia l'orologio è un'ora prima dell'Italia."
+    },
     {
       "title": "Guida a sinistra",
       "text": "Le rotatorie si fanno in senso orario, dando la precedenza a chi arriva da destra. Limiti in miglia orarie."
@@ -898,8 +2003,22 @@
     {
       "title": "Pagamenti",
       "text": "Quasi ovunque si paga con carta contactless. Qualche sterlina serve per i parcheggi."
+    },
+    {
+      "title": "Roaming",
+      "text": "Il Regno Unito può non rientrare nel vostro piano dati. Controllate con il gestore."
+    },
+    {
+      "title": "Buio presto",
+      "text": "Il sole tramonta verso le 18:00. Prevedete di arrivare in hotel prima, soprattutto il 13."
+    },
+    {
+      "title": "Stagione",
+      "text": "Il Jacobite ferma il 23 ottobre e il centro visitatori di Glenfinnan chiude prima dal 26 ottobre."
     }
   ],
-  "exchangeRates": { "GBP": 1.16 },
+  "exchangeRates": {
+    "GBP": 1.16
+  },
   "disclaimer": "Orari, prezzi e durate di guida sono indicativi e vanno riconfermati poco prima della partenza."
 }
