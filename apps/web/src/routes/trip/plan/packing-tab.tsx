@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, Loader2, Plus, Sparkles, X } from 'lucide-react';
+import { Check, Loader2, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PackingItem } from '@tripshare/shared/trip-format';
@@ -7,7 +7,9 @@ import { UserAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Input, Select } from '@/components/ui/input';
+import { Field, Input, Select } from '@/components/ui/input';
+import { confirmDialog } from '@/components/confirm';
+import { textareaClass } from './fields';
 import { toast } from 'sonner';
 import { useAiStatus, useAiTask } from '@/lib/ai';
 import { usePlan, usePlanOps } from '@/lib/plan';
@@ -49,6 +51,7 @@ export function PackingTab({ trip }: { trip: TripDetail }) {
   });
   const [group, setGroup] = useState<PackingItem['group']>('clothing');
   const [perPerson, setPerPerson] = useState(false);
+  const [editing, setEditing] = useState<PackingItem | null>(null);
   const ai = useAiStatus();
   const { run, running } = useAiTask();
   const [suggested, setSuggested] = useState<{ items: PackingItem[]; selected: boolean[] } | null>(
@@ -229,7 +232,10 @@ export function PackingTab({ trip }: { trip: TripDetail }) {
                     >
                       {doneItem && <Check className="size-4" />}
                     </button>
-                    <div className="min-w-0 flex-1">
+                    <div
+                      className={cn('min-w-0 flex-1', canEdit && 'cursor-pointer')}
+                      onClick={() => canEdit && setEditing(p)}
+                    >
                       <p
                         className={cn(
                           'font-medium',
@@ -255,17 +261,6 @@ export function PackingTab({ trip }: { trip: TripDetail }) {
                         ))}
                       </div>
                     )}
-                    {canEdit && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="size-8 text-muted-foreground"
-                        aria-label={t('expense.delete')}
-                        onClick={() => apply([{ type: 'deletePackingItem', id: p.id! }])}
-                      >
-                        <X />
-                      </Button>
-                    )}
                   </div>
                 );
               })}
@@ -273,6 +268,22 @@ export function PackingTab({ trip }: { trip: TripDetail }) {
           </section>
         );
       })}
+      {editing && (
+        <PackingDialog
+          item={editing}
+          pending={pending}
+          onClose={() => setEditing(null)}
+          onSave={async (item) => {
+            await apply([{ type: 'upsertPackingItem', item }]);
+            setEditing(null);
+          }}
+          onDelete={async () => {
+            if (!(await confirmDialog(t('packing.confirmDelete')))) return;
+            await apply([{ type: 'deletePackingItem', id: editing.id! }]);
+            setEditing(null);
+          }}
+        />
+      )}
       {suggested && (
         <Dialog open onOpenChange={(o) => !o && setSuggested(null)}>
           <DialogContent title={`✨ ${t('ai.packing.title')}`}>
@@ -318,5 +329,99 @@ export function PackingTab({ trip }: { trip: TripDetail }) {
         </Dialog>
       )}
     </div>
+  );
+}
+
+function PackingDialog({
+  item,
+  pending,
+  onClose,
+  onSave,
+  onDelete,
+}: {
+  item: PackingItem;
+  pending: boolean;
+  onClose: () => void;
+  onSave: (item: PackingItem) => Promise<void>;
+  onDelete: () => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const [draft, setDraft] = useState(item);
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent title={t('packing.editTitle')}>
+        <form
+          className="grid grid-cols-1 gap-4 pt-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void onSave({
+              ...draft,
+              item: draft.item.trim(),
+              reason: draft.reason?.trim() || undefined,
+            });
+          }}
+        >
+          <Field label={t('packing.item')} htmlFor="packing-item">
+            <Input
+              id="packing-item"
+              required
+              maxLength={160}
+              value={draft.item}
+              onChange={(e) => setDraft({ ...draft, item: e.target.value })}
+            />
+          </Field>
+          <Field label={t('packing.group')} htmlFor="packing-group">
+            <Select
+              id="packing-group"
+              value={draft.group}
+              onChange={(e) =>
+                setDraft({ ...draft, group: e.target.value as PackingItem['group'] })
+              }
+            >
+              {GROUPS.map((g) => (
+                <option key={g} value={g}>
+                  {GROUP_EMOJI[g]} {t(`packing.groups.${g}`)}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label={t('packing.reason')} htmlFor="packing-reason">
+            <textarea
+              id="packing-reason"
+              maxLength={300}
+              className={textareaClass}
+              value={draft.reason ?? ''}
+              onChange={(e) => setDraft({ ...draft, reason: e.target.value })}
+            />
+          </Field>
+          <label className="inline-flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="accent-[var(--primary)]"
+              checked={draft.perPerson}
+              onChange={(e) => setDraft({ ...draft, perPerson: e.target.checked })}
+            />
+            {t('packing.perPerson')}
+          </label>
+          <div className="mt-2 flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-destructive"
+              aria-label={t('expense.delete')}
+              disabled={pending}
+              onClick={onDelete}
+            >
+              <Trash2 />
+              <span className="hidden sm:inline">{t('expense.delete')}</span>
+            </Button>
+            <div className="flex-1" />
+            <Button type="submit" size="lg" disabled={pending || !draft.item.trim()}>
+              {t('common.save')}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

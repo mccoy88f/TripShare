@@ -9,6 +9,7 @@ import {
   Pencil,
   Plus,
   Shuffle,
+  Trash2,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -50,6 +51,8 @@ type Weather = {
   precipitation: number | null;
   sunset: string | null;
   sunrise: string | null;
+  /** Località delle previsioni per quel giorno. */
+  place?: string;
 };
 
 export function PlanTab({ trip }: { trip: TripDetail }) {
@@ -64,6 +67,8 @@ export function PlanTab({ trip }: { trip: TripDetail }) {
   const canEdit = trip.role !== 'viewer';
   const plan = data?.plan;
   const [selected, setSelected] = useState<string | null>(null);
+  /** Consiglio in modifica: indice nella lista, oppure -1 per uno nuovo. */
+  const [tipIndex, setTipIndex] = useState<number | null>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   useOnAdd('plan', () => {
     if (plan && plan.days.length === 0) toast.info(t('trip.fab.noDays'));
@@ -171,12 +176,24 @@ export function PlanTab({ trip }: { trip: TripDetail }) {
         canEdit={canEdit}
       />
 
-      {plan.tips.length > 0 && (
+      {(plan.tips.length > 0 || (canEdit && plan.days.length > 0)) && (
         <section>
-          <h3 className="mb-2 px-1 text-sm font-semibold">💡 {t('plan.tips')}</h3>
+          <div className="mb-2 flex items-center justify-between px-1">
+            <h3 className="text-sm font-semibold">💡 {t('plan.tips')}</h3>
+            {canEdit && (
+              <Button size="sm" variant="ghost" onClick={() => setTipIndex(-1)}>
+                <Plus />
+                {t('plan.tip.add')}
+              </Button>
+            )}
+          </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {plan.tips.map((tip, i) => (
-              <Card key={i} className="p-4">
+              <Card
+                key={i}
+                className={cn('p-4', canEdit && 'cursor-pointer transition hover:bg-muted/40')}
+                onClick={() => canEdit && setTipIndex(i)}
+              >
                 <p className="font-semibold">{tip.title}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{tip.text}</p>
               </Card>
@@ -184,11 +201,35 @@ export function PlanTab({ trip }: { trip: TripDetail }) {
           </div>
         </section>
       )}
+      {tipIndex !== null && (
+        <TipDialog
+          tip={plan.tips[tipIndex]}
+          pending={pending}
+          onClose={() => setTipIndex(null)}
+          onSave={async (tip) => {
+            const tips =
+              tipIndex < 0
+                ? [...plan.tips, tip]
+                : plan.tips.map((x, i) => (i === tipIndex ? tip : x));
+            await apply([{ type: 'setTips', tips }]);
+            setTipIndex(null);
+          }}
+          onDelete={
+            tipIndex < 0
+              ? undefined
+              : async () => {
+                  if (!(await confirmDialog(t('plan.tip.confirmDelete')))) return;
+                  await apply([
+                    { type: 'setTips', tips: plan.tips.filter((_, i) => i !== tipIndex) },
+                  ]);
+                  setTipIndex(null);
+                }
+          }
+        />
+      )}
       {plan.disclaimer && <p className="px-1 text-xs text-muted-foreground">{plan.disclaimer}</p>}
       {weather.data?.status === 'OK' && (
-        <p className="px-1 text-xs text-muted-foreground">
-          {t('plan.weatherSource', { place: weather.data.location })}
-        </p>
+        <p className="px-1 text-xs text-muted-foreground">{t('plan.weatherSource')}</p>
       )}
     </div>
   );
@@ -269,7 +310,8 @@ function DayView({
             )}
             {weather && (
               <Badge variant="outline" className="text-sm font-medium">
-                {weatherEmoji(weather.code)} {Math.round(weather.max)}° / {Math.round(weather.min)}°
+                {weatherEmoji(weather.code)} {weather.place && `${weather.place} `}
+                {Math.round(weather.max)}° / {Math.round(weather.min)}°
                 {weather.precipitation != null && ` · 💧 ${weather.precipitation}%`}
                 {weather.sunset && ` · 🌇 ${weather.sunset}`}
               </Badge>
@@ -630,6 +672,76 @@ function DayDialog({
             <div className="flex-1" />
             <Button type="submit" disabled={pending || !title.trim()}>
               {pending && <Loader2 className="animate-spin" />}
+              {t('common.save')}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TipDialog({
+  tip,
+  pending,
+  onClose,
+  onSave,
+  onDelete,
+}: {
+  tip?: { title: string; text: string };
+  pending: boolean;
+  onClose: () => void;
+  onSave: (tip: { title: string; text: string }) => Promise<void>;
+  onDelete?: () => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const [title, setTitle] = useState(tip?.title ?? '');
+  const [text, setText] = useState(tip?.text ?? '');
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent title={tip ? t('plan.tip.edit') : t('plan.tip.add')}>
+        <form
+          className="grid grid-cols-1 gap-4 pt-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void onSave({ title: title.trim(), text: text.trim() });
+          }}
+        >
+          <Field label={t('plan.tip.title')} htmlFor="tip-title">
+            <Input
+              id="tip-title"
+              required
+              maxLength={120}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </Field>
+          <Field label={t('plan.tip.text')} htmlFor="tip-text">
+            <textarea
+              id="tip-text"
+              required
+              maxLength={600}
+              className={textareaClass}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
+          </Field>
+          <div className="mt-2 flex items-center gap-2">
+            {onDelete && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-destructive"
+                aria-label={t('expense.delete')}
+                disabled={pending}
+                onClick={onDelete}
+              >
+                <Trash2 />
+                <span className="hidden sm:inline">{t('expense.delete')}</span>
+              </Button>
+            )}
+            <div className="flex-1" />
+            <Button type="submit" size="lg" disabled={pending || !title.trim() || !text.trim()}>
               {t('common.save')}
             </Button>
           </div>

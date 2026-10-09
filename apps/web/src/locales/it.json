@@ -574,7 +574,7 @@
     "links": "Link",
     "linksHint": "Uno per riga: Titolo | https://…",
     "onePerLine": "Uno per riga.",
-    "weatherSource": "Meteo per {{place}} da Open-Meteo, aggiornato ogni ora.",
+    "weatherSource": "Meteo da Open-Meteo per la località di ogni giorno (dove si dorme o la prima tappa), aggiornato ogni ora.",
     "import": "Importa JSON",
     "export": "Esporta JSON",
     "imported": "Programma importato",
@@ -747,6 +747,13 @@
       "ticket": "Biglietto",
       "insurance": "Assicurazione",
       "other": "Altro"
+    },
+    "tip": {
+      "add": "Aggiungi",
+      "edit": "Modifica consiglio",
+      "title": "Titolo",
+      "text": "Testo",
+      "confirmDelete": "Eliminare questo consiglio?"
     }
   },
   "budget": {
@@ -788,7 +795,11 @@
       "gear": "Attrezzatura",
       "food": "Cibo",
       "other": "Altro"
-    }
+    },
+    "editTitle": "Modifica elemento",
+    "item": "Cosa",
+    "reason": "Note",
+    "confirmDelete": "Eliminare questo elemento dalla lista?"
   },
   "tickets": {
     "title": "Biglietti",

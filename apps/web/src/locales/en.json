@@ -574,7 +574,7 @@
     "links": "Links",
     "linksHint": "One per line: Title | https://…",
     "onePerLine": "One per line.",
-    "weatherSource": "Weather for {{place}} from Open-Meteo, updated hourly.",
+    "weatherSource": "Weather from Open-Meteo for each day's location (where you sleep or the first stop), updated hourly.",
     "import": "Import JSON",
     "export": "Export JSON",
     "imported": "Plan imported",
@@ -747,6 +747,13 @@
       "ticket": "Ticket",
       "insurance": "Insurance",
       "other": "Other"
+    },
+    "tip": {
+      "add": "Add",
+      "edit": "Edit tip",
+      "title": "Title",
+      "text": "Text",
+      "confirmDelete": "Delete this tip?"
     }
   },
   "budget": {
@@ -788,7 +795,11 @@
       "gear": "Gear",
       "food": "Food",
       "other": "Other"
-    }
+    },
+    "editTitle": "Edit item",
+    "item": "What",
+    "reason": "Notes",
+    "confirmDelete": "Remove this item from the list?"
   },
   "tickets": {
     "title": "Tickets",

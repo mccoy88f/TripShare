@@ -132,22 +132,41 @@ export const planRouter = router({
           start > new Date().toISOString().slice(0, 10) ? ('TOO_FAR' as const) : ('PAST' as const),
         days: [],
       };
-    const located = plan.places.find((p) => p.location)?.location;
+    const language = localeOf(ctx.session?.user.locale);
+    const find = (q: string | undefined) =>
+      q ? geocode(q, language, ctx.httpFetch).catch(() => null) : Promise.resolve(null);
     try {
-      const point =
-        located ??
-        (await geocode(
-          plan.trip.destination.name,
-          localeOf(ctx.session?.user.locale),
-          ctx.httpFetch,
-        ));
-      if (!point) return { status: 'NO_LOCATION' as const, days: [] };
-      const days = await forecast(point, window.from, window.to, ctx.httpFetch);
-      return {
-        status: 'OK' as const,
-        location: 'name' in point ? point.name : plan.trip.destination.name,
-        days,
-      };
+      // Località di riferimento del viaggio: un luogo con coordinate, la destinazione o, se non
+      // si trova (es. "Scozia"), la prima tappa dei giorni.
+      const located = plan.places.find((p) => p.location)?.location;
+      let base: { name: string; lat: number; lng: number } | null = located
+        ? { name: plan.trip.destination.name, ...located }
+        : await find(plan.trip.destination.name);
+      for (const d of plan.days) {
+        if (base) break;
+        base = await find(d.route[0]);
+      }
+      if (!base) return { status: 'NO_LOCATION' as const, days: [] };
+
+      // Ogni giorno usa la sua località: dove si dorme se c'è un alloggio, altrimenti la prima tappa.
+      const dayPlace = new Map<string, { name: string; lat: number; lng: number }>();
+      for (const d of plan.days) {
+        if (d.date < window.from || d.date > window.to) continue;
+        const stop = d.stayBookingId ? d.route.at(-1) : d.route[0];
+        dayPlace.set(d.date, (await find(stop)) ?? base);
+      }
+      const points = new Map<string, { name: string; lat: number; lng: number }>();
+      const keyOf = (p: { lat: number; lng: number }) => `${p.lat.toFixed(2)},${p.lng.toFixed(2)}`;
+      for (const p of [base, ...dayPlace.values()]) points.set(keyOf(p), p);
+      const forecasts = new Map<string, Awaited<ReturnType<typeof forecast>>>();
+      for (const [key, p] of points)
+        forecasts.set(key, await forecast(p, window.from, window.to, ctx.httpFetch));
+      const days = forecasts.get(keyOf(base))!.map((w) => {
+        const p = dayPlace.get(w.date) ?? base;
+        const own = forecasts.get(keyOf(p))?.find((x) => x.date === w.date);
+        return { ...(own ?? w), place: own ? p.name : base.name };
+      });
+      return { status: 'OK' as const, location: base.name, days };
     } catch {
       return { status: 'UNAVAILABLE' as const, days: [] };
     }

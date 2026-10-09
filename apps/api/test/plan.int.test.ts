@@ -14,6 +14,8 @@ const scozia = JSON.parse(
 const fakeWeather = (async (input: string | URL | Request) => {
   const url = String(input);
   if (url.includes('geocoding-api')) {
+    // Il nome di una regione come "Scozia" non viene trovato, una città sì.
+    if (new URL(url).searchParams.get('name') === 'Scozia') return Response.json({});
     return Response.json({
       results: [{ name: 'Fort William', country: 'Regno Unito', latitude: 56.82, longitude: -5.1 }],
     });
@@ -235,5 +237,36 @@ run('trip plan (integration)', () => {
     );
     expect(res.data.status).toBe('OK');
     expect(res.data.days[0]).toMatchObject({ sunset: '18:05', max: 12.4 });
+  });
+
+  it('falls back to the day stops when the destination is not a city', async () => {
+    const { owner, tripId } = await setup();
+    const today = new Date().toISOString().slice(0, 10);
+    const res = await t.trpc('plan.replace', owner, {
+      tripId,
+      updateTrip: true,
+      plan: {
+        formatVersion: 1,
+        language: 'it',
+        trip: {
+          title: 'Scozia',
+          destination: { name: 'Scozia' },
+          startDate: today,
+          endDate: today,
+          currency: 'EUR',
+          travelers: 2,
+        },
+        days: [{ date: today, title: 'Highlands', route: ['Edimburgo', 'Fort William'] }],
+      },
+    });
+    expect(res.status).toBe(200);
+    const weather = await t.trpc<{ status: string; days: { place: string }[] }>(
+      'plan.weather',
+      owner,
+      { tripId },
+      'query',
+    );
+    expect(weather.data.status).toBe('OK');
+    expect(weather.data.days[0]!.place).toBe('Fort William');
   });
 });
