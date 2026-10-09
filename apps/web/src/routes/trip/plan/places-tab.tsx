@@ -49,6 +49,7 @@ import {
   parseLinks,
   textareaClass,
 } from './fields';
+import { confirmDialog } from '@/components/confirm';
 
 export function PlacesTab({ trip }: { trip: TripDetail }) {
   const { t } = useTranslation();
@@ -320,9 +321,10 @@ function PlaceDialog({
                 type="button"
                 variant="ghost"
                 className="text-destructive"
+                aria-label={t('expense.delete')}
                 disabled={pending}
                 onClick={async () => {
-                  if (!confirm(t('plan.place.confirmDelete'))) return;
+                  if (!(await confirmDialog(t('plan.place.confirmDelete')))) return;
                   await apply([{ type: 'deletePlace', id: place.id }]);
                   onClose();
                 }}

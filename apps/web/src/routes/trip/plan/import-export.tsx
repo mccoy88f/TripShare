@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { usePlan } from '@/lib/plan';
 import { useTRPC } from '@/lib/trpc';
+import { confirmDialog } from '@/components/confirm';
 
 /** Importa un viaggio nel formato standard TripShare (JSON) sostituendo il programma. */
 export function ImportPlanButton({
@@ -62,7 +63,14 @@ export function ImportPlanButton({
             toast.error(t('plan.errors.notJson'));
             return;
           }
-          if (!confirm(t('plan.confirmImport'))) return;
+          if (
+            !(await confirmDialog({
+              title: t('plan.confirmImport'),
+              destructive: false,
+              confirmLabel: t('plan.import'),
+            }))
+          )
+            return;
           replace.mutate({ tripId, plan: json, updateTrip: true });
         }}
       />

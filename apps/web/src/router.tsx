@@ -11,6 +11,7 @@ import { AppLayout } from '@/components/layouts/app-layout';
 import { AuthLayout } from '@/components/layouts/auth-layout';
 import { PublicLayout } from '@/components/layouts/public-layout';
 import { PwaUpdater } from '@/components/pwa';
+import { ConfirmHost } from '@/components/confirm';
 import { authClient } from '@/lib/auth-client';
 import { ForgotPasswordPage, LoginPage, ResetPasswordPage, SignupPage } from '@/routes/auth-pages';
 import { LandingPage } from '@/routes/landing';
@@ -26,6 +27,7 @@ const rootRoute = createRootRoute({
       <Outlet />
       <Toaster position="top-center" richColors closeButton />
       <PwaUpdater />
+      <ConfirmHost />
     </>
   ),
   notFoundComponent: NotFoundPage,

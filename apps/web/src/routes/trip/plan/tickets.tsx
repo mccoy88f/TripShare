@@ -31,6 +31,7 @@ import { BOOKING_EMOJI } from '@/lib/plan';
 import { useTRPC } from '@/lib/trpc';
 import type { TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { confirmDialog } from '@/components/confirm';
 
 type Ticket = {
   id: string;
@@ -242,8 +243,8 @@ export function TicketsDialog({
                           variant="ghost"
                           className="size-8 text-muted-foreground"
                           aria-label={t('expense.delete')}
-                          onClick={() =>
-                            confirm(t('tickets.confirmDelete')) &&
+                          onClick={async () =>
+                            (await confirmDialog(t('tickets.confirmDelete'))) &&
                             remove.mutate({ tripId: trip.id, id: tk.id })
                           }
                         >

@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { Trash2 } from 'lucide-react';
+import { RotateCcw, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { isCurrencyCode } from '@tripshare/shared';
+import { confirmDialog } from '@/components/confirm';
 import { DEFAULT_COVER } from '@/components/trip-cover';
 import { toTripInput, TripForm } from '@/components/trip-form';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ export function SettingsTab({ trip }: { trip: TripDetail }) {
     trpc.trips.removeCover.mutationOptions({ onSuccess: refresh, onError }),
   );
   const remove = useMutation(trpc.trips.delete.mutationOptions({ onError }));
+  const reset = useMutation(trpc.trips.reset.mutationOptions({ onError }));
   const setCover = useMutation(trpc.trips.setUnsplashCover.mutationOptions());
   const hasExpenses = trip.ledger.total > 0;
 
@@ -86,6 +88,34 @@ export function SettingsTab({ trip }: { trip: TripDetail }) {
       </Card>
       <Card className="border-destructive/30">
         <CardHeader>
+          <CardTitle className="text-destructive">{t('trip.resetTitle')}</CardTitle>
+          <CardDescription>{t('trip.resetText')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            className="border-destructive/40 text-destructive"
+            disabled={reset.isPending}
+            onClick={async () => {
+              const ok = await confirmDialog({
+                title: t('trip.resetConfirm'),
+                description: t('trip.resetText'),
+                confirmLabel: t('trip.reset'),
+              });
+              if (!ok) return;
+              await reset.mutateAsync({ id: trip.id });
+              // Spese, programma, biglietti, note e chat cambiano tutti: si ricarica tutto.
+              await queryClient.invalidateQueries();
+              toast.success(t('trip.resetDone'));
+            }}
+          >
+            <RotateCcw />
+            {t('trip.reset')}
+          </Button>
+        </CardContent>
+      </Card>
+      <Card className="border-destructive/30">
+        <CardHeader>
           <CardTitle className="text-destructive">{t('trip.deleteTitle')}</CardTitle>
           <CardDescription>{t('trip.deleteText')}</CardDescription>
         </CardHeader>
@@ -94,8 +124,13 @@ export function SettingsTab({ trip }: { trip: TripDetail }) {
             variant="destructive"
             disabled={remove.isPending}
             onClick={async () => {
-              const typed = prompt(t('trip.deleteConfirm', { title: trip.title }));
-              if (typed?.trim() !== trip.title.trim()) return;
+              const ok = await confirmDialog({
+                title: t('trip.deleteTitle'),
+                description: `${t('trip.deleteText')} ${t('trip.deleteConfirm', { title: trip.title })}`,
+                confirmLabel: t('trip.delete'),
+                typeToConfirm: trip.title,
+              });
+              if (!ok) return;
               await remove.mutateAsync({ id: trip.id });
               await queryClient.invalidateQueries({ queryKey: trpc.trips.list.queryKey() });
               await navigate({ to: '/app' });

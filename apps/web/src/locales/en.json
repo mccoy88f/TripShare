@@ -16,7 +16,10 @@
       "light": "Light",
       "dark": "Dark"
     },
-    "or": "or"
+    "or": "or",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "typeToConfirm": "Type “{{text}}” to confirm"
   },
   "nav": {
     "signIn": "Sign in",
@@ -516,7 +519,12 @@
       "notes": "Add note",
       "members": "Invite someone",
       "noDays": "Create the trip days first (or generate them with AI)."
-    }
+    },
+    "resetTitle": "Reset trip",
+    "reset": "Reset trip",
+    "resetText": "Removes expenses, balances, the plan (days, activities, places, bookings, budget and packing), tickets, notes and assistant chats. Title, dates, currency, cover and members stay. This can't be undone.",
+    "resetConfirm": "Reset the trip?",
+    "resetDone": "Trip reset"
   },
   "models": {
     "free": "Free",
@@ -762,7 +770,8 @@
     },
     "amountRequired": "An amount is required, except for items with amount to enter.",
     "stepWhat": "Item",
-    "stepMore": "Notes"
+    "stepMore": "Notes",
+    "confirmDelete": "Delete this budget item?"
   },
   "packing": {
     "progress": "{{done}} of {{total}} ready",

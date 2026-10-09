@@ -27,6 +27,7 @@ import type { TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useOnAdd } from '@/lib/fab';
 import { moneyDraft, MoneyFields, moneyFromDraft, moneyLabel, textareaClass } from './fields';
+import { confirmDialog } from '@/components/confirm';
 
 export function BudgetTab({ trip }: { trip: TripDetail }) {
   const { t, i18n } = useTranslation();
@@ -303,8 +304,10 @@ function BudgetDialog({
                 type="button"
                 variant="ghost"
                 className="text-destructive"
+                aria-label={t('expense.delete')}
                 disabled={pending}
                 onClick={async () => {
+                  if (!(await confirmDialog(t('budget.confirmDelete')))) return;
                   await apply([{ type: 'deleteBudgetItem', id: item.id }]);
                   onClose();
                 }}

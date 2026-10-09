@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { ExpenseDialog, type ExpensePreset } from './expense-dialog';
 import { useOnAdd } from '@/lib/fab';
 import { useKeyboard } from '@/lib/keyboard';
+import { confirmDialog } from '@/components/confirm';
 
 /** Descrizione breve di una modifica proposta dall'assistente. */
 function describeOp(op: PlanOp, t: TFunction): string {
@@ -240,8 +241,8 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
               className="size-10 shrink-0 text-muted-foreground"
               aria-label={t('ai.chat.clear')}
               title={t('ai.chat.clear')}
-              onClick={() =>
-                confirm(t('ai.chat.confirmClear')) &&
+              onClick={async () =>
+                (await confirmDialog(t('ai.chat.confirmClear'))) &&
                 removeChat.mutate({ tripId: trip.id, conversationId })
               }
             >

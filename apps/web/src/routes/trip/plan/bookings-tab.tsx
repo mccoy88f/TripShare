@@ -28,6 +28,7 @@ import {
   parseLinks,
   textareaClass,
 } from './fields';
+import { confirmDialog } from '@/components/confirm';
 
 const CATEGORY_OF: Record<Booking['type'], ExpenseCategory> = {
   flight: 'flights',
@@ -368,9 +369,10 @@ function BookingDialog({
                 type="button"
                 variant="ghost"
                 className="text-destructive"
+                aria-label={t('expense.delete')}
                 disabled={pending}
                 onClick={async () => {
-                  if (!confirm(t('plan.booking.confirmDelete'))) return;
+                  if (!(await confirmDialog(t('plan.booking.confirmDelete')))) return;
                   await apply([{ type: 'deleteBooking', id: booking.id }]);
                   onClose();
                 }}

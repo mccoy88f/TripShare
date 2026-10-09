@@ -13,6 +13,7 @@ import { shortDate } from '@/lib/format';
 import { useTRPC } from '@/lib/trpc';
 import type { TripDetail } from '@/lib/types';
 import { useOnAdd } from '@/lib/fab';
+import { confirmDialog } from '@/components/confirm';
 
 export function MembersTab({ trip }: { trip: TripDetail }) {
   const { t } = useTranslation();
@@ -179,7 +180,13 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
                   className="size-9 text-muted-foreground"
                   aria-label={t('members.remove')}
                   onClick={async () => {
-                    if (!confirm(t('members.confirmRemove', { name: m.name }))) return;
+                    if (
+                      !(await confirmDialog({
+                        title: t('members.confirmRemove', { name: m.name }),
+                        confirmLabel: t('members.remove'),
+                      }))
+                    )
+                      return;
                     await removeMember.mutateAsync({ tripId: trip.id, memberId: m.id });
                     await refresh();
                   }}
@@ -336,7 +343,13 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
         variant="ghost"
         className="justify-self-start text-destructive"
         onClick={async () => {
-          if (!confirm(t('members.confirmLeave'))) return;
+          if (
+            !(await confirmDialog({
+              title: t('members.confirmLeave'),
+              confirmLabel: t('members.leave'),
+            }))
+          )
+            return;
           try {
             await removeMember.mutateAsync({ tripId: trip.id, memberId: trip.myMemberId });
             await queryClient.invalidateQueries({ queryKey: trpc.trips.list.queryKey() });

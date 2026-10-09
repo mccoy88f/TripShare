@@ -28,6 +28,7 @@ import {
   textareaClass,
   type MoneyDraft,
 } from './fields';
+import { confirmDialog } from '@/components/confirm';
 
 interface Draft {
   date: string;
@@ -192,9 +193,10 @@ export function ActivityDialog({
                 type="button"
                 variant="ghost"
                 className="text-destructive"
+                aria-label={t('expense.delete')}
                 disabled={pending}
                 onClick={async () => {
-                  if (!confirm(t('plan.activity.confirmDelete'))) return;
+                  if (!(await confirmDialog(t('plan.activity.confirmDelete')))) return;
                   await apply([{ type: 'deleteActivity', id: activity.id }]);
                   onOpenChange(false);
                 }}

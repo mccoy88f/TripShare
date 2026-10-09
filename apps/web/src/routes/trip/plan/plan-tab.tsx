@@ -40,6 +40,7 @@ import { moneyLabel, textareaClass } from './fields';
 import { GeneratePlanButton } from './generate-trip';
 import { ImportPlanButton } from './import-export';
 import { myTickets, TicketViewer, useTickets, type Ticket } from './tickets';
+import { confirmDialog } from '@/components/confirm';
 
 type Weather = {
   date: string;
@@ -619,7 +620,7 @@ function DayDialog({
               className="text-destructive"
               disabled={pending}
               onClick={async () => {
-                if (!confirm(t('plan.confirmDeleteDay'))) return;
+                if (!(await confirmDialog(t('plan.confirmDeleteDay')))) return;
                 await apply([{ type: 'deleteDay', date: day.date }]);
                 onOpenChange(false);
               }}

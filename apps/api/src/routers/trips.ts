@@ -1,7 +1,18 @@
 import { TRPCError } from '@trpc/server';
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { expense, trip, tripMember, user } from '@tripshare/db';
+import {
+  aiChatMessage,
+  aiConversation,
+  bookingTicket,
+  expense,
+  packingCheck,
+  settlement,
+  trip,
+  tripMember,
+  tripNote,
+  user,
+} from '@tripshare/db';
 import { CURRENCY_CODES } from '@tripshare/shared';
 import { computeLedgers, requireMember } from '../services/trips.js';
 import { downloadPhoto, searchPhotos } from '../unsplash.js';
@@ -168,6 +179,40 @@ export const tripsRouter = router({
     const { trip: t } = await requireMember(ctx.db, input.id, ctx.user.id, 'owner');
     await ctx.db.delete(trip).where(eq(trip.id, input.id));
     await ctx.storage?.removeByUrl(t.coverImage);
+    return { ok: true };
+  }),
+
+  /**
+   * Azzera il viaggio: toglie spese, saldi, programma (giorni, luoghi, prenotazioni, budget,
+   * valigia), biglietti, note e chat dell'assistente. Restano i dati principali del viaggio,
+   * la copertina, i partecipanti e gli inviti.
+   */
+  reset: authedProcedure.input(z.object({ id: z.uuid() })).mutation(async ({ ctx, input }) => {
+    await requireMember(ctx.db, input.id, ctx.user.id, 'owner');
+    const files = await ctx.db.transaction(async (tx) => {
+      const receipts = await tx
+        .select({ name: expense.receipt })
+        .from(expense)
+        .where(and(eq(expense.tripId, input.id), isNotNull(expense.receipt)));
+      const tickets = await tx
+        .select({ name: bookingTicket.storageName })
+        .from(bookingTicket)
+        .where(and(eq(bookingTicket.tripId, input.id), isNotNull(bookingTicket.storageName)));
+      await tx.delete(expense).where(eq(expense.tripId, input.id));
+      await tx.delete(settlement).where(eq(settlement.tripId, input.id));
+      await tx.delete(bookingTicket).where(eq(bookingTicket.tripId, input.id));
+      await tx.delete(packingCheck).where(eq(packingCheck.tripId, input.id));
+      await tx.delete(tripNote).where(eq(tripNote.tripId, input.id));
+      await tx.delete(aiChatMessage).where(eq(aiChatMessage.tripId, input.id));
+      await tx.delete(aiConversation).where(eq(aiConversation.tripId, input.id));
+      // Senza programma salvato si riparte dal programma vuoto costruito dai dati del viaggio.
+      await tx
+        .update(trip)
+        .set({ plan: null, planVersion: sql`${trip.planVersion} + 1`, updatedAt: new Date() })
+        .where(eq(trip.id, input.id));
+      return [...receipts, ...tickets].map((r) => r.name);
+    });
+    for (const name of files) await ctx.storage?.removePrivate(name).catch(() => undefined);
     return { ok: true };
   }),
 

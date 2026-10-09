@@ -12,6 +12,7 @@ import { money, shortDate, todayIso } from '@/lib/format';
 import { useTRPC } from '@/lib/trpc';
 import type { TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { confirmDialog } from '@/components/confirm';
 
 type Transfer = TripDetail['ledger']['transfers'][number];
 
@@ -137,15 +138,16 @@ export function BalancesTab({ trip }: { trip: TripDetail }) {
                         size="sm"
                         variant="outline"
                         disabled={record.isPending}
-                        onClick={() => {
+                        onClick={async () => {
                           if (
-                            !confirm(
-                              t('balance.confirmManual', {
+                            !(await confirmDialog({
+                              destructive: false,
+                              title: t('balance.confirmManual', {
                                 from: nameOf(tr.from),
                                 to: nameOf(tr.to),
                                 amount: money(tr.amount, trip.currency),
                               }),
-                            )
+                            }))
                           )
                             return;
                           record.mutate({
@@ -190,8 +192,8 @@ export function BalancesTab({ trip }: { trip: TripDetail }) {
                     variant="ghost"
                     className="size-8 text-muted-foreground"
                     aria-label={t('expense.delete')}
-                    onClick={() =>
-                      confirm(t('balance.confirmDelete')) &&
+                    onClick={async () =>
+                      (await confirmDialog(t('balance.confirmDelete'))) &&
                       remove.mutate({ tripId: trip.id, id: s.id })
                     }
                   >

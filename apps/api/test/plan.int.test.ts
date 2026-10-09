@@ -130,6 +130,54 @@ run('trip plan (integration)', () => {
     expect(invalid.status).toBe(400);
   });
 
+  it('resets a trip to its empty structure (owner only)', async () => {
+    const { owner, tripId } = await setup();
+    await t.trpc('plan.replace', owner, { tripId, plan: scozia, updateTrip: true });
+    const trip = await t.trpc<{ myMemberId: string }>('trips.get', owner, { id: tripId }, 'query');
+    const me = trip.data.myMemberId;
+    await t.trpc('expenses.create', owner, {
+      tripId,
+      title: 'Cena',
+      category: 'food',
+      amount: 5000,
+      currency: 'EUR',
+      date: '2026-10-12',
+      payers: [{ memberId: me, amount: 5000 }],
+      split: { method: 'equal', members: [me] },
+    });
+    await t.trpc('notes.create', owner, { tripId, content: 'Adattatori', visibility: 'public' });
+    await t.trpc('tickets.createCode', owner, {
+      tripId,
+      bookingId: 'flight-out',
+      codeFormat: 'QRCode',
+      codeValue: 'ABC',
+    });
+
+    const stranger = (await t.signUp('other@example.com', 'Other')).cookie;
+    expect((await t.trpc('trips.reset', stranger, { id: tripId })).status).toBe(404);
+
+    expect((await t.trpc('trips.reset', owner, { id: tripId })).status).toBe(200);
+    const after = await t.trpc<{
+      title: string;
+      startDate: string;
+      members: unknown[];
+      ledger: { total: number };
+    }>('trips.get', owner, { id: tripId }, 'query');
+    expect(after.data).toMatchObject({ title: 'Scozia 12-16 ottobre', startDate: '2026-10-12' });
+    expect(after.data.members).toHaveLength(1);
+    expect(after.data.ledger.total).toBe(0);
+    const plan = await t.trpc<{
+      plan: { days: unknown[]; places: unknown[]; bookings: unknown[]; budget: unknown[] };
+    }>('plan.get', owner, { tripId }, 'query');
+    expect(plan.data.plan).toMatchObject({ days: [], places: [], bookings: [], budget: [] });
+    const lists = await Promise.all(
+      ['expenses.list', 'notes.list', 'tickets.list'].map((p) =>
+        t.trpc<unknown[]>(p, owner, { tripId }, 'query'),
+      ),
+    );
+    expect(lists.map((l) => l.data.length)).toEqual([0, 0, 0]);
+  });
+
   it('tracks packing checks per member and blocks viewers from editing', async () => {
     const { owner, tripId } = await setup();
     await t.trpc('plan.replace', owner, { tripId, plan: scozia });

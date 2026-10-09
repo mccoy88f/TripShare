@@ -13,6 +13,7 @@ import { useTRPC } from '@/lib/trpc';
 import type { TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { textareaClass } from './plan/fields';
+import { confirmDialog } from '@/components/confirm';
 
 type Visibility = 'public' | 'private';
 interface Draft {
@@ -133,9 +134,9 @@ function DeleteNote({ tripId, id }: { tripId: string; id: string }) {
       variant="ghost"
       className="size-8"
       aria-label={t('expense.delete')}
-      onClick={(e) => {
+      onClick={async (e) => {
         e.stopPropagation();
-        if (confirm(t('notes.confirmDelete'))) remove.mutate({ tripId, id });
+        if (await confirmDialog(t('notes.confirmDelete'))) remove.mutate({ tripId, id });
       }}
     >
       <Trash2 />
@@ -235,9 +236,10 @@ function NoteDialog({
                 type="button"
                 variant="ghost"
                 className="text-destructive"
+                aria-label={t('expense.delete')}
                 disabled={pending}
                 onClick={async () => {
-                  if (!confirm(t('notes.confirmDelete'))) return;
+                  if (!(await confirmDialog(t('notes.confirmDelete')))) return;
                   await remove.mutateAsync({ tripId: trip.id, id: draft.id! });
                   onClose();
                 }}

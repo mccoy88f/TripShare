@@ -38,6 +38,7 @@ import {
   type ReceiptItem,
   type ReceiptResult,
 } from './receipt-scan';
+import { confirmDialog } from '@/components/confirm';
 
 type Method = 'equal' | 'shares' | 'percent' | 'exact';
 
@@ -385,9 +386,10 @@ export function ExpenseDialog({
                 type="button"
                 variant="ghost"
                 className="text-destructive"
+                aria-label={t('expense.delete')}
                 disabled={pending}
                 onClick={async () => {
-                  if (!confirm(t('expense.confirmDelete'))) return;
+                  if (!(await confirmDialog(t('expense.confirmDelete')))) return;
                   await remove.mutateAsync({ tripId: trip.id, id: expense.id });
                   await invalidate();
                   toast.success(t('expense.deleted'));

@@ -16,7 +16,10 @@
       "light": "Chiaro",
       "dark": "Scuro"
     },
-    "or": "oppure"
+    "or": "oppure",
+    "confirm": "Conferma",
+    "delete": "Elimina",
+    "typeToConfirm": "Scrivi «{{text}}» per confermare"
   },
   "nav": {
     "signIn": "Accedi",
@@ -516,7 +519,12 @@
       "notes": "Aggiungi nota",
       "members": "Invita qualcuno",
       "noDays": "Crea prima i giorni del viaggio (o generali con l'AI)."
-    }
+    },
+    "resetTitle": "Azzera viaggio",
+    "reset": "Azzera viaggio",
+    "resetText": "Toglie spese, saldi, programma (giorni, attività, luoghi, prenotazioni, budget e valigia), biglietti, note e chat dell'assistente. Restano titolo, date, valuta, copertina e partecipanti. Non si può annullare.",
+    "resetConfirm": "Azzerare il viaggio?",
+    "resetDone": "Viaggio azzerato"
   },
   "models": {
     "free": "Gratis",
@@ -762,7 +770,8 @@
     },
     "amountRequired": "Serve un importo, tranne per le voci con importo da inserire.",
     "stepWhat": "Voce",
-    "stepMore": "Note"
+    "stepMore": "Note",
+    "confirmDelete": "Eliminare questa voce di budget?"
   },
   "packing": {
     "progress": "{{done}} di {{total}} pronti",
