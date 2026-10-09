@@ -1,5 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Loader2, MessageSquarePlus, Plus, Send, Sparkles, Trash2 } from 'lucide-react';
+import {
+  Check,
+  Loader2,
+  MessageSquarePlus,
+  Pencil,
+  Plus,
+  Send,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -23,6 +32,7 @@ import { cn } from '@/lib/utils';
 import { ExpenseDialog, type ExpensePreset } from './expense-dialog';
 import { useOnAdd } from '@/lib/fab';
 import { useKeyboard } from '@/lib/keyboard';
+import { ProposalDialog } from './proposal-dialog';
 import { confirmDialog } from '@/components/confirm';
 
 /** Descrizione breve di una modifica proposta dall'assistente. */
@@ -129,6 +139,8 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
   const [message, setMessage] = useState('');
   const [sent, setSent] = useState<string | null>(null);
   const [expense, setExpense] = useState<ExpensePreset | null>(null);
+  /** Modifiche proposte in revisione prima di essere applicate. */
+  const [reviewing, setReviewing] = useState<{ messageId: string; ops: PlanOp[] } | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   useOnAdd('assistant', () => input.current?.focus());
@@ -336,20 +348,10 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
                       <Button
                         size="sm"
                         className="justify-self-start"
-                        disabled={applying}
-                        onClick={async () => {
-                          await apply(actions);
-                          await markApplied.mutateAsync({ tripId: trip.id, messageId: m.id });
-                          await queryClient.invalidateQueries({
-                            queryKey: trpc.ai.chat.history.queryKey({
-                              tripId: trip.id,
-                              conversationId: conversationId ?? '',
-                            }),
-                          });
-                        }}
+                        onClick={() => setReviewing({ messageId: m.id, ops: actions })}
                       >
-                        {applying ? <Loader2 className="animate-spin" /> : <Check />}
-                        {t('ai.chat.apply')}
+                        <Pencil />
+                        {t('ai.chat.review')}
                       </Button>
                     )
                   )}
@@ -373,6 +375,25 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
         </>
       )}
       <div ref={bottom} />
+      {reviewing && (
+        <ProposalDialog
+          ops={reviewing.ops}
+          describe={describeOp}
+          applying={applying}
+          onClose={() => setReviewing(null)}
+          onApply={async (ops) => {
+            await apply(ops);
+            await markApplied.mutateAsync({ tripId: trip.id, messageId: reviewing.messageId });
+            await queryClient.invalidateQueries({
+              queryKey: trpc.ai.chat.history.queryKey({
+                tripId: trip.id,
+                conversationId: conversationId ?? '',
+              }),
+            });
+            setReviewing(null);
+          }}
+        />
+      )}
       {expense && (
         <ExpenseDialog
           trip={trip}

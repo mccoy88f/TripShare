@@ -959,7 +959,13 @@
       },
       "addExpense": "Aggiungi",
       "newChat": "Nuova chat",
-      "conversations": "Conversazioni"
+      "conversations": "Conversazioni",
+      "review": "Rivedi e aggiungi",
+      "reviewTitle": "Rivedi le modifiche",
+      "reviewHint": "Togli la spunta a ciò che non vuoi e tocca la matita per correggere.",
+      "editProposal": "Modifica",
+      "applySelected_one": "Aggiungi {{count}} voce",
+      "applySelected_other": "Aggiungi {{count}} voci"
     },
     "verify": {
       "button": "Verifica",

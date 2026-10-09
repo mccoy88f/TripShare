@@ -57,10 +57,6 @@ export function BudgetTab({ trip }: { trip: TripDetail }) {
   const categories = EXPENSE_CATEGORY_KEYS.filter(
     (c) => summary.byCategory[c] || actualByCategory[c],
   );
-  const max = Math.max(
-    1,
-    ...categories.map((c) => Math.max(summary.byCategory[c] ?? 0, actualByCategory[c] ?? 0)),
-  );
 
   const fetchRates = async () => {
     setLoadingRates(true);
@@ -134,34 +130,38 @@ export function BudgetTab({ trip }: { trip: TripDetail }) {
               <span className="size-2.5 rounded-full bg-accent" /> {t('budget.spent')}
             </span>
           </div>
-          {categories.map((c) => (
-            <div key={c} className="grid grid-cols-1 gap-1">
-              <div className="flex items-center justify-between text-sm">
-                <span>
-                  {EXPENSE_CATEGORIES[c].emoji} {categoryLabel(c, locale)}
-                </span>
-                <span className="tabular text-muted-foreground">
-                  {money(actualByCategory[c] ?? 0, trip.currency)} /{' '}
-                  {money(summary.byCategory[c] ?? 0, trip.currency)}
-                </span>
+          {categories.map((c) => {
+            // Ogni barra è in scala sulla propria categoria: previsto e speso si confrontano tra loro.
+            const planned = summary.byCategory[c] ?? 0;
+            const actual = actualByCategory[c] ?? 0;
+            const scale = Math.max(planned, actual, 1);
+            return (
+              <div key={c} className="grid grid-cols-1 gap-1">
+                <div className="flex items-center justify-between text-sm">
+                  <span>
+                    {EXPENSE_CATEGORIES[c].emoji} {categoryLabel(c, locale)}
+                  </span>
+                  <span className="tabular text-muted-foreground">
+                    {money(actualByCategory[c] ?? 0, trip.currency)} /{' '}
+                    {money(summary.byCategory[c] ?? 0, trip.currency)}
+                  </span>
+                </div>
+                <div className="relative h-2.5 rounded-full bg-muted">
+                  <div
+                    className="absolute inset-y-0 left-0 rounded-full bg-primary/35"
+                    style={{ width: `${(planned / scale) * 100}%` }}
+                  />
+                  <div
+                    className={cn(
+                      'absolute inset-y-0 left-0 h-1.5 translate-y-0.5 rounded-full',
+                      actual > planned ? 'bg-destructive' : 'bg-accent',
+                    )}
+                    style={{ width: `${(actual / scale) * 100}%` }}
+                  />
+                </div>
               </div>
-              <div className="relative h-2.5 rounded-full bg-muted">
-                <div
-                  className="absolute inset-y-0 left-0 rounded-full bg-primary/35"
-                  style={{ width: `${((summary.byCategory[c] ?? 0) / max) * 100}%` }}
-                />
-                <div
-                  className={cn(
-                    'absolute inset-y-0 left-0 h-1.5 translate-y-0.5 rounded-full',
-                    (actualByCategory[c] ?? 0) > (summary.byCategory[c] ?? 0)
-                      ? 'bg-destructive'
-                      : 'bg-accent',
-                  )}
-                  style={{ width: `${((actualByCategory[c] ?? 0) / max) * 100}%` }}
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </Card>
       )}
 
