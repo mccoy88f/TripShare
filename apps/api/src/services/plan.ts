@@ -84,3 +84,21 @@ export function planError(err: unknown): never {
   }
   throw err;
 }
+
+const PLACE_PHOTO = /^\/api\/files\/place-[a-f0-9]{32}\.webp$/;
+
+/**
+ * Elimina i file delle foto dei luoghi che non compaiono più nel programma (luogo tolto,
+ * foto sostituita o programma azzerato). Le foto esterne (https) non sono nostre.
+ */
+export async function removeOrphanPhotos(
+  storage: { removeByUrl(url: string): Promise<void> } | undefined,
+  before: TripDocument | undefined,
+  after: TripDocument | undefined,
+) {
+  if (!storage || !before) return;
+  const kept = new Set((after?.places ?? []).map((p) => p.photo));
+  for (const p of before.places)
+    if (p.photo && PLACE_PHOTO.test(p.photo) && !kept.has(p.photo))
+      await storage.removeByUrl(p.photo).catch(() => undefined);
+}

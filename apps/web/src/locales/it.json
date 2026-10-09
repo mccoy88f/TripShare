@@ -302,7 +302,8 @@
     "aiTest": "Prova",
     "aiTestOk": "Funziona · {{model}} · {{ms}} ms · risposta: {{content}}",
     "aiTestError": "Errore con {{model}}: {{error}}",
-    "aiErrors": "Ultimi errori"
+    "aiErrors": "Ultimi errori",
+    "brave": "Brave Search API key (foto dei luoghi)"
   },
   "legal": {
     "privacyTitle": "Informativa sulla privacy",
@@ -1080,5 +1081,27 @@
     "count_one": "{{count}} risultato",
     "count_other": "{{count}} risultati",
     "ask": "Chiedi all'assistente"
+  },
+  "placePhoto": {
+    "none": "Nessuna foto",
+    "upload": "Carica foto",
+    "search": "Cerca online",
+    "remove": "Rimuovi",
+    "searchTitle": "Cerca una foto del luogo",
+    "placeholder": "Cerca, es. Edinburgh Castle",
+    "rights": "Le foto arrivano da siti di terzi: controlla di poterle usare. Quella scelta viene salvata su TripShare.",
+    "noResults": "Nessuna foto trovata.",
+    "searchError": "Ricerca non disponibile.",
+    "error": "Non è stato possibile salvare la foto.",
+    "errors": {
+      "BRAVE_INVALID_KEY": "La chiave di Brave Search non è valida.",
+      "BRAVE_RATE_LIMIT": "Troppe richieste a Brave Search: riprova tra poco.",
+      "BRAVE_NOT_CONFIGURED": "La ricerca foto non è configurata.",
+      "INVALID_URL": "Indirizzo dell'immagine non valido.",
+      "NOT_AN_IMAGE": "Il file non è un'immagine.",
+      "FILE_TOO_LARGE": "L'immagine è troppo grande.",
+      "DOWNLOAD_FAILED": "Impossibile scaricare l'immagine.",
+      "INVALID_IMAGE": "Immagine non valida."
+    }
   }
 }

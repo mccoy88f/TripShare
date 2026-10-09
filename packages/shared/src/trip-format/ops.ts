@@ -67,6 +67,13 @@ export const PlanOpSchema = z.discriminatedUnion('type', [
   /** Sostituisce nel giorno le attività indicate dall'alternativa con quelle dell'alternativa. */
   z.object({ type: z.literal('applyAlternative'), id: RefSchema }),
   z.object({ type: z.literal('upsertPlace'), place: PlaceSchema.extend({ id: OptionalId }) }),
+  /** Imposta (o, senza `photo`, toglie) la foto di un luogo. */
+  z.object({
+    type: z.literal('setPlacePhoto'),
+    id: RefSchema,
+    photo: PlaceSchema.shape.photo,
+    photoCredit: PlaceSchema.shape.photoCredit,
+  }),
   z.object({ type: z.literal('deletePlace'), id: RefSchema }),
   z.object({ type: z.literal('upsertBooking'), booking: BookingSchema.extend({ id: OptionalId }) }),
   z.object({ type: z.literal('deleteBooking'), id: RefSchema }),
@@ -302,9 +309,27 @@ export function applyPlanOps(input: TripDocument, ops: PlanOp[]): TripDocument {
         }
         break;
       }
-      case 'upsertPlace':
-        upsertBy(doc.places, { ...op.place, id: op.place.id ?? newId(op.place.name, used) });
+      case 'upsertPlace': {
+        const id = op.place.id ?? newId(op.place.name, used);
+        // Chi modifica un luogo senza citare la foto (AI, import) non deve farla sparire:
+        // per toglierla c'è setPlacePhoto.
+        const previous = doc.places.find((p) => p.id === id);
+        upsertBy(doc.places, {
+          ...op.place,
+          id,
+          ...(!op.place.photo && previous?.photo
+            ? { photo: previous.photo, photoCredit: previous.photoCredit }
+            : {}),
+        });
         break;
+      }
+      case 'setPlacePhoto': {
+        const place = doc.places.find((p) => p.id === op.id);
+        if (!place) throw new PlanOpError(`PLACE_NOT_FOUND:${op.id}`);
+        place.photo = op.photo;
+        place.photoCredit = op.photo ? op.photoCredit : undefined;
+        break;
+      }
       case 'deletePlace':
         doc.places = doc.places.filter((p) => p.id !== op.id);
         for (const day of doc.days) {

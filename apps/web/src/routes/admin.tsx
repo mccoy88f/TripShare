@@ -383,6 +383,12 @@ function GeneralSettings() {
             settings={settings}
             save={save}
           />
+          <SecretField
+            label={t('admin.brave')}
+            settingKey="brave.apiKey"
+            settings={settings}
+            save={save}
+          />
         </CardContent>
       </Card>
     </div>

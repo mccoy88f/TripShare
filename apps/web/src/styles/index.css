@@ -114,3 +114,20 @@
   animation: search-flash 2.6s ease-out;
   border-radius: 0.75rem;
 }
+
+/* Card con foto di sfondo: testo chiaro e controlli in vetro su un velo scuro. */
+.photo-card {
+  --color-foreground: #fff;
+  --color-card-foreground: #fff;
+  --color-muted-foreground: rgb(255 255 255 / 0.84);
+  --color-card: rgb(255 255 255 / 0.14);
+  --color-muted: rgb(255 255 255 / 0.2);
+  --color-secondary: rgb(255 255 255 / 0.22);
+  --color-secondary-foreground: #fff;
+  --color-input: rgb(255 255 255 / 0.4);
+  --color-primary: oklch(0.9 0.1 185);
+  --color-border: rgb(255 255 255 / 0.22);
+  color: #fff;
+  background-size: cover;
+  background-position: center;
+}

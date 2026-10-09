@@ -303,6 +303,17 @@
             "type": "string",
             "maxLength": 1000
           },
+          "photo": {
+            "description": "Foto del luogo: URL https oppure un file caricato su TripShare. Facoltativa.",
+            "type": "string",
+            "maxLength": 500,
+            "pattern": "^(\\/api\\/files\\/|https:\\/\\/)"
+          },
+          "photoCredit": {
+            "description": "Sito o autore della foto, se non è stata caricata da chi usa il viaggio.",
+            "type": "string",
+            "maxLength": 160
+          },
           "tips": {
             "default": [],
             "type": "array",

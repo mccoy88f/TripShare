@@ -11,6 +11,7 @@ import sharp from 'sharp';
 export const IMAGE_PRESETS = {
   avatar: { width: 512, height: 512, fit: 'cover' as const },
   cover: { width: 1600, height: 900, fit: 'cover' as const },
+  place: { width: 1200, height: 800, fit: 'cover' as const },
 };
 export type ImagePreset = keyof typeof IMAGE_PRESETS;
 

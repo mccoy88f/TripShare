@@ -121,6 +121,22 @@ export async function buildServer(
       return { url };
     });
 
+    /** Foto di un luogo caricata dal dispositivo; il programma la collega al luogo. */
+    app.post<{ Params: { id: string } }>('/api/trips/:id/place-photo', async (req, reply) => {
+      const session = await sessionOf(req);
+      if (!session) return reply.status(401).send({ error: 'UNAUTHORIZED' });
+      try {
+        await requireMember(services.db, req.params.id, session.user.id, 'editor');
+      } catch {
+        return reply.status(404).send({ error: 'TRIP_NOT_FOUND' });
+      }
+      const image = await readImage(req);
+      if (!Buffer.isBuffer(image)) return reply.status(image.status).send({ error: image.error });
+      const url = await storage.saveImage(image, 'place').catch(() => null);
+      if (!url) return reply.status(422).send({ error: 'INVALID_IMAGE' });
+      return { url };
+    });
+
     const TICKET_TYPES: Record<string, string> = {
       'application/pdf': 'pdf',
       'application/vnd.apple.pkpass': 'pkpass',

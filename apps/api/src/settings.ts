@@ -100,6 +100,11 @@ export const SETTINGS = {
     default: null,
     secret: true,
   },
+  'brave.apiKey': {
+    schema: z.string().min(10).max(200).nullable(),
+    default: null,
+    secret: true,
+  },
 } as const;
 
 export type SettingKey = keyof typeof SETTINGS;

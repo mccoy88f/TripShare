@@ -3,7 +3,14 @@ import { and, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { packingCheck, trip } from '@tripshare/db';
 import { applyPlanOps, parseTripDocument, PlanOpSchema } from '@tripshare/shared/trip-format';
-import { activeMemberCount, planError, prepareForStorage, readPlan } from '../services/plan.js';
+import {
+  activeMemberCount,
+  planError,
+  prepareForStorage,
+  readPlan,
+  removeOrphanPhotos,
+} from '../services/plan.js';
+import { downloadImage, ImageDownloadError, searchImages } from '../brave.js';
 import { requireMember } from '../services/trips.js';
 import { authedProcedure, router } from '../trpc/init.js';
 import { forecast, forecastWindow, geocode } from '../weather.js';
@@ -33,12 +40,14 @@ export const planRouter = router({
       await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
       const members = await activeMemberCount(ctx.db, input.tripId);
       try {
-        return await ctx.db.transaction(async (tx) => {
+        let before: ReturnType<typeof readPlan> | undefined;
+        let after: ReturnType<typeof readPlan> | undefined;
+        const result = await ctx.db.transaction(async (tx) => {
           const [row] = await tx.select().from(trip).where(eq(trip.id, input.tripId)).for('update');
           if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
-          const next = prepareForStorage(
-            applyPlanOps(readPlan(row, members, localeOf(ctx.session?.user.locale)), input.ops),
-          );
+          before = readPlan(row, members, localeOf(ctx.session?.user.locale));
+          const next = prepareForStorage(applyPlanOps(before, input.ops));
+          after = next;
           const [updated] = await tx
             .update(trip)
             .set({ plan: next, planVersion: sql`${trip.planVersion} + 1`, updatedAt: new Date() })
@@ -46,8 +55,50 @@ export const planRouter = router({
             .returning({ version: trip.planVersion });
           return { version: updated!.version };
         });
+        await removeOrphanPhotos(ctx.storage, before, after);
+        return result;
       } catch (err) {
         planError(err);
+      }
+    }),
+
+  /** Cerca foto di un luogo con Brave Search (se il super admin ha impostato la chiave). */
+  placePhotoSearch: authedProcedure
+    .input(z.object({ tripId: z.uuid(), query: z.string().trim().min(2).max(120) }))
+    .query(async ({ ctx, input }) => {
+      await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
+      const key = await ctx.settings.get('brave.apiKey');
+      if (!key) throw new TRPCError({ code: 'BAD_REQUEST', message: 'BRAVE_NOT_CONFIGURED' });
+      try {
+        return await searchImages(
+          key,
+          input.query,
+          localeOf(ctx.session?.user.locale),
+          ctx.httpFetch,
+        );
+      } catch (err) {
+        throw new TRPCError({
+          code: 'BAD_GATEWAY',
+          message: err instanceof Error ? err.message : 'BRAVE_UNAVAILABLE',
+        });
+      }
+    }),
+
+  /** Scarica la foto scelta dalla ricerca e la salva; restituisce l'URL da usare nel luogo. */
+  placePhotoFromUrl: authedProcedure
+    .input(z.object({ tripId: z.uuid(), url: z.url().max(2000) }))
+    .mutation(async ({ ctx, input }) => {
+      await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
+      if (!ctx.storage) throw new TRPCError({ code: 'BAD_REQUEST', message: 'NO_STORAGE' });
+      const maxMb = await ctx.settings.get('uploads.maxMb');
+      try {
+        const data = await downloadImage(input.url, maxMb * 1024 * 1024, ctx.httpFetch);
+        return { url: await ctx.storage.saveImage(data, 'place') };
+      } catch (err) {
+        throw new TRPCError({
+          code: err instanceof ImageDownloadError ? 'BAD_REQUEST' : 'UNPROCESSABLE_CONTENT',
+          message: err instanceof ImageDownloadError ? err.message : 'INVALID_IMAGE',
+        });
       }
     }),
 
@@ -75,6 +126,7 @@ export const planRouter = router({
         ...parsed.data,
         trip: { ...parsed.data.trip, currency: row.currency as typeof parsed.data.trip.currency },
       });
+      const previous = readPlan(row, await activeMemberCount(ctx.db, input.tripId));
       await ctx.db
         .update(trip)
         .set({
@@ -93,6 +145,7 @@ export const planRouter = router({
             : {}),
         })
         .where(eq(trip.id, input.tripId));
+      await removeOrphanPhotos(ctx.storage, previous, plan);
       return { ok: true };
     }),
 

@@ -14,6 +14,7 @@ import {
   user,
 } from '@tripshare/db';
 import { CURRENCY_CODES } from '@tripshare/shared';
+import { readPlan, removeOrphanPhotos } from '../services/plan.js';
 import { computeLedgers, requireMember } from '../services/trips.js';
 import { downloadPhoto, searchPhotos } from '../unsplash.js';
 import { listMembers } from '../services/members.js';
@@ -177,8 +178,10 @@ export const tripsRouter = router({
 
   delete: authedProcedure.input(z.object({ id: z.uuid() })).mutation(async ({ ctx, input }) => {
     const { trip: t } = await requireMember(ctx.db, input.id, ctx.user.id, 'owner');
+    const plan = readPlan(t, 1);
     await ctx.db.delete(trip).where(eq(trip.id, input.id));
     await ctx.storage?.removeByUrl(t.coverImage);
+    await removeOrphanPhotos(ctx.storage, plan, undefined);
     return { ok: true };
   }),
 
@@ -188,7 +191,8 @@ export const tripsRouter = router({
    * la copertina, i partecipanti e gli inviti.
    */
   reset: authedProcedure.input(z.object({ id: z.uuid() })).mutation(async ({ ctx, input }) => {
-    await requireMember(ctx.db, input.id, ctx.user.id, 'owner');
+    const { trip: current } = await requireMember(ctx.db, input.id, ctx.user.id, 'owner');
+    const previous = readPlan(current, 1);
     const files = await ctx.db.transaction(async (tx) => {
       const receipts = await tx
         .select({ name: expense.receipt })
@@ -213,6 +217,7 @@ export const tripsRouter = router({
       return [...receipts, ...tickets].map((r) => r.name);
     });
     for (const name of files) await ctx.storage?.removePrivate(name).catch(() => undefined);
+    await removeOrphanPhotos(ctx.storage, previous, undefined);
     return { ok: true };
   }),
 

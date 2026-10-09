@@ -470,6 +470,8 @@ function ActivityCard({
 }) {
   const { t } = useTranslation();
   const places = a.placeIds.map((id) => plan.places.find((p) => p.id === id)).filter((p) => !!p);
+  // L'icona dell'attività è la foto del primo luogo che ne ha una.
+  const photo = places.find((p) => p.photo)?.photo;
   const booking = a.bookingId ? plan.bookings.find((b) => b.id === a.bookingId) : undefined;
   const tr = a.transport;
   const fmt = (minor: number, cur: string) => money(minor, cur);
@@ -496,7 +498,16 @@ function ActivityCard({
         )}
       >
         <div className="flex items-start gap-2.5">
-          <span className="text-xl leading-6">{a.emoji ?? ACTIVITY_TYPE_EMOJI[a.type]}</span>
+          {photo ? (
+            <img
+              src={photo}
+              alt=""
+              loading="lazy"
+              className="size-11 shrink-0 rounded-xl object-cover shadow-xs"
+            />
+          ) : (
+            <span className="text-xl leading-6">{a.emoji ?? ACTIVITY_TYPE_EMOJI[a.type]}</span>
+          )}
           <div className="min-w-0 flex-1">
             <p className="font-semibold">
               {a.title}

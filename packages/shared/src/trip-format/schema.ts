@@ -127,6 +127,17 @@ export const PlaceSchema = z
       .optional()
       .meta(d('Per ristoranti e caffè: pasti consigliati.')),
     description: z.string().max(1000).optional(),
+    photo: z
+      .string()
+      .max(500)
+      .regex(/^(\/api\/files\/|https:\/\/)/)
+      .optional()
+      .meta(d('Foto del luogo: URL https oppure un file caricato su TripShare. Facoltativa.')),
+    photoCredit: z
+      .string()
+      .max(160)
+      .optional()
+      .meta(d('Sito o autore della foto, se non è stata caricata da chi usa il viaggio.')),
     tips: z.array(z.string().max(300)).default([]),
     verification: VerificationSchema.optional(),
     links: z.array(LinkSchema).default([]),

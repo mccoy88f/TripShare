@@ -51,6 +51,7 @@ import {
   textareaClass,
 } from './fields';
 import { confirmDialog } from '@/components/confirm';
+import { PlacePhotoField } from './place-photo';
 import { searchId } from '@/lib/search-focus';
 
 export function PlacesTab({ trip }: { trip: TripDetail }) {
@@ -123,8 +124,16 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
               onClick={() => canEdit && setEditing(p)}
               className={cn(
                 'flex flex-col gap-2 p-4',
+                p.photo && 'photo-card min-h-56 justify-end border-transparent',
                 canEdit && 'cursor-pointer transition hover:bg-muted/40',
               )}
+              style={
+                p.photo
+                  ? {
+                      backgroundImage: `linear-gradient(to bottom, rgb(0 0 0 / 0.25), rgb(0 0 0 / 0.78)), url("${p.photo}")`,
+                    }
+                  : undefined
+              }
             >
               <div className="flex items-start gap-3">
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-xl">
@@ -268,6 +277,8 @@ function PlaceDialog({
     price: moneyDraft(place?.price, currency),
     priceLevel: place?.priceLevel ? String(place.priceLevel) : '',
     description: place?.description ?? '',
+    photo: place?.photo ?? '',
+    photoCredit: place?.photoCredit ?? '',
     tips: place?.tips ?? [],
     links: formatLinks(place?.links ?? []),
     verified: place?.verification?.status ?? 'unverified',
@@ -284,6 +295,8 @@ function PlaceDialog({
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const sources = parseLinks(d.sources);
+    const photoChanged =
+      !!place && ((place.photo ?? '') !== d.photo || (place.photoCredit ?? '') !== d.photoCredit);
     await apply([
       {
         type: 'upsertPlace',
@@ -299,6 +312,10 @@ function PlaceDialog({
           ...(d.priceLevel ? { priceLevel: Number(d.priceLevel) } : {}),
           ...(place?.meals ? { meals: place.meals } : {}),
           ...(d.description.trim() ? { description: d.description.trim() } : {}),
+          // Per un luogo nuovo la foto va subito; per uno esistente la cambia setPlacePhoto.
+          ...(!place && d.photo
+            ? { photo: d.photo, ...(d.photoCredit ? { photoCredit: d.photoCredit } : {}) }
+            : {}),
           tips: cleanLines(d.tips),
           links: parseLinks(d.links),
           ...(d.verified === 'verified' || place?.verification
@@ -312,6 +329,16 @@ function PlaceDialog({
             : {}),
         },
       },
+      ...(photoChanged && place
+        ? [
+            {
+              type: 'setPlacePhoto' as const,
+              id: place.id,
+              ...(d.photo ? { photo: d.photo } : {}),
+              ...(d.photo && d.photoCredit ? { photoCredit: d.photoCredit } : {}),
+            },
+          ]
+        : []),
     ]);
     onClose();
   };
@@ -424,6 +451,14 @@ function PlaceDialog({
             </Field>
           </Step>
           <Step title={t('plan.place.stepMore')}>
+            <PlacePhotoField
+              tripId={tripId}
+              value={{ photo: d.photo || undefined, photoCredit: d.photoCredit || undefined }}
+              searchQuery={`${d.name} ${plan.trip.destination.name ?? ''}`.trim()}
+              onChange={(v) =>
+                setD((p) => ({ ...p, photo: v.photo ?? '', photoCredit: v.photoCredit ?? '' }))
+              }
+            />
             <Field label={t('plan.activity.description')} htmlFor="pl-desc">
               <textarea
                 id="pl-desc"
