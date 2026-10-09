@@ -12,6 +12,7 @@ import {
 import {
   CURRENCY_CODES,
   EXPENSE_CATEGORY_KEYS,
+  allocate,
   computeShares,
   convertMinor,
   type CurrencyCode,
@@ -282,6 +283,98 @@ export const expensesRouter = router({
         )
         .returning({ id: expense.id });
       if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+      return { ok: true };
+    }),
+
+  /**
+   * Integra una spesa esistente con un documento (ricevuta, conferma di pagamento): stato,
+   * scontrino, data e, se diverso, l'importo, ripartendo pagatori e quote in proporzione.
+   */
+  integrate: authedProcedure
+    .input(
+      z.object({
+        tripId: z.uuid(),
+        id: z.uuid(),
+        status: z.enum(['paid', 'planned']).optional(),
+        date: z.iso.date().optional(),
+        receipt: z
+          .string()
+          .regex(/^[a-f0-9]{32}\.[a-z0-9]{1,8}$/)
+          .optional(),
+        bookingId: z.string().max(64).optional(),
+        amount: Minor.optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { trip } = await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
+      const [row] = await ctx.db
+        .select()
+        .from(expense)
+        .where(
+          and(
+            eq(expense.id, input.id),
+            eq(expense.tripId, input.tripId),
+            isNull(expense.deletedAt),
+          ),
+        );
+      if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+      const changeAmount = input.amount !== undefined && input.amount !== row.amount;
+      await ctx.db.transaction(async (tx) => {
+        if (changeAmount) {
+          const amount = input.amount!;
+          const [payers, shares] = await Promise.all([
+            tx.select().from(expensePayer).where(eq(expensePayer.expenseId, row.id)),
+            tx.select().from(expenseShare).where(eq(expenseShare.expenseId, row.id)),
+          ]);
+          // Pagatori e quote mantengono le proporzioni di prima e sommano al nuovo totale
+          // (anche con la divisione per importi esatti).
+          const rescale = <T extends { memberId: string; amount: number }>(rows: T[]) => {
+            const parts = rows.some((r) => r.amount > 0)
+              ? allocate(
+                  amount,
+                  rows.map((r) => r.amount),
+                )
+              : rows.map(() => 0);
+            return rows.map((r, i) => ({ ...r, amount: parts[i]! }));
+          };
+          for (const p of rescale(payers))
+            await tx
+              .update(expensePayer)
+              .set({ amount: p.amount })
+              .where(
+                and(eq(expensePayer.expenseId, row.id), eq(expensePayer.memberId, p.memberId)),
+              );
+          for (const sh of rescale(shares))
+            await tx
+              .update(expenseShare)
+              .set({ amount: sh.amount })
+              .where(
+                and(eq(expenseShare.expenseId, row.id), eq(expenseShare.memberId, sh.memberId)),
+              );
+        }
+        const amount = changeAmount ? input.amount! : row.amount;
+        await tx
+          .update(expense)
+          .set({
+            ...(input.status ? { status: input.status } : {}),
+            ...(input.date ? { date: input.date } : {}),
+            ...(input.receipt ? { receipt: input.receipt } : {}),
+            ...(input.bookingId ? { bookingId: input.bookingId } : {}),
+            ...(changeAmount
+              ? {
+                  amount,
+                  amountTrip: convertMinor(
+                    amount,
+                    row.currency as CurrencyCode,
+                    trip.currency as CurrencyCode,
+                    row.rate,
+                  ),
+                }
+              : {}),
+            updatedAt: new Date(),
+          })
+          .where(eq(expense.id, row.id));
+      });
       return { ok: true };
     }),
 

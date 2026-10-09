@@ -989,6 +989,31 @@
       "boarding_pass": "Carta d'imbarco",
       "ticket": "Biglietto",
       "other": "Documento"
+    },
+    "integrateExpense": "Integra la spesa esistente «{{title}}»",
+    "newExpense": "Crea una nuova spesa",
+    "skipExpense": "Non registrare la spesa",
+    "attachReceipt": "allega la ricevuta",
+    "markPaid": "segna pagata",
+    "updateAmount": "importo {{from}} → {{to}}",
+    "updateBooking": "Aggiorna la prenotazione «{{title}}»",
+    "bookingUpToDate": "«{{title}}» è già nel programma, niente di nuovo da aggiungere.",
+    "placeExists": "Luogo già presente: {{name}}",
+    "ticketExists": "Biglietto già caricato per «{{title}}».",
+    "changes": {
+      "code": "codice {{value}}",
+      "provider": "fornitore {{value}}",
+      "time": "orario {{value}}",
+      "timeFrom": "orario {{from}} → {{value}}",
+      "end": "fine {{value}}",
+      "cost": "costo {{value}}",
+      "paid": "pagata",
+      "booked": "confermata",
+      "flight": "volo {{value}}",
+      "place": "luogo collegato",
+      "notes": "note",
+      "links_one": "{{count}} link",
+      "links_other": "{{count}} link"
     }
   }
 }

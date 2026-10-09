@@ -98,4 +98,61 @@ run('notes and planned expenses (integration)', () => {
     );
     expect(list.data[0]).toMatchObject({ bookingId: 'bk-hotel', status: 'paid' });
   });
+
+  it('integrates a planned expense with a payment receipt, rescaling the split', async () => {
+    const { marco, tripId } = await setup();
+    const trip = await t.trpc<{ myMemberId: string; members: { id: string }[] }>(
+      'trips.get',
+      marco,
+      { id: tripId },
+      'query',
+    );
+    const me = trip.data.myMemberId;
+    const all = trip.data.members.map((m) => m.id);
+    const { data: created } = await t.trpc<{ id: string }>('expenses.create', marco, {
+      tripId,
+      title: 'Hotel (stima)',
+      category: 'lodging',
+      amount: 20000,
+      currency: 'EUR',
+      date: '2026-10-12',
+      payers: [{ memberId: me, amount: 20000 }],
+      split: { method: 'equal', members: all },
+      status: 'planned',
+      bookingId: 'the-spires',
+    });
+    const res = await t.trpc('expenses.integrate', marco, {
+      tripId,
+      id: created.id,
+      status: 'paid',
+      amount: 20300,
+      receipt: `${'a'.repeat(32)}.jpg`,
+    });
+    expect(res.status).toBe(200);
+    const list = await t.trpc<
+      {
+        amount: number;
+        amountTrip: number;
+        status: string;
+        receipt: string;
+        payers: { amount: number }[];
+        shares: { amount: number }[];
+      }[]
+    >('expenses.list', marco, { tripId }, 'query');
+    expect(list.data[0]).toMatchObject({
+      amount: 20300,
+      amountTrip: 20300,
+      status: 'paid',
+      receipt: `${'a'.repeat(32)}.jpg`,
+    });
+    expect(list.data[0]!.payers[0]!.amount).toBe(20300);
+    expect(list.data[0]!.shares.reduce((a, s) => a + s.amount, 0)).toBe(20300);
+    const detail = await t.trpc<{ ledger: { balances: Record<string, number> } }>(
+      'trips.get',
+      marco,
+      { id: tripId },
+      'query',
+    );
+    expect(detail.data.ledger.balances[me]).toBe(10150);
+  });
 });

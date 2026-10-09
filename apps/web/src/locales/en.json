@@ -989,6 +989,31 @@
       "boarding_pass": "Boarding pass",
       "ticket": "Ticket",
       "other": "Document"
+    },
+    "integrateExpense": "Update the existing expense “{{title}}”",
+    "newExpense": "Create a new expense",
+    "skipExpense": "Don't record the expense",
+    "attachReceipt": "attach the receipt",
+    "markPaid": "mark paid",
+    "updateAmount": "amount {{from}} → {{to}}",
+    "updateBooking": "Update the booking “{{title}}”",
+    "bookingUpToDate": "“{{title}}” is already in the plan, nothing new to add.",
+    "placeExists": "Place already there: {{name}}",
+    "ticketExists": "Ticket already uploaded for “{{title}}”.",
+    "changes": {
+      "code": "code {{value}}",
+      "provider": "provider {{value}}",
+      "time": "time {{value}}",
+      "timeFrom": "time {{from}} → {{value}}",
+      "end": "end {{value}}",
+      "cost": "cost {{value}}",
+      "paid": "paid",
+      "booked": "confirmed",
+      "flight": "flight {{value}}",
+      "place": "place linked",
+      "notes": "notes",
+      "links_one": "{{count}} link",
+      "links_other": "{{count}} links"
     }
   }
 }
