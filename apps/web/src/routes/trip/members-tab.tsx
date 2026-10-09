@@ -116,7 +116,7 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
                   </Badge>
                 ) : m.placeholder ? (
                   <Badge variant="warning">{t('members.placeholder')}</Badge>
-                ) : (
+                ) : isOwner && m.id !== trip.myMemberId ? null : (
                   <Badge variant="outline">{t(`members.roles.${m.role}`)}</Badge>
                 )}
               </div>
@@ -124,7 +124,7 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
             <div className="ml-auto flex items-center gap-2">
               {isOwner && !m.placeholder && m.id !== trip.myMemberId && (
                 <Select
-                  className="h-9 w-40 text-sm"
+                  className="h-9 w-36 text-sm"
                   value={m.role}
                   onChange={(e) =>
                     updateMember.mutate({
