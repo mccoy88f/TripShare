@@ -2,7 +2,7 @@ import type { ComponentProps } from 'react';
 import { cn } from '@/lib/utils';
 
 export const fieldClass =
-  'flex h-11 w-full rounded-md border border-input bg-card px-3.5 text-[15px] shadow-xs transition outline-none placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/20 disabled:opacity-50 aria-invalid:border-destructive';
+  'flex h-11 w-full min-w-0 rounded-md border border-input bg-card px-3.5 text-[15px] shadow-xs transition outline-none placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/20 disabled:opacity-50 aria-invalid:border-destructive';
 
 export function Input({ className, ...props }: ComponentProps<'input'>) {
   return <input className={cn(fieldClass, className)} {...props} />;
@@ -45,7 +45,7 @@ export function Field({
   className?: string;
 }) {
   return (
-    <div className={cn('grid gap-1.5', className)}>
+    <div className={cn('grid min-w-0 grid-cols-1 gap-1.5', className)}>
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
       {error ? (

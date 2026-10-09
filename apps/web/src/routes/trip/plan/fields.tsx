@@ -99,7 +99,7 @@ export function MoneyFields({
 }) {
   const { t } = useTranslation();
   return (
-    <fieldset className="grid gap-2">
+    <fieldset className="grid grid-cols-1 gap-2">
       <legend className="mb-1.5 text-sm font-medium">{label}</legend>
       <div className="grid grid-cols-[1fr_auto_auto] gap-2">
         <Input

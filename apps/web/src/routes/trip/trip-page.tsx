@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
-import { ArrowLeft, CalendarDays, Loader2, Plus } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Loader2, Plus, Settings, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AvatarStack } from '@/components/avatar-stack';
@@ -14,33 +14,57 @@ import { BalancesTab } from './balances-tab';
 import { ExpenseDialog } from './expense-dialog';
 import { ExpensesTab } from './expenses-tab';
 import { MembersTab } from './members-tab';
+import { NotesTab } from './notes-tab';
 import { SettingsTab } from './settings-tab';
 import { BookingsTab } from './plan/bookings-tab';
 import { BudgetTab } from './plan/budget-tab';
 import { PackingTab } from './plan/packing-tab';
 import { PlacesTab } from './plan/places-tab';
 import { PlanTab } from './plan/plan-tab';
+import { TicketsTab } from './plan/tickets-tab';
+import { cn } from '@/lib/utils';
 
-const TABS = [
+/** Tab visibili nella barra; membri e impostazioni sono icone a destra. */
+const MAIN_TABS = [
   'plan',
   'expenses',
-  'balances',
-  'places',
   'bookings',
-  'budget',
+  'tickets',
+  'places',
   'packing',
-  'members',
-  'settings',
+  'notes',
 ] as const;
+const TABS = [...MAIN_TABS, 'members', 'settings'] as const;
 type Tab = (typeof TABS)[number];
+/** Sotto-viste del tab Spese. */
+const MONEY_VIEWS = ['list', 'balances', 'budget'] as const;
+type MoneyView = (typeof MONEY_VIEWS)[number];
 
 export function TripPage() {
   const { t } = useTranslation();
   const trpc = useTRPC();
   const navigate = useNavigate();
   const { tripId } = useParams({ strict: false }) as { tripId: string };
-  const search = useSearch({ strict: false }) as { tab?: string };
-  const tab: Tab = TABS.includes(search.tab as Tab) ? (search.tab as Tab) : 'plan';
+  const search = useSearch({ strict: false }) as { tab?: string; view?: string };
+  // I vecchi link a "saldi" e "budget" aprono la sotto-vista del tab Spese.
+  const legacyView = search.tab === 'balances' || search.tab === 'budget' ? search.tab : undefined;
+  const tab: Tab = legacyView
+    ? 'expenses'
+    : TABS.includes(search.tab as Tab)
+      ? (search.tab as Tab)
+      : 'plan';
+  const view: MoneyView =
+    legacyView ??
+    (MONEY_VIEWS.includes(search.view as MoneyView) ? (search.view as MoneyView) : 'list');
+  const go = (next: Tab, nextView?: MoneyView) =>
+    void navigate({
+      to: '.',
+      search: {
+        tab: next === 'plan' ? undefined : next,
+        view: next === 'expenses' && nextView && nextView !== 'list' ? nextView : undefined,
+      },
+      replace: true,
+    });
   const { data: trip, error } = useQuery(trpc.trips.get.queryOptions({ id: tripId }));
   const [adding, setAdding] = useState(false);
 
@@ -104,51 +128,79 @@ export function TripPage() {
       </TripCover>
 
       <div className="mx-auto max-w-4xl px-4 pt-5 lg:px-8">
-        <Tabs
-          value={tab}
-          onValueChange={(value) =>
-            void navigate({
-              to: '.',
-              search: { tab: value === 'plan' ? undefined : value },
-              replace: true,
-            })
-          }
-        >
-          <div className="flex items-center justify-between gap-3">
-            <TabsList className="min-w-0">
-              {TABS.filter((x) => x !== 'settings' || trip.role === 'owner').map((x) => (
+        <Tabs value={tab} onValueChange={(value) => go(value as Tab)}>
+          <div className="flex items-center gap-2">
+            <TabsList className="min-w-0 flex-1 sm:flex-none">
+              {MAIN_TABS.map((x) => (
                 <TabsTrigger key={x} value={x}>
                   {t(`trip.tabs.${x}`)}
                 </TabsTrigger>
               ))}
             </TabsList>
-            {canEdit && (
-              <Button onClick={() => setAdding(true)} className="hidden sm:inline-flex">
-                <Plus />
-                {t('expense.add')}
-              </Button>
-            )}
+            <div className="ml-auto flex shrink-0 items-center gap-1">
+              <IconTab
+                active={tab === 'members'}
+                label={t('trip.tabs.members')}
+                onClick={() => go('members')}
+              >
+                <Users />
+              </IconTab>
+              {trip.role === 'owner' && (
+                <IconTab
+                  active={tab === 'settings'}
+                  label={t('trip.tabs.settings')}
+                  onClick={() => go('settings')}
+                >
+                  <Settings />
+                </IconTab>
+              )}
+            </div>
           </div>
           <TabsContent value="plan">
             <PlanTab trip={trip} />
           </TabsContent>
-          <TabsContent value="places">
-            <PlacesTab trip={trip} />
+          <TabsContent value="expenses">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="inline-flex rounded-full bg-muted p-1">
+                {MONEY_VIEWS.map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => go('expenses', v)}
+                    className={cn(
+                      'rounded-full px-3.5 py-1 text-sm font-medium transition',
+                      view === v ? 'bg-card shadow-sm' : 'text-muted-foreground',
+                    )}
+                  >
+                    {t(`trip.money.${v}`)}
+                  </button>
+                ))}
+              </div>
+              {canEdit && (
+                <Button onClick={() => setAdding(true)} className="ml-auto hidden sm:inline-flex">
+                  <Plus />
+                  {t('expense.add')}
+                </Button>
+              )}
+            </div>
+            {view === 'list' && <ExpensesTab trip={trip} />}
+            {view === 'balances' && <BalancesTab trip={trip} />}
+            {view === 'budget' && <BudgetTab trip={trip} />}
           </TabsContent>
           <TabsContent value="bookings">
             <BookingsTab trip={trip} />
           </TabsContent>
-          <TabsContent value="budget">
-            <BudgetTab trip={trip} />
+          <TabsContent value="tickets">
+            <TicketsTab trip={trip} />
+          </TabsContent>
+          <TabsContent value="places">
+            <PlacesTab trip={trip} />
           </TabsContent>
           <TabsContent value="packing">
             <PackingTab trip={trip} />
           </TabsContent>
-          <TabsContent value="expenses">
-            <ExpensesTab trip={trip} />
-          </TabsContent>
-          <TabsContent value="balances">
-            <BalancesTab trip={trip} />
+          <TabsContent value="notes">
+            <NotesTab trip={trip} />
           </TabsContent>
           <TabsContent value="members">
             <MembersTab trip={trip} />
@@ -174,5 +226,35 @@ export function TripPage() {
         </>
       )}
     </div>
+  );
+}
+
+function IconTab({
+  active,
+  label,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      aria-pressed={active}
+      className={cn(
+        'flex size-10 items-center justify-center rounded-full transition [&_svg]:size-5',
+        active
+          ? 'bg-primary text-primary-foreground shadow-sm'
+          : 'bg-muted text-muted-foreground hover:text-foreground',
+      )}
+    >
+      {children}
+    </button>
   );
 }

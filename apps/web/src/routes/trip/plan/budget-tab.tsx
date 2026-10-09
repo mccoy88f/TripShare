@@ -44,8 +44,11 @@ export function BudgetTab({ trip }: { trip: TripDetail }) {
   const travelers = Math.max(1, trip.members.filter((m) => !m.removed).length);
   const summary = summarizeBudget(plan, budgetContext(plan, travelers));
   const spent = trip.ledger.total;
+  // Le spese "da pagare" sono già impegnate: riducono il rimanente.
+  const toPay = trip.ledger.planned;
+  const left = summary.total - spent - toPay;
   const actualByCategory: Record<string, number> = {};
-  for (const e of expenses)
+  for (const e of expenses.filter((x) => x.status !== 'planned'))
     actualByCategory[e.category] = (actualByCategory[e.category] ?? 0) + e.amountTrip;
   const categories = EXPENSE_CATEGORY_KEYS.filter(
     (c) => summary.byCategory[c] || actualByCategory[c],
@@ -89,12 +92,13 @@ export function BudgetTab({ trip }: { trip: TripDetail }) {
   );
 
   return (
-    <div className="grid gap-6 pb-8">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-1 gap-6 pb-8">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(9rem,1fr))]">
         {stat(t('budget.planned'), summary.total)}
         {stat(t('budget.perPerson'), Math.round(summary.total / travelers))}
         {stat(t('budget.spent'), spent)}
-        {stat(t('budget.left'), summary.total - spent, summary.total - spent >= 0 ? 'good' : 'bad')}
+        {toPay > 0 && stat(t('expense.toPay'), toPay)}
+        {stat(t('budget.left'), left, left >= 0 ? 'good' : 'bad')}
       </div>
 
       {summary.missingRates.length > 0 && (
@@ -117,7 +121,7 @@ export function BudgetTab({ trip }: { trip: TripDetail }) {
       )}
 
       {categories.length > 0 && (
-        <Card className="grid gap-3 p-4">
+        <Card className="grid grid-cols-1 gap-3 p-4">
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <span className="size-2.5 rounded-full bg-primary/35" /> {t('budget.planned')}
@@ -127,7 +131,7 @@ export function BudgetTab({ trip }: { trip: TripDetail }) {
             </span>
           </div>
           {categories.map((c) => (
-            <div key={c} className="grid gap-1">
+            <div key={c} className="grid grid-cols-1 gap-1">
               <div className="flex items-center justify-between text-sm">
                 <span>
                   {EXPENSE_CATEGORIES[c].emoji} {categoryLabel(c, locale)}
@@ -157,7 +161,7 @@ export function BudgetTab({ trip }: { trip: TripDetail }) {
         </Card>
       )}
 
-      <section className="grid gap-3">
+      <section className="grid grid-cols-1 gap-3">
         <div className="flex items-center justify-between">
           <h3 className="px-1 text-sm font-semibold">{t('budget.items')}</h3>
           {canEdit && (
@@ -288,7 +292,7 @@ function BudgetDialog({
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent title={item ? t('budget.editTitle') : t('budget.add')}>
-        <form onSubmit={submit} className="grid gap-4 pt-2">
+        <form onSubmit={submit} className="grid grid-cols-1 gap-4 pt-2">
           <Field label={t('expense.title')} htmlFor="bu-title">
             <Input
               id="bu-title"

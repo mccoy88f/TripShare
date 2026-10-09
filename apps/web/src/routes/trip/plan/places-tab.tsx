@@ -50,7 +50,7 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
       .map((d) => d.date);
 
   return (
-    <div className="grid gap-4 pb-8">
+    <div className="grid grid-cols-1 gap-4 pb-8">
       {canEdit && (
         <Button className="justify-self-start" onClick={() => setEditing('new')}>
           <Plus />
@@ -62,7 +62,7 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
           {t('plan.place.empty')}
         </p>
       )}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {plan.places.map((p) => {
           const days = daysOf(p.id);
           const verified = p.verification?.status === 'verified';
@@ -229,7 +229,7 @@ function PlaceDialog({
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent title={place ? t('plan.place.editTitle') : t('plan.place.add')}>
-        <form onSubmit={submit} className="grid gap-4 pt-2">
+        <form onSubmit={submit} className="grid grid-cols-1 gap-4 pt-2">
           <div className="grid grid-cols-[1fr_auto] gap-3">
             <Field label={t('plan.place.name')} htmlFor="pl-name">
               <Input
@@ -330,7 +330,7 @@ function PlaceDialog({
               onChange={(e) => set('links', e.target.value)}
             />
           </Field>
-          <div className="grid gap-3 rounded-xl border p-3">
+          <div className="grid grid-cols-1 gap-3 rounded-xl border p-3">
             <div className="grid grid-cols-2 gap-3">
               <Field label={t('plan.place.verification')} htmlFor="pl-ver">
                 <Select

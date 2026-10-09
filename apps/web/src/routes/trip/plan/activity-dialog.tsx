@@ -179,7 +179,7 @@ export function ActivityDialog({
         title={activity ? t('plan.activity.editTitle') : t('plan.activity.newTitle')}
         description={longDate(date)}
       >
-        <form onSubmit={submit} className="grid gap-5 pt-2">
+        <form onSubmit={submit} className="grid grid-cols-1 gap-5 pt-2">
           <div className="flex items-end gap-3">
             <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
               <PopoverTrigger asChild>
@@ -258,7 +258,7 @@ export function ActivityDialog({
             />
           </Field>
 
-          <div className="grid gap-2">
+          <div className="grid grid-cols-1 gap-2">
             <span className="text-sm font-medium">{t('plan.activity.places')}</span>
             {plan.places.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
@@ -294,7 +294,7 @@ export function ActivityDialog({
             />
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {plan.bookings.length > 0 && (
               <Field label={t('plan.activity.booking')} htmlFor="act-booking">
                 <Select
@@ -324,7 +324,7 @@ export function ActivityDialog({
             )}
           </div>
 
-          <div className="grid gap-3 rounded-xl border p-3">
+          <div className="grid grid-cols-1 gap-3 rounded-xl border p-3">
             <label className="flex items-center gap-2 text-sm font-medium">
               <input
                 type="checkbox"

@@ -62,7 +62,7 @@ export function myTickets(tickets: Ticket[] | undefined, myMemberId: string, boo
 const isPkpass = (t: Ticket) => t.mimeType === 'application/vnd.apple.pkpass';
 const isImage = (t: Ticket) => !!t.mimeType?.startsWith('image/');
 
-function TicketIcon({ ticket }: { ticket: Ticket }) {
+export function TicketIcon({ ticket }: { ticket: Ticket }) {
   if (ticket.codeValue) return <QrCode className="size-5" />;
   if (isPkpass(ticket) || ticket.walletUrl) return <Wallet className="size-5" />;
   return <FileText className="size-5" />;
@@ -169,7 +169,7 @@ export function TicketsDialog({
         title={`${BOOKING_EMOJI[booking.type]} ${t('tickets.title')}`}
         description={booking.title}
       >
-        <div className="grid gap-5 pt-2">
+        <div className="grid grid-cols-1 gap-5 pt-2">
           {tickets.length === 0 && (
             <p className="rounded-xl border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
               {t('tickets.empty')}
@@ -180,7 +180,7 @@ export function TicketsDialog({
               {tickets.map((tk, i) => {
                 const member = members.find((m) => m.id === tk.memberId);
                 return (
-                  <div key={tk.id} className="grid gap-2 p-3">
+                  <div key={tk.id} className="grid grid-cols-1 gap-2 p-3">
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
@@ -273,7 +273,7 @@ export function TicketsDialog({
           )}
 
           {canEdit && (
-            <div className="grid gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
@@ -315,7 +315,7 @@ export function TicketsDialog({
                 }}
               />
               {manual.open && (
-                <form onSubmit={addManual} className="grid gap-3 rounded-xl border p-3">
+                <form onSubmit={addManual} className="grid grid-cols-1 gap-3 rounded-xl border p-3">
                   <div className="grid grid-cols-[auto_1fr] gap-2">
                     <Select
                       className="w-36"
@@ -431,7 +431,7 @@ export function TicketViewer({
         title={`${booking ? `${BOOKING_EMOJI[booking.type]} ${booking.title}` : t('tickets.ticket')}`}
         description={ticket.label ?? undefined}
       >
-        <div className="grid gap-4 pt-1">
+        <div className="grid grid-cols-1 gap-4 pt-1">
           <div className="flex items-center justify-between gap-2">
             {member ? (
               <span className="inline-flex items-center gap-2 text-sm font-medium">

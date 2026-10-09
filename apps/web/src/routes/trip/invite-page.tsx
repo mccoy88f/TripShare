@@ -78,7 +78,7 @@ export function InvitePage() {
           </div>
         </div>
       </TripCover>
-      <CardContent className="grid gap-5 pt-5">
+      <CardContent className="grid grid-cols-1 gap-5 pt-5">
         <div className="flex items-center gap-3">
           <AvatarStack users={invite.members} max={6} />
           <span className="text-sm text-muted-foreground">
@@ -93,7 +93,7 @@ export function InvitePage() {
             </Link>
           </Button>
         ) : !session ? (
-          <div className="grid gap-3">
+          <div className="grid grid-cols-1 gap-3">
             <p className="text-sm text-muted-foreground">{t('invite.needAccount')}</p>
             <Button asChild size="lg" variant="accent">
               <Link to="/signup" search={{ invite: token, email: invite.email ?? undefined }}>
@@ -111,11 +111,11 @@ export function InvitePage() {
             {t('invite.errors.INVITATION_OTHER_EMAIL')}
           </p>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {invite.claimable.length > 0 && (
-              <div className="grid gap-2">
+              <div className="grid grid-cols-1 gap-2">
                 <p className="text-sm font-medium">{t('invite.whoAreYou')}</p>
-                <div className="grid gap-2">
+                <div className="grid grid-cols-1 gap-2">
                   {invite.claimable.map((m) => (
                     <button
                       key={m.id}

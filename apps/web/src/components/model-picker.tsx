@@ -155,7 +155,7 @@ export function ModelPicker({
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-[min(92vw,30rem)] p-0">
-        <div className="grid gap-2 border-b p-3">
+        <div className="grid grid-cols-1 gap-2 border-b p-3">
           <div className="flex items-center gap-2 rounded-md bg-muted px-3">
             <Search className="size-4 text-muted-foreground" />
             <input

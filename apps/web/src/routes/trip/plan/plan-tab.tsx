@@ -116,10 +116,10 @@ export function PlanTab({ trip }: { trip: TripDetail }) {
   const day = plan.days.find((d) => d.date === selected) ?? plan.days[0]!;
 
   return (
-    <div className="grid gap-5 pb-8">
+    <div className="grid grid-cols-1 gap-5 pb-8">
       <div
         ref={stripRef}
-        className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:px-0"
+        className="-mx-4 flex snap-x scroll-px-4 gap-2 overflow-x-auto px-4 pt-0.5 pb-2 [scrollbar-width:none] lg:mx-0 lg:scroll-px-0 lg:px-0"
       >
         {plan.days.map((d, i) => {
           const w = weatherByDate.get(d.date);
@@ -166,7 +166,7 @@ export function PlanTab({ trip }: { trip: TripDetail }) {
       {plan.tips.length > 0 && (
         <section>
           <h3 className="mb-2 px-1 text-sm font-semibold">💡 {t('plan.tips')}</h3>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {plan.tips.map((tip, i) => (
               <Card key={i} className="p-4">
                 <p className="font-semibold">{tip.title}</p>
@@ -242,7 +242,7 @@ function DayView({
   const index = plan.days.findIndex((d) => d.date === day.date);
 
   return (
-    <section className="grid gap-4">
+    <section className="grid grid-cols-1 gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -571,7 +571,7 @@ function DayDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent title={t('plan.editDay')} description={longDate(day.date)}>
-        <form onSubmit={submit} className="grid gap-4 pt-2">
+        <form onSubmit={submit} className="grid grid-cols-1 gap-4 pt-2">
           <Field label={t('plan.dayTitle')} htmlFor="day-title">
             <Input
               id="day-title"

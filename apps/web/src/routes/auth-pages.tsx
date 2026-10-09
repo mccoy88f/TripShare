@@ -107,7 +107,7 @@ export function LoginPage() {
         {magicSent ? (
           <SuccessBox text={t('auth.magicLinkSent')} />
         ) : (
-          <form onSubmit={submit} className="grid gap-4">
+          <form onSubmit={submit} className="grid grid-cols-1 gap-4">
             <Field label={t('auth.email')} htmlFor="email">
               <Input
                 id="email"
@@ -220,7 +220,7 @@ export function SignupPage() {
         {sentTo ? (
           <SuccessBox text={t('auth.checkEmailText', { email: sentTo })} />
         ) : (
-          <form onSubmit={submit} className="grid gap-4">
+          <form onSubmit={submit} className="grid grid-cols-1 gap-4">
             <Field label={t('auth.name')} htmlFor="name">
               <Input
                 id="name"
@@ -312,7 +312,7 @@ export function ForgotPasswordPage() {
         {sent ? (
           <SuccessBox text={t('auth.forgotSent')} />
         ) : (
-          <form onSubmit={submit} className="grid gap-4">
+          <form onSubmit={submit} className="grid grid-cols-1 gap-4">
             <Field label={t('auth.email')} htmlFor="email">
               <Input
                 id="email"
@@ -385,7 +385,7 @@ export function ResetPasswordPage() {
             </Button>
           </>
         ) : (
-          <form onSubmit={submit} className="grid gap-4">
+          <form onSubmit={submit} className="grid grid-cols-1 gap-4">
             <Field label={t('auth.newPassword')} htmlFor="password" hint={t('auth.passwordHint')}>
               <Input
                 id="password"

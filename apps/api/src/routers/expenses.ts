@@ -50,6 +50,9 @@ const ExpenseInput = z.object({
   payers: z.array(z.object({ memberId: MemberId, amount: z.number().int().min(0) })).min(1),
   split: SplitSchema,
   notes: z.string().trim().max(1000).nullable().optional(),
+  /** "planned": da pagare, conta nel budget ma non nei saldi finché non viene pagata. */
+  status: z.enum(['paid', 'planned']).default('paid'),
+  bookingId: z.string().max(64).nullable().optional(),
 });
 type ExpenseInputT = z.infer<typeof ExpenseInput>;
 
@@ -191,6 +194,8 @@ export const expensesRouter = router({
           date: input.date,
           splitMethod: input.split.method,
           notes: input.notes,
+          status: input.status,
+          bookingId: input.bookingId ?? null,
           createdBy: ctx.user.id,
         })
         .returning({ id: expense.id });
@@ -231,11 +236,44 @@ export const expensesRouter = router({
             date: input.date,
             splitMethod: input.split.method,
             notes: input.notes,
+            status: input.status,
+            bookingId: input.bookingId ?? null,
             updatedAt: new Date(),
           })
           .where(eq(expense.id, input.id));
         await writeParts(tx, input.id, input, prepared.shares, prepared.weights);
       });
+      return { ok: true };
+    }),
+
+  /** Segna come pagata una spesa prevista (o la riporta a "da pagare"). */
+  setStatus: authedProcedure
+    .input(
+      z.object({
+        tripId: z.uuid(),
+        id: z.uuid(),
+        status: z.enum(['paid', 'planned']),
+        date: z.iso.date().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
+      const [row] = await ctx.db
+        .update(expense)
+        .set({
+          status: input.status,
+          ...(input.date ? { date: input.date } : {}),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(expense.id, input.id),
+            eq(expense.tripId, input.tripId),
+            isNull(expense.deletedAt),
+          ),
+        )
+        .returning({ id: expense.id });
+      if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
       return { ok: true };
     }),
 

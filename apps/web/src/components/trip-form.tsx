@@ -55,7 +55,7 @@ export function TripForm({
   };
 
   return (
-    <form onSubmit={submit} className="grid gap-6">
+    <form onSubmit={submit} className="grid grid-cols-1 gap-6">
       <div>
         <TripCover
           coverImage={shownImage}
@@ -134,7 +134,7 @@ export function TripForm({
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-[auto_1fr]">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_1fr]">
         <Field label="Emoji">
           <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
             <PopoverTrigger asChild>
@@ -176,7 +176,7 @@ export function TripForm({
           onChange={(e) => set('destination', e.target.value)}
         />
       </Field>
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Field label={t('trip.form.start')} htmlFor="trip-start">
           <Input
             id="trip-start"

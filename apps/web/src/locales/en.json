@@ -332,7 +332,15 @@
       "AMOUNT_TOO_SMALL": "Amount too small."
     },
     "currency": "Currency",
-    "paidByYou": "Paid by you"
+    "paidByYou": "Paid by you",
+    "planned": "To pay",
+    "paidStatus": "Paid",
+    "toPay": "To pay",
+    "plannedHint": "Counts in the budget but not in balances until you mark it as paid.",
+    "willPay": "Will pay",
+    "willPayName": "{{name}} will pay",
+    "markPaid": "Mark paid",
+    "markedPaid": "Expense marked as paid"
   },
   "invite": {
     "from": "{{name}} invites you",
@@ -402,13 +410,15 @@
     "tabs": {
       "expenses": "Expenses",
       "balances": "Balances",
-      "members": "Members",
+      "members": "Participants",
       "settings": "Settings",
       "plan": "Plan",
       "places": "Places",
       "bookings": "Bookings",
       "budget": "Budget",
-      "packing": "Packing"
+      "packing": "Packing",
+      "tickets": "Tickets",
+      "notes": "Notes"
     },
     "new": {
       "title": "New trip",
@@ -438,6 +448,11 @@
     "delete": "Delete trip",
     "errors": {
       "CURRENCY_LOCKED": "The currency can't be changed after expenses were added."
+    },
+    "money": {
+      "list": "Expenses",
+      "balances": "Balances",
+      "budget": "Budget"
     }
   },
   "models": {
@@ -717,6 +732,23 @@
       "UNSUPPORTED_FILE": "unsupported format",
       "FILE_TOO_LARGE": "file too large",
       "UNKNOWN_MEMBER": "invalid traveler"
-    }
+    },
+    "emptyTab": "No tickets yet",
+    "emptyTabText": "Upload tickets, QR codes and Wallet passes from bookings: they will show up here, with who they are assigned to.",
+    "all": "All tickets",
+    "manage": "Manage tickets"
+  },
+  "notes": {
+    "title": "Title",
+    "titlePlaceholder": "Title (optional)",
+    "content": "Note text",
+    "placeholder": "Write a note: addresses, ideas, things to remember…",
+    "public": "Everyone",
+    "private": "Only me",
+    "privateHint": "Private note: only you can see it",
+    "pin": "Pinned",
+    "add": "Add note",
+    "empty": "No notes yet. Public notes are visible to the whole group, private ones only to you.",
+    "confirmDelete": "Delete this note?"
   }
 }

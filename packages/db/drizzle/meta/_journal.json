@@ -36,6 +36,20 @@
       "when": 1791553352348,
       "tag": "0004_invited_email",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791553934777,
+      "tag": "0005_ai",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791561405205,
+      "tag": "0006_notes_planned",
+      "breakpoints": true
     }
   ]
 }

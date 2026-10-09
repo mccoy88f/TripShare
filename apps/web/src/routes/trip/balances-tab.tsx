@@ -59,7 +59,7 @@ export function BalancesTab({ trip }: { trip: TripDetail }) {
   const currency = isCurrencyCode(trip.currency) ? trip.currency : 'EUR';
 
   return (
-    <div className="grid gap-6 pb-8">
+    <div className="grid grid-cols-1 gap-6 pb-8">
       <Card className="p-2">
         {balances.map(({ member, amount }) => (
           <div key={member.id} className="flex items-center gap-3 rounded-lg px-3 py-2.5">
@@ -100,7 +100,7 @@ export function BalancesTab({ trip }: { trip: TripDetail }) {
             <p className="mt-3 font-semibold">{t('balance.allSettled')}</p>
           </div>
         ) : (
-          <div className="grid gap-3">
+          <div className="grid grid-cols-1 gap-3">
             {trip.ledger.transfers.map((tr) => {
               const to = members[tr.to];
               const paypal =

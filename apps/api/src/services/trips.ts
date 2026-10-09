@@ -46,6 +46,8 @@ export interface Ledger {
   transfers: { from: string; to: string; amount: number }[];
   /** Totale speso dal gruppo, nella valuta del viaggio. */
   total: number;
+  /** Spese previste ancora da pagare (fuori dai saldi). */
+  planned: number;
   /** Quanto ha pagato e quanto ha consumato ciascuno. */
   paid: Record<string, number>;
   owed: Record<string, number>;
@@ -63,10 +65,17 @@ export async function computeLedgers(
   const result = new Map<string, Ledger>();
   if (tripIds.length === 0) return result;
 
-  const expenses = await db
-    .select({ id: expense.id, tripId: expense.tripId, amountTrip: expense.amountTrip })
+  const all = await db
+    .select({
+      id: expense.id,
+      tripId: expense.tripId,
+      amountTrip: expense.amountTrip,
+      status: expense.status,
+    })
     .from(expense)
     .where(and(inArray(expense.tripId, tripIds), isNull(expense.deletedAt)));
+  const planned = all.filter((e) => e.status === 'planned');
+  const expenses = all.filter((e) => e.status !== 'planned');
   const ids = expenses.map((e) => e.id);
   const [payers, shares, settlements] = await Promise.all([
     ids.length ? db.select().from(expensePayer).where(inArray(expensePayer.expenseId, ids)) : [],
@@ -116,6 +125,7 @@ export async function computeLedgers(
       balances,
       transfers: simplifyDebts(balances),
       total: expenses.filter((e) => e.tripId === tripId).reduce((a, e) => a + e.amountTrip, 0),
+      planned: planned.filter((e) => e.tripId === tripId).reduce((a, e) => a + e.amountTrip, 0),
       paid: sum('paid'),
       owed: sum('owed'),
     });

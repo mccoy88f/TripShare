@@ -110,7 +110,7 @@ export function ProfilePage() {
 
   return (
     <form
-      className="grid gap-6"
+      className="grid grid-cols-1 gap-6"
       onSubmit={(e) => {
         e.preventDefault();
         if (paypalInvalid) return;
@@ -127,10 +127,10 @@ export function ProfilePage() {
           <CardTitle>{t('profile.avatar')}</CardTitle>
           <CardDescription>{t('profile.avatarHint')}</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-5">
+        <CardContent className="grid grid-cols-1 gap-5">
           <div className="flex flex-wrap items-center gap-5">
             <UserAvatar user={preview} size="xl" className="shadow-lg" />
-            <div className="grid gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
@@ -222,7 +222,7 @@ export function ProfilePage() {
         <CardHeader>
           <CardTitle>{t('profile.preferences')}</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-3">
+        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field label={t('common.language')} htmlFor="locale">
             <Select
               id="locale"

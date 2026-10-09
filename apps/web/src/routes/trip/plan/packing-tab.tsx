@@ -82,9 +82,9 @@ export function PackingTab({ trip }: { trip: TripDetail }) {
   };
 
   return (
-    <div className="grid gap-5 pb-8">
+    <div className="grid grid-cols-1 gap-5 pb-8">
       {plan.packing.length > 0 && (
-        <div className="grid gap-2">
+        <div className="grid grid-cols-1 gap-2">
           <div className="flex justify-between text-sm">
             <span className="font-medium">
               {t('packing.progress', { done, total: plan.packing.length })}

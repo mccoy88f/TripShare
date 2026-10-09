@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { Loader2, Plus, Receipt, Ticket as TicketIcon, Trash2 } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,9 +12,10 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Input, Select } from '@/components/ui/input';
 import { money, shortDate } from '@/lib/format';
 import { BOOKING_EMOJI, usePlan, usePlanOps } from '@/lib/plan';
-import type { TripDetail } from '@/lib/types';
+import { useTRPC } from '@/lib/trpc';
+import type { ExpenseT, TripDetail } from '@/lib/types';
 import { ExpenseDialog, type ExpensePreset } from '../expense-dialog';
-import { myTickets, TicketsDialog, TicketViewer, useTickets, type Ticket } from './tickets';
+import { TicketsDialog, TicketViewer, useTickets, type Ticket } from './tickets';
 import {
   formatLinks,
   moneyDraft,
@@ -59,6 +61,10 @@ export function expenseFromBooking(b: Booking, travelers: number): ExpensePreset
     emoji: BOOKING_EMOJI[b.type],
     category: CATEGORY_OF[b.type],
     date: b.start.date,
+    bookingId: b.id,
+    // Se la prenotazione non risulta pagata la spesa nasce "da pagare": conta nel budget ma
+    // non nei saldi finché qualcuno non la segna come pagata.
+    status: b.paid === true ? 'paid' : 'planned',
     ...(amount && currency ? { amount, currency } : {}),
   };
 }
@@ -68,6 +74,9 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
   const { data } = usePlan(trip.id);
   const [editing, setEditing] = useState<Booking | 'new' | null>(null);
   const [expense, setExpense] = useState<ExpensePreset | null>(null);
+  const [editingExpense, setEditingExpense] = useState<ExpenseT | undefined>();
+  const trpc = useTRPC();
+  const { data: expenses } = useQuery(trpc.expenses.list.queryOptions({ tripId: trip.id }));
   const [ticketsOf, setTicketsOf] = useState<Booking | null>(null);
   const [viewing, setViewing] = useState<{ list: Ticket[]; index: number } | null>(null);
   const { data: tickets } = useTickets(trip.id);
@@ -78,37 +87,10 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
     `${a.start.date}${a.start.time ?? ''}`.localeCompare(`${b.start.date}${b.start.time ?? ''}`),
   );
 
-  const mine = myTickets(tickets, trip.myMemberId).sort(
-    (a, b) =>
-      bookings.findIndex((x) => x.id === a.bookingId) -
-      bookings.findIndex((x) => x.id === b.bookingId),
-  );
+  const linked = (b: Booking) => expenses?.find((e) => e.bookingId === b.id);
 
   return (
-    <div className="grid gap-4 pb-8">
-      {mine.length > 0 && (
-        <section className="grid gap-2">
-          <h3 className="px-1 text-sm font-semibold">🎫 {t('tickets.mine')}</h3>
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:px-0">
-            {mine.map((tk, i) => {
-              const b = bookings.find((x) => x.id === tk.bookingId);
-              return (
-                <button
-                  key={tk.id}
-                  onClick={() => setViewing({ list: mine, index: i })}
-                  className="flex w-48 shrink-0 flex-col items-start rounded-xl bg-gradient-to-br from-primary to-accent p-3 text-left text-white shadow-md"
-                >
-                  <span className="text-xl">{b ? BOOKING_EMOJI[b.type] : '🎫'}</span>
-                  <span className="line-clamp-2 text-sm font-semibold">
-                    {b?.title ?? t('tickets.ticket')}
-                  </span>
-                  {tk.label && <span className="line-clamp-1 text-xs opacity-85">{tk.label}</span>}
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      )}
+    <div className="grid grid-cols-1 gap-4 pb-8">
       {canEdit && (
         <Button className="justify-self-start" onClick={() => setEditing('new')}>
           <Plus />
@@ -120,7 +102,7 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
           {t('plan.booking.empty')}
         </p>
       )}
-      <div className="grid gap-3">
+      <div className="grid grid-cols-1 gap-3">
         {bookings.map((b) => (
           <Card key={b.id} className="flex flex-wrap items-start gap-3 p-4">
             <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-xl">
@@ -171,15 +153,28 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
                     })}
                   </Button>
                 )}
-                {canEdit && (
+                {linked(b) ? (
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setExpense(expenseFromBooking(b, plan.trip.travelers))}
+                    disabled={!canEdit}
+                    onClick={() => setEditingExpense(linked(b))}
                   >
-                    <Receipt />
-                    {t('plan.booking.toExpense')}
+                    {linked(b)!.status === 'planned'
+                      ? `⏳ ${t('expense.planned')}`
+                      : `✅ ${t('expense.paidStatus')}`}
                   </Button>
+                ) : (
+                  canEdit && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setExpense(expenseFromBooking(b, plan.trip.travelers))}
+                    >
+                      <Receipt />
+                      {t('plan.booking.toExpense')}
+                    </Button>
+                  )
                 )}
                 {canEdit && (
                   <Button size="sm" variant="ghost" onClick={() => setEditing(b)}>
@@ -224,6 +219,12 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
           onOpenChange={(o) => !o && setExpense(null)}
         />
       )}
+      <ExpenseDialog
+        trip={trip}
+        expense={editingExpense}
+        open={!!editingExpense}
+        onOpenChange={(o) => !o && setEditingExpense(undefined)}
+      />
     </div>
   );
 }
@@ -307,7 +308,7 @@ function BookingDialog({
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent title={booking ? t('plan.booking.editTitle') : t('plan.booking.add')}>
-        <form onSubmit={submit} className="grid gap-4 pt-2">
+        <form onSubmit={submit} className="grid grid-cols-1 gap-4 pt-2">
           <div className="grid grid-cols-2 gap-3">
             <Field label={t('plan.booking.type')} htmlFor="bk-type">
               <Select
@@ -363,11 +364,12 @@ function BookingDialog({
               />
             </Field>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label={t('plan.booking.start')} htmlFor="bk-sd">
               <div className="flex gap-2">
                 <Input
                   id="bk-sd"
+                  className="min-w-0 flex-1"
                   type="date"
                   required
                   value={d.startDate}
@@ -386,6 +388,7 @@ function BookingDialog({
               <div className="flex gap-2">
                 <Input
                   id="bk-ed"
+                  className="min-w-0 flex-1"
                   type="date"
                   min={d.startDate}
                   value={d.endDate}

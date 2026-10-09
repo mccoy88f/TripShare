@@ -125,7 +125,7 @@ function Overview() {
   );
   if (!data) return <Loader2 className="mx-auto mt-10 animate-spin text-muted-foreground" />;
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle>{t('admin.status')}</CardTitle>
@@ -162,8 +162,8 @@ function Overview() {
           <CardTitle>{t('admin.smtpConfig')}</CardTitle>
           <CardDescription>{t('admin.smtpEnvNote')}</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4">
-          <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
+        <CardContent className="grid grid-cols-1 gap-4">
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
             <dt className="text-muted-foreground">Host</dt>
             <dd className="font-mono">
               {data.smtp.host}:{data.smtp.port} {data.smtp.secure ? '(TLS)' : '(STARTTLS)'}
@@ -243,7 +243,7 @@ function SecretField({
   const s = settings[settingKey];
   const state = s?.secret ? s : { set: false, preview: null };
   return (
-    <div className="grid gap-2">
+    <div className="grid grid-cols-1 gap-2">
       <SaveRow
         disabled={draft.trim().length < 10}
         onSave={() => {
@@ -297,12 +297,12 @@ function GeneralSettings() {
   if (!settings) return <Loader2 className="mx-auto mt-10 animate-spin text-muted-foreground" />;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <Card>
         <CardHeader>
           <CardTitle>{t('admin.registration')}</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-5">
+        <CardContent className="grid grid-cols-1 gap-5">
           <Field label={t('admin.registrationMode')} htmlFor="reg-mode">
             <Select
               id="reg-mode"
@@ -346,7 +346,7 @@ function GeneralSettings() {
         <CardHeader>
           <CardTitle>TripShare</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-5">
+        <CardContent className="grid grid-cols-1 gap-5">
           <SaveRow onSave={() => save('general.appName', appName.trim() || null)}>
             <Field label={t('admin.appName')} htmlFor="app-name" hint={t('admin.appNameHint')}>
               <Input
@@ -467,7 +467,7 @@ function AiSettings() {
   };
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <p className="rounded-xl bg-secondary px-4 py-3 text-sm text-secondary-foreground">
         ✨ {t('admin.aiComing')}
       </p>
@@ -475,7 +475,7 @@ function AiSettings() {
         <CardHeader>
           <CardTitle>OpenRouter</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-5">
+        <CardContent className="grid grid-cols-1 gap-5">
           <Field label={t('admin.aiMode')} htmlFor="ai-mode">
             <Select
               id="ai-mode"
@@ -520,7 +520,7 @@ function AiSettings() {
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="grid gap-1">
+            <div className="grid grid-cols-1 gap-1">
               <CardTitle>{t('admin.models')}</CardTitle>
               <CardDescription>{t('admin.modelHint')}</CardDescription>
             </div>
@@ -536,7 +536,7 @@ function AiSettings() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="grid gap-5">
+        <CardContent className="grid grid-cols-1 gap-5">
           {catalog.isError && (
             <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {t('admin.modelsUnavailable')} ({catalog.error.message})
@@ -584,7 +584,7 @@ function AiSettings() {
             </Field>
           ))}
           <Field label={t('admin.fallbacks')} hint={t('admin.fallbacksHint')}>
-            <div className="grid gap-2">
+            <div className="grid grid-cols-1 gap-2">
               {models.fallbacks.map((id) => (
                 <div key={id} className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2">
                   <span className="min-w-0 flex-1">
@@ -647,7 +647,7 @@ function Users() {
   );
   const fmt = new Intl.DateTimeFormat(i18n.resolvedLanguage, { dateStyle: 'medium' });
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-1 gap-4">
       <Input
         placeholder={t('admin.search')}
         value={search}
@@ -700,7 +700,7 @@ function Audit() {
   return (
     <Card className="divide-y">
       {data.map((row) => (
-        <div key={row.id} className="grid gap-1 p-4 sm:grid-cols-[160px_1fr]">
+        <div key={row.id} className="grid grid-cols-1 gap-1 p-4 sm:grid-cols-[160px_1fr]">
           <span className="tabular text-sm text-muted-foreground">
             {fmt.format(new Date(row.createdAt))}
           </span>

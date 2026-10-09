@@ -48,7 +48,7 @@ function PhonePreview() {
             ))}
           </div>
         </div>
-        <div className="grid gap-1 p-3">
+        <div className="grid grid-cols-1 gap-1 p-3">
           <div className="mb-1 flex items-center justify-between rounded-xl bg-success/10 px-3 py-2 text-sm">
             <span className="font-medium">{t('landing.previewReceive')}</span>
             <span className="tabular font-bold text-success">+ 142,30 €</span>
@@ -129,7 +129,7 @@ export function LandingPage() {
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-16">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f, i) => (
             <motion.div
               key={f.key}

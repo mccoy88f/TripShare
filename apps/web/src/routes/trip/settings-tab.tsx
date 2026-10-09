@@ -35,7 +35,7 @@ export function SettingsTab({ trip }: { trip: TripDetail }) {
   const hasExpenses = trip.ledger.total > 0;
 
   return (
-    <div className="grid gap-6 pb-8">
+    <div className="grid grid-cols-1 gap-6 pb-8">
       <TripForm
         key={trip.updatedAt.toString()}
         initial={{

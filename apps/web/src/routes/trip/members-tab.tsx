@@ -89,7 +89,7 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
   const origin = window.location.origin;
 
   return (
-    <div className="grid gap-6 pb-8">
+    <div className="grid grid-cols-1 gap-6 pb-8">
       <Card className="divide-y">
         {active.map((m) => (
           <div key={m.id} className="flex flex-wrap items-center gap-3 p-4">
@@ -103,8 +103,10 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
               </p>
               <div className="mt-0.5 flex flex-wrap gap-1.5">
                 {m.invitedEmail ? (
-                  <Badge variant="warning" title={m.invitedEmail}>
-                    ✉️ {t('members.pending', { email: m.invitedEmail })}
+                  <Badge variant="warning" title={m.invitedEmail} className="max-w-full">
+                    <span className="truncate">
+                      ✉️ {t('members.pending', { email: m.invitedEmail })}
+                    </span>
                   </Badge>
                 ) : m.placeholder ? (
                   <Badge variant="warning">{t('members.placeholder')}</Badge>
@@ -113,10 +115,10 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-2">
               {isOwner && !m.placeholder && m.id !== trip.myMemberId && (
                 <Select
-                  className="h-9 w-44 text-sm"
+                  className="h-9 w-40 text-sm"
                   value={m.role}
                   onChange={(e) =>
                     updateMember.mutate({
@@ -190,7 +192,7 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
             <CardTitle>{t('members.inviteTitle')}</CardTitle>
             <CardDescription>{t('members.inviteText')}</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-5">
+          <CardContent className="grid grid-cols-1 gap-5">
             <Button
               variant="accent"
               onClick={() => newLink()}
@@ -201,7 +203,11 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
               {t('members.createLink')}
             </Button>
             <form onSubmit={inviteByEmail} className="flex flex-wrap items-end gap-3">
-              <Field label={t('members.byEmail')} htmlFor="inv-email" className="min-w-56 flex-1">
+              <Field
+                label={t('members.byEmail')}
+                htmlFor="inv-email"
+                className="min-w-0 basis-56 flex-1"
+              >
                 <Input
                   id="inv-email"
                   type="email"
@@ -211,7 +217,11 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </Field>
-              <Field label={t('members.inviteName')} htmlFor="inv-name" className="min-w-40 flex-1">
+              <Field
+                label={t('members.inviteName')}
+                htmlFor="inv-name"
+                className="min-w-0 basis-40 flex-1"
+              >
                 <Input
                   id="inv-name"
                   maxLength={80}
@@ -246,7 +256,7 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
                 label={t('members.addPlaceholder')}
                 htmlFor="ph-name"
                 hint={t('members.placeholderHint')}
-                className="min-w-56 flex-1"
+                className="min-w-0 basis-56 flex-1"
               >
                 <Input
                   id="ph-name"
@@ -264,7 +274,7 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
             </form>
 
             {invites.data && invites.data.length > 0 && (
-              <div className="grid gap-2">
+              <div className="grid grid-cols-1 gap-2">
                 <p className="text-sm font-medium">{t('members.activeInvites')}</p>
                 {invites.data.map((inv) => {
                   const url = `${origin}/invite/${inv.token}`;

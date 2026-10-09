@@ -1,9 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Check, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from '@tripshare/shared';
-import { longDate, money } from '@/lib/format';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { longDate, money, todayIso } from '@/lib/format';
 import { useTRPC } from '@/lib/trpc';
 import type { ExpenseT, TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -13,7 +15,24 @@ export function ExpensesTab({ trip }: { trip: TripDetail }) {
   const { t } = useTranslation();
   const trpc = useTRPC();
   const { data: expenses } = useQuery(trpc.expenses.list.queryOptions({ tripId: trip.id }));
+  const queryClient = useQueryClient();
   const [editing, setEditing] = useState<ExpenseT | undefined>();
+  const setStatus = useMutation(
+    trpc.expenses.setStatus.mutationOptions({
+      onSuccess: async () => {
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: trpc.expenses.list.queryKey({ tripId: trip.id }),
+          }),
+          queryClient.invalidateQueries({ queryKey: trpc.trips.get.queryKey({ id: trip.id }) }),
+          queryClient.invalidateQueries({ queryKey: trpc.trips.list.queryKey() }),
+        ]);
+        toast.success(t('expense.markedPaid'));
+      },
+      onError: () => toast.error(t('common.error')),
+    }),
+  );
+  const canEdit = trip.role !== 'viewer';
   const names = Object.fromEntries(
     trip.members.map((m) => [m.id, m.id === trip.myMemberId ? t('expense.you') : m.name]),
   );
@@ -29,11 +48,71 @@ export function ExpensesTab({ trip }: { trip: TripDetail }) {
     );
   }
 
+  const planned = expenses.filter((e) => e.status === 'planned');
   const groups = new Map<string, ExpenseT[]>();
-  for (const e of expenses) groups.set(e.date, [...(groups.get(e.date) ?? []), e]);
+  for (const e of expenses.filter((x) => x.status !== 'planned'))
+    groups.set(e.date, [...(groups.get(e.date) ?? []), e]);
+  const emojiOf = (e: ExpenseT) =>
+    e.emoji ?? EXPENSE_CATEGORIES[e.category as ExpenseCategory]?.emoji ?? '📦';
 
   return (
-    <div className="grid gap-6 pb-8">
+    <div className="grid grid-cols-1 gap-6 pb-8">
+      {planned.length > 0 && (
+        <section>
+          <h3 className="mb-2 flex items-center justify-between px-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            <span>⏳ {t('expense.toPay')}</span>
+            <span className="tabular normal-case">
+              {money(
+                planned.reduce((a, e) => a + e.amountTrip, 0),
+                trip.currency,
+              )}
+            </span>
+          </h3>
+          <div className="divide-y rounded-xl border border-dashed border-warning bg-warning/5">
+            {planned.map((e) => (
+              <div key={e.id} className="flex items-center gap-3 px-4 py-3">
+                <button
+                  type="button"
+                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  onClick={() => canEdit && setEditing(e)}
+                >
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-xl opacity-80">
+                    {emojiOf(e)}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold">{e.title}</span>
+                    <span className="block truncate text-sm text-muted-foreground">
+                      {longDate(e.date)} ·{' '}
+                      {t('expense.willPayName', {
+                        name: e.payers.map((p) => names[p.memberId] ?? '?').join(', '),
+                      })}
+                    </span>
+                  </span>
+                  <span className="tabular font-semibold">{money(e.amount, e.currency)}</span>
+                </button>
+                {canEdit && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={setStatus.isPending}
+                    onClick={() =>
+                      setStatus.mutate({
+                        tripId: trip.id,
+                        id: e.id,
+                        status: 'paid',
+                        date: todayIso(),
+                      })
+                    }
+                  >
+                    <Check />
+                    <span className="hidden sm:inline">{t('expense.markPaid')}</span>
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
       {[...groups.entries()].map(([date, items]) => (
         <section key={date}>
           <h3 className="mb-2 px-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -45,12 +124,11 @@ export function ExpensesTab({ trip }: { trip: TripDetail }) {
               const myPaid = e.payers.find((p) => p.memberId === trip.myMemberId)?.amount ?? 0;
               const delta = Math.round(((myPaid - myShare) * e.amountTrip) / e.amount);
               const payers = e.payers.map((p) => names[p.memberId] ?? '?').join(', ');
-              const emoji =
-                e.emoji ?? EXPENSE_CATEGORIES[e.category as ExpenseCategory]?.emoji ?? '📦';
+              const emoji = emojiOf(e);
               return (
                 <button
                   key={e.id}
-                  onClick={() => trip.role !== 'viewer' && setEditing(e)}
+                  onClick={() => canEdit && setEditing(e)}
                   className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-muted/50"
                 >
                   <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-xl">

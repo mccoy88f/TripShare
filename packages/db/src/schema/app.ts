@@ -28,3 +28,13 @@ export const auditLog = pgTable(
   },
   (t) => [index('audit_log_created_at_idx').on(t.createdAt)],
 );
+
+/** Segreti personali (fuori dalla tabella user, che finisce nella sessione). */
+export const userSecret = pgTable('user_secret', {
+  userId: text()
+    .primaryKey()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  /** Chiave OpenRouter personale, cifrata con ENCRYPTION_KEY. */
+  openrouterKey: jsonb(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});

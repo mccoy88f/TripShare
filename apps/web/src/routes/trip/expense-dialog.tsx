@@ -59,6 +59,8 @@ interface State {
   percents: Record<string, string>;
   exact: Record<string, string>;
   notes: string;
+  status: 'paid' | 'planned';
+  bookingId: string | null;
 }
 
 /** Valori iniziali per una nuova spesa (da prenotazione, scontrino letto dall'AI…). */
@@ -70,6 +72,8 @@ export interface ExpensePreset {
   amount?: number;
   currency?: CurrencyCode;
   notes?: string;
+  status?: 'paid' | 'planned';
+  bookingId?: string;
 }
 
 function initialState(trip: TripDetail, expense?: ExpenseT, preset?: ExpensePreset): State {
@@ -94,6 +98,8 @@ function initialState(trip: TripDetail, expense?: ExpenseT, preset?: ExpensePres
       percents: {},
       exact: {},
       notes: preset?.notes ?? '',
+      status: preset?.status ?? 'paid',
+      bookingId: preset?.bookingId ?? null,
     };
   }
   const currency = (
@@ -125,6 +131,8 @@ function initialState(trip: TripDetail, expense?: ExpenseT, preset?: ExpensePres
       expense.shares.map((s) => [s.memberId, fmtNumber(s.amount, currency)]),
     ),
     notes: expense.notes ?? '',
+    status: expense.status === 'planned' ? 'planned' : 'paid',
+    bookingId: expense.bookingId,
   };
 }
 
@@ -259,6 +267,8 @@ export function ExpenseDialog({
       payers: [{ memberId: s.payerId, amount }],
       split: split.input,
       notes: s.notes.trim() || null,
+      status: s.status,
+      bookingId: s.bookingId,
     };
     if (expense) await update.mutateAsync({ ...input, id: expense.id });
     else await create.mutateAsync(input);
@@ -276,7 +286,7 @@ export function ExpenseDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent title={expense ? t('expense.editTitle') : t('expense.newTitle')}>
-        <form onSubmit={submit} className="grid gap-5 pt-2">
+        <form onSubmit={submit} className="grid grid-cols-1 gap-5 pt-2">
           <div className="flex items-end gap-3">
             <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
               <PopoverTrigger asChild>
@@ -347,7 +357,7 @@ export function ExpenseDialog({
             </Field>
           </div>
           {foreign && (
-            <div className="grid gap-1.5 rounded-xl bg-muted/60 p-3 text-sm">
+            <div className="grid grid-cols-1 gap-1.5 rounded-xl bg-muted/60 p-3 text-sm">
               <label className="flex flex-wrap items-center gap-2" htmlFor="exp-rate">
                 <span>1 {s.currency} =</span>
                 <Input
@@ -372,7 +382,7 @@ export function ExpenseDialog({
             </div>
           )}
 
-          <div className="grid gap-1.5">
+          <div className="grid grid-cols-1 gap-1.5">
             <span className="text-sm font-medium">{t('expense.category')}</span>
             <div className="flex flex-wrap gap-1.5">
               {EXPENSE_CATEGORY_KEYS.map((c) => (
@@ -400,8 +410,33 @@ export function ExpenseDialog({
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t('expense.paidBy')} htmlFor="exp-payer">
+          <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
+            {(['paid', 'planned'] as const).map((st) => (
+              <button
+                key={st}
+                type="button"
+                aria-pressed={s.status === st}
+                onClick={() => set('status', st)}
+                className={cn(
+                  'rounded-full px-3 py-1.5 text-sm font-medium transition',
+                  s.status === st ? 'bg-card shadow-sm' : 'text-muted-foreground',
+                )}
+              >
+                {st === 'paid' ? `✅ ${t('expense.paidStatus')}` : `⏳ ${t('expense.planned')}`}
+              </button>
+            ))}
+          </div>
+          {s.status === 'planned' && (
+            <p className="-mt-3 px-1 text-[13px] text-muted-foreground">
+              {t('expense.plannedHint')}
+            </p>
+          )}
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field
+              label={s.status === 'planned' ? t('expense.willPay') : t('expense.paidBy')}
+              htmlFor="exp-payer"
+            >
               <Select
                 id="exp-payer"
                 value={s.payerId}
@@ -425,7 +460,7 @@ export function ExpenseDialog({
             </Field>
           </div>
 
-          <div className="grid gap-3">
+          <div className="grid grid-cols-1 gap-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-sm font-medium">{t('expense.splitTitle')}</span>
               <div className="inline-flex rounded-full bg-muted p-1">

@@ -332,7 +332,15 @@
       "AMOUNT_TOO_SMALL": "Importo troppo piccolo."
     },
     "currency": "Valuta",
-    "paidByYou": "Pagato da te"
+    "paidByYou": "Pagato da te",
+    "planned": "Da pagare",
+    "paidStatus": "Pagata",
+    "toPay": "Da pagare",
+    "plannedHint": "Conta nel budget ma non nei saldi finché non la segni come pagata.",
+    "willPay": "Pagherà",
+    "willPayName": "pagherà {{name}}",
+    "markPaid": "Segna pagata",
+    "markedPaid": "Spesa segnata come pagata"
   },
   "invite": {
     "from": "{{name}} ti invita",
@@ -402,13 +410,15 @@
     "tabs": {
       "expenses": "Spese",
       "balances": "Saldi",
-      "members": "Membri",
+      "members": "Partecipanti",
       "settings": "Impostazioni",
       "plan": "Programma",
       "places": "Luoghi",
       "bookings": "Prenotazioni",
       "budget": "Budget",
-      "packing": "Bagagli"
+      "packing": "Bagagli",
+      "tickets": "Biglietti",
+      "notes": "Note"
     },
     "new": {
       "title": "Nuovo viaggio",
@@ -438,6 +448,11 @@
     "delete": "Elimina viaggio",
     "errors": {
       "CURRENCY_LOCKED": "La valuta non si può cambiare dopo aver inserito spese."
+    },
+    "money": {
+      "list": "Spese",
+      "balances": "Saldi",
+      "budget": "Budget"
     }
   },
   "models": {
@@ -717,6 +732,23 @@
       "UNSUPPORTED_FILE": "formato non supportato",
       "FILE_TOO_LARGE": "file troppo grande",
       "UNKNOWN_MEMBER": "partecipante non valido"
-    }
+    },
+    "emptyTab": "Ancora nessun biglietto",
+    "emptyTabText": "Carica biglietti, QR e pass Wallet dalle prenotazioni: compariranno qui, con a chi sono assegnati.",
+    "all": "Tutti i biglietti",
+    "manage": "Gestisci biglietti"
+  },
+  "notes": {
+    "title": "Titolo",
+    "titlePlaceholder": "Titolo (facoltativo)",
+    "content": "Testo della nota",
+    "placeholder": "Scrivi una nota: indirizzi, idee, cose da ricordare…",
+    "public": "Tutti",
+    "private": "Solo io",
+    "privateHint": "Nota privata: la vedi solo tu",
+    "pin": "In evidenza",
+    "add": "Aggiungi nota",
+    "empty": "Nessuna nota. Le note pubbliche le vede tutto il gruppo, quelle private solo tu.",
+    "confirmDelete": "Eliminare questa nota?"
   }
 }

@@ -126,8 +126,10 @@ const newTripRoute = createRoute({
 const tripRoute = createRoute({
   getParentRoute: () => appLayout,
   path: '/trips/$tripId',
-  validateSearch: (s: Record<string, unknown>): { tab?: string } =>
-    typeof s.tab === 'string' ? { tab: s.tab } : {},
+  validateSearch: (s: Record<string, unknown>): { tab?: string; view?: string } => ({
+    ...(typeof s.tab === 'string' ? { tab: s.tab } : {}),
+    ...(typeof s.view === 'string' ? { view: s.view } : {}),
+  }),
   component: TripPage,
 });
 const profileRoute = createRoute({

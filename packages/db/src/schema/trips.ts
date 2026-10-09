@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   bigint,
+  boolean,
   date,
   doublePrecision,
   index,
@@ -112,6 +113,12 @@ export const expense = pgTable(
     date: date().notNull(),
     splitMethod: text().notNull(),
     notes: text(),
+    /** Foto o PDF dello scontrino (archivio privato). */
+    receipt: text(),
+    /** "paid" (entra nei saldi) o "planned" (da pagare: conta solo nel budget). */
+    status: text().notNull().default('paid'),
+    /** Prenotazione del programma a cui si riferisce la spesa. */
+    bookingId: text(),
     createdBy: text().references(() => user.id, { onDelete: 'set null' }),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -219,4 +226,77 @@ export const bookingTicket = pgTable(
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('booking_ticket_trip_idx').on(t.tripId, t.bookingId)],
+);
+
+/** Lavoro AI (scontrino, prenotazione, generazione, chat…) eseguito dal worker. */
+export const aiJob = pgTable(
+  'ai_job',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    tripId: uuid().references(() => trip.id, { onDelete: 'cascade' }),
+    kind: text().notNull(),
+    status: text().notNull().default('queued'),
+    input: jsonb().notNull(),
+    result: jsonb(),
+    error: text(),
+    model: text(),
+    promptTokens: integer(),
+    completionTokens: integer(),
+    /** Costo in dollari riportato da OpenRouter. */
+    cost: doublePrecision(),
+    /** "central" (chiave dell'istanza) o "user" (chiave personale). */
+    keySource: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [
+    index('ai_job_user_idx').on(t.userId, t.createdAt),
+    index('ai_job_trip_idx').on(t.tripId),
+  ],
+);
+
+/** Conversazione con l'assistente di un viaggio (privata per ogni utente). */
+export const aiChatMessage = pgTable(
+  'ai_chat_message',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    tripId: uuid()
+      .notNull()
+      .references(() => trip.id, { onDelete: 'cascade' }),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    role: text().notNull(),
+    content: text().notNull(),
+    /** Operazioni sul programma proposte dall'assistente. */
+    actions: jsonb(),
+    appliedAt: timestamp({ withTimezone: true }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('ai_chat_trip_user_idx').on(t.tripId, t.userId, t.createdAt)],
+);
+
+/** Note del viaggio: pubbliche (visibili a tutti) o private (solo per l'autore). */
+export const tripNote = pgTable(
+  'trip_note',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    tripId: uuid()
+      .notNull()
+      .references(() => trip.id, { onDelete: 'cascade' }),
+    memberId: uuid()
+      .notNull()
+      .references(() => tripMember.id, { onDelete: 'cascade' }),
+    emoji: text(),
+    title: text(),
+    content: text().notNull(),
+    visibility: text().notNull().default('public'),
+    pinned: boolean().notNull().default(false),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('trip_note_trip_idx').on(t.tripId, t.createdAt)],
 );
