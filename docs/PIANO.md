@@ -467,7 +467,7 @@ Con questo si può già usare l'app con il gruppo nel prossimo viaggio.
 
 ### Stato di avanzamento
 
-**Fasi 0, 1 e 2 completate.** Cosa c'è:
+**Fasi 0–3 completate.** Cosa c'è:
 
 - monorepo, CI su GitHub Actions, immagini Docker multi-architettura, Caddy con HTTPS,
   compose dedicato per Coolify;
@@ -484,6 +484,11 @@ Con questo si può già usare l'app con il gruppo nel prossimo viaggio.
   esatti, in qualsiasi valuta con il tasso BCE del giorno (modificabile);
 - saldi esatti al centesimo, trasferimenti minimi, rimborsi registrati o pagati con
   link PayPal.me precompilato;
+- programma giorno per giorno, luoghi, prenotazioni, budget previsto/speso, lista bagagli
+  con spunte per persona, meteo (fase 3);
+- biglietti delle prenotazioni: PDF, immagini, Apple Wallet (.pkpass), link Google Wallet,
+  QR e codici a barre letti dalle foto e mostrati a schermo intero, assegnati ai
+  partecipanti e disponibili offline;
 - formato standard del viaggio (sezione 2.3).
 
 Scelte diverse dal piano iniziale:

@@ -5,7 +5,8 @@ import rateLimit from '@fastify/rate-limit';
 import { fastifyTRPCPlugin, type FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
 import Fastify, { type FastifyRequest } from 'fastify';
 import { and, eq } from 'drizzle-orm';
-import { trip, user } from '@tripshare/db';
+import { bookingTicket, trip, tripMember, user } from '@tripshare/db';
+import { TICKET_CODE_FORMATS } from './routers/tickets.js';
 import { tripDocumentJsonSchema } from '@tripshare/shared/trip-format';
 import { requireMember } from './services/trips.js';
 import { appRouter, type AppRouter } from './routers/index.js';
@@ -119,6 +120,106 @@ export async function buildServer(
       await storage.removeByUrl(previous?.image);
       return { url };
     });
+
+    const TICKET_TYPES: Record<string, string> = {
+      'application/pdf': 'pdf',
+      'application/vnd.apple.pkpass': 'pkpass',
+      'image/png': 'png',
+      'image/jpeg': 'jpg',
+      'image/webp': 'webp',
+      'image/heic': 'heic',
+      'image/gif': 'gif',
+    };
+
+    /** Caricamento di un biglietto (PDF, immagine o Apple Wallet) per una prenotazione. */
+    app.post<{ Params: { id: string } }>('/api/trips/:id/tickets', async (req, reply) => {
+      const session = await sessionOf(req);
+      if (!session) return reply.status(401).send({ error: 'UNAUTHORIZED' });
+      try {
+        await requireMember(services.db, req.params.id, session.user.id, 'editor');
+      } catch {
+        return reply.status(404).send({ error: 'TRIP_NOT_FOUND' });
+      }
+      const maxMb = await services.settings.get('uploads.maxMb');
+      const file = await req.file({ limits: { fileSize: maxMb * 1024 * 1024 } });
+      if (!file) return reply.status(400).send({ error: 'NO_FILE' });
+      const isPkpass = file.filename.toLowerCase().endsWith('.pkpass');
+      const mime = isPkpass ? 'application/vnd.apple.pkpass' : file.mimetype;
+      const ext = TICKET_TYPES[mime];
+      if (!ext) return reply.status(415).send({ error: 'UNSUPPORTED_FILE' });
+      const buffer = await file.toBuffer().catch(() => null);
+      if (!buffer || file.file.truncated)
+        return reply.status(413).send({ error: 'FILE_TOO_LARGE' });
+
+      const field = (name: string) => {
+        const f = file.fields[name] as { value?: unknown } | undefined;
+        return typeof f?.value === 'string' && f.value.trim() ? f.value.trim() : undefined;
+      };
+      const bookingId = field('bookingId');
+      if (!bookingId || bookingId.length > 64)
+        return reply.status(400).send({ error: 'NO_BOOKING' });
+      const memberId = field('memberId');
+      if (memberId) {
+        const [m] = await services.db
+          .select({ id: tripMember.id })
+          .from(tripMember)
+          .where(and(eq(tripMember.id, memberId), eq(tripMember.tripId, req.params.id)));
+        if (!m) return reply.status(400).send({ error: 'UNKNOWN_MEMBER' });
+      }
+      const codeFormat = field('codeFormat');
+      const format =
+        codeFormat && (TICKET_CODE_FORMATS as readonly string[]).includes(codeFormat)
+          ? codeFormat
+          : null;
+
+      const storageName = await storage.savePrivate(buffer, ext);
+      const [row] = await services.db
+        .insert(bookingTicket)
+        .values({
+          tripId: req.params.id,
+          bookingId,
+          memberId: memberId ?? null,
+          label: field('label')?.slice(0, 120) ?? null,
+          fileName: file.filename.slice(0, 200),
+          storageName,
+          mimeType: mime,
+          size: buffer.length,
+          codeFormat: format,
+          codeValue: format ? (field('codeValue')?.slice(0, 4000) ?? null) : null,
+          createdBy: session.user.id,
+        })
+        .returning({ id: bookingTicket.id });
+      return { id: row!.id };
+    });
+
+    app.get<{ Params: { id: string; ticketId: string } }>(
+      '/api/trips/:id/tickets/:ticketId/file',
+      async (req, reply) => {
+        const session = await sessionOf(req);
+        if (!session) return reply.status(401).send({ error: 'UNAUTHORIZED' });
+        try {
+          await requireMember(services.db, req.params.id, session.user.id);
+        } catch {
+          return reply.status(404).send({ error: 'NOT_FOUND' });
+        }
+        const [ticket] = await services.db
+          .select()
+          .from(bookingTicket)
+          .where(
+            and(eq(bookingTicket.id, req.params.ticketId), eq(bookingTicket.tripId, req.params.id)),
+          );
+        const data = ticket?.storageName ? await storage.readPrivate(ticket.storageName) : null;
+        if (!ticket || !data) return reply.status(404).send({ error: 'NOT_FOUND' });
+        reply.header('content-type', ticket.mimeType ?? 'application/octet-stream');
+        reply.header('cache-control', 'private, max-age=86400');
+        reply.header(
+          'content-disposition',
+          `inline; filename*=UTF-8''${encodeURIComponent(ticket.fileName ?? 'ticket')}`,
+        );
+        reply.header('x-content-type-options', 'nosniff');
+        return reply.send(data);
+      },
+    );
 
     app.post<{ Params: { id: string } }>('/api/trips/:id/cover', async (req, reply) => {
       const session = await sessionOf(req);

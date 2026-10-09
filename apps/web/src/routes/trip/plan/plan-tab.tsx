@@ -36,6 +36,7 @@ import { cn } from '@/lib/utils';
 import { ActivityDialog } from './activity-dialog';
 import { moneyLabel, textareaClass } from './fields';
 import { ImportPlanButton } from './import-export';
+import { myTickets, TicketViewer, useTickets, type Ticket } from './tickets';
 
 type Weather = {
   date: string;
@@ -222,6 +223,14 @@ function DayView({
   canEdit: boolean;
 }) {
   const { t } = useTranslation();
+  const { data: tickets } = useTickets(trip.id);
+  const [viewing, setViewing] = useState<{ list: Ticket[]; index: number } | null>(null);
+  const ticketProps = (a: Activity) => {
+    const list = a.bookingId ? myTickets(tickets, trip.myMemberId, a.bookingId) : [];
+    return list.length
+      ? { ticketCount: list.length, onTickets: () => setViewing({ list, index: 0 }) }
+      : {};
+  };
   const { apply, pending } = usePlanOps(trip.id);
   const [editing, setEditing] = useState<{ activity?: Activity; alternativeId?: string } | null>(
     null,
@@ -284,6 +293,7 @@ function DayView({
               key={a.id}
               plan={plan}
               activity={a}
+              {...ticketProps(a)}
               onEdit={canEdit ? () => setEditing({ activity: a }) : undefined}
             />
           ))}
@@ -340,6 +350,15 @@ function DayView({
           onOpenChange={(open) => !open && setEditing(null)}
         />
       )}
+      {viewing && (
+        <TicketViewer
+          trip={trip}
+          bookings={plan.bookings}
+          tickets={viewing.list}
+          index={viewing.index}
+          onClose={() => setViewing(null)}
+        />
+      )}
       <DayDialog tripId={trip.id} plan={plan} day={day} open={editDay} onOpenChange={setEditDay} />
     </section>
   );
@@ -348,11 +367,15 @@ function DayView({
 function ActivityCard({
   plan,
   activity: a,
+  ticketCount,
+  onTickets,
   onEdit,
   compact,
 }: {
   plan: TripDocument;
   activity: Activity;
+  ticketCount?: number;
+  onTickets?: () => void;
   onEdit?: () => void;
   compact?: boolean;
 }) {
@@ -396,7 +419,7 @@ function ActivityCard({
             {a.description && <p className="mt-1 text-sm text-muted-foreground">{a.description}</p>}
           </div>
         </div>
-        {(tr || a.cost || booking) && (
+        {(tr || a.cost || booking || onTickets) && (
           <div className="mt-2.5 flex flex-wrap gap-1.5 text-xs">
             {tr && (
               <span className="rounded-full bg-secondary px-2.5 py-1 font-medium text-secondary-foreground">
@@ -424,6 +447,18 @@ function ActivityCard({
                 {BOOKING_EMOJI[booking.type]} {booking.title}
                 {booking.status === 'to_book' && ` · ${t('plan.bookingStatus.to_book')}`}
               </span>
+            )}
+            {onTickets && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTickets();
+                }}
+                className="rounded-full bg-gradient-to-r from-primary to-accent px-2.5 py-1 font-semibold text-white"
+              >
+                🎫 {t('tickets.show', { count: ticketCount })}
+              </button>
             )}
           </div>
         )}

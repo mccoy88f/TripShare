@@ -69,7 +69,9 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // Il modulo dei codici a barre (wasm) è precaricato: i biglietti si mostrano anche offline.
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,wasm}'],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: '/index.html',
         // Le API non passano dalla cache del service worker.
         navigateFallbackDenylist: [/^\/api\//],
@@ -78,6 +80,17 @@ export default defineConfig({
             urlPattern: ({ url }) => url.pathname.startsWith('/emojibase/'),
             handler: 'CacheFirst',
             options: { cacheName: 'emojibase', expiration: { maxEntries: 8 } },
+          },
+          {
+            // File dei biglietti: dalla rete se possibile, altrimenti dalla copia salvata.
+            urlPattern: ({ url }) =>
+              /^\/api\/trips\/[^/]+\/tickets\/[^/]+\/file$/.test(url.pathname),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'tickets',
+              networkTimeoutSeconds: 4,
+              expiration: { maxEntries: 100, maxAgeSeconds: 90 * 24 * 3600 },
+            },
           },
           {
             urlPattern: ({ url }) => url.pathname.startsWith('/api/files/'),

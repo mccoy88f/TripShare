@@ -261,6 +261,6 @@ run('trips, invitations, expenses and balances (integration)', () => {
     expect(file.headers['content-type']).toBe('image/webp');
     const meta = await sharp(file.rawPayload).metadata();
     expect(meta).toMatchObject({ format: 'webp', width: 1600, height: 900 });
-    expect(await readdir(uploads)).toHaveLength(1);
+    expect((await readdir(uploads)).filter((f) => f.endsWith('.webp'))).toHaveLength(1);
   });
 });

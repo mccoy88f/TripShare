@@ -188,3 +188,33 @@ export const packingCheck = pgTable(
   },
   (t) => [primaryKey({ columns: [t.tripId, t.itemId, t.memberId] })],
 );
+
+/**
+ * Biglietto o documento di una prenotazione (PDF, immagine, Apple Wallet, link Google Wallet
+ * o solo il contenuto di un QR / codice a barre), assegnato a un partecipante o a tutti.
+ * `bookingId` è l'id della prenotazione nel programma del viaggio.
+ */
+export const bookingTicket = pgTable(
+  'booking_ticket',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    tripId: uuid()
+      .notNull()
+      .references(() => trip.id, { onDelete: 'cascade' }),
+    bookingId: text().notNull(),
+    /** Nullo = per tutti. */
+    memberId: uuid().references(() => tripMember.id, { onDelete: 'set null' }),
+    label: text(),
+    fileName: text(),
+    /** Nome del file nell'archivio privato. */
+    storageName: text(),
+    mimeType: text(),
+    size: integer(),
+    codeFormat: text(),
+    codeValue: text(),
+    walletUrl: text(),
+    createdBy: text().references(() => user.id, { onDelete: 'set null' }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('booking_ticket_trip_idx').on(t.tripId, t.bookingId)],
+);

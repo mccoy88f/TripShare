@@ -1,4 +1,4 @@
-import { Loader2, Plus, Receipt, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Receipt, Ticket as TicketIcon, Trash2 } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isCurrencyCode, type CurrencyCode, type ExpenseCategory } from '@tripshare/shared';
@@ -13,6 +13,7 @@ import { money, shortDate } from '@/lib/format';
 import { BOOKING_EMOJI, usePlan, usePlanOps } from '@/lib/plan';
 import type { TripDetail } from '@/lib/types';
 import { ExpenseDialog, type ExpensePreset } from '../expense-dialog';
+import { myTickets, TicketsDialog, TicketViewer, useTickets, type Ticket } from './tickets';
 import {
   formatLinks,
   moneyDraft,
@@ -67,6 +68,9 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
   const { data } = usePlan(trip.id);
   const [editing, setEditing] = useState<Booking | 'new' | null>(null);
   const [expense, setExpense] = useState<ExpensePreset | null>(null);
+  const [ticketsOf, setTicketsOf] = useState<Booking | null>(null);
+  const [viewing, setViewing] = useState<{ list: Ticket[]; index: number } | null>(null);
+  const { data: tickets } = useTickets(trip.id);
   const canEdit = trip.role !== 'viewer';
   if (!data) return <Loader2 className="mx-auto mt-10 animate-spin text-muted-foreground" />;
   const { plan } = data;
@@ -74,8 +78,37 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
     `${a.start.date}${a.start.time ?? ''}`.localeCompare(`${b.start.date}${b.start.time ?? ''}`),
   );
 
+  const mine = myTickets(tickets, trip.myMemberId).sort(
+    (a, b) =>
+      bookings.findIndex((x) => x.id === a.bookingId) -
+      bookings.findIndex((x) => x.id === b.bookingId),
+  );
+
   return (
     <div className="grid gap-4 pb-8">
+      {mine.length > 0 && (
+        <section className="grid gap-2">
+          <h3 className="px-1 text-sm font-semibold">🎫 {t('tickets.mine')}</h3>
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:px-0">
+            {mine.map((tk, i) => {
+              const b = bookings.find((x) => x.id === tk.bookingId);
+              return (
+                <button
+                  key={tk.id}
+                  onClick={() => setViewing({ list: mine, index: i })}
+                  className="flex w-48 shrink-0 flex-col items-start rounded-xl bg-gradient-to-br from-primary to-accent p-3 text-left text-white shadow-md"
+                >
+                  <span className="text-xl">{b ? BOOKING_EMOJI[b.type] : '🎫'}</span>
+                  <span className="line-clamp-2 text-sm font-semibold">
+                    {b?.title ?? t('tickets.ticket')}
+                  </span>
+                  {tk.label && <span className="line-clamp-1 text-xs opacity-85">{tk.label}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
       {canEdit && (
         <Button className="justify-self-start" onClick={() => setEditing('new')}>
           <Plus />
@@ -129,7 +162,15 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
               {b.cost && b.paid === false && (
                 <span className="text-xs text-muted-foreground">{t('plan.booking.payOnSite')}</span>
               )}
-              <div className="flex gap-1">
+              <div className="flex flex-wrap justify-end gap-1">
+                {(canEdit || (tickets ?? []).some((x) => x.bookingId === b.id)) && (
+                  <Button size="sm" variant="outline" onClick={() => setTicketsOf(b)}>
+                    <TicketIcon />
+                    {t('tickets.button', {
+                      count: (tickets ?? []).filter((x) => x.bookingId === b.id).length,
+                    })}
+                  </Button>
+                )}
                 {canEdit && (
                   <Button
                     size="sm"
@@ -150,6 +191,23 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
           </Card>
         ))}
       </div>
+      {ticketsOf && (
+        <TicketsDialog
+          trip={trip}
+          booking={ticketsOf}
+          onClose={() => setTicketsOf(null)}
+          onView={(list, index) => setViewing({ list, index })}
+        />
+      )}
+      {viewing && (
+        <TicketViewer
+          trip={trip}
+          bookings={plan.bookings}
+          tickets={viewing.list}
+          index={viewing.index}
+          onClose={() => setViewing(null)}
+        />
+      )}
       {editing && (
         <BookingDialog
           tripId={trip.id}

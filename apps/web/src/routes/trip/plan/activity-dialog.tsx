@@ -211,7 +211,7 @@ export function ActivityDialog({
             </Field>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <Field label={t('plan.activity.time')} htmlFor="act-time">
               <Input
                 id="act-time"
@@ -228,7 +228,11 @@ export function ActivityDialog({
                 onChange={(e) => set('endTime', e.target.value)}
               />
             </Field>
-            <Field label={t('plan.activity.type')} htmlFor="act-type">
+            <Field
+              label={t('plan.activity.type')}
+              htmlFor="act-type"
+              className="col-span-2 sm:col-span-1"
+            >
               <Select
                 id="act-type"
                 value={d.type}

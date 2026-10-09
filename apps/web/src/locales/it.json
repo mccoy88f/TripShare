@@ -680,5 +680,38 @@
       "food": "Cibo",
       "other": "Altro"
     }
+  },
+  "tickets": {
+    "title": "Biglietti",
+    "mine": "I miei biglietti",
+    "ticket": "Biglietto",
+    "button_one": "Biglietti ({{count}})",
+    "button_other": "Biglietti ({{count}})",
+    "show_one": "Biglietto",
+    "show_other": "Biglietti ({{count}})",
+    "empty": "Nessun biglietto per questa prenotazione.",
+    "upload": "Carica biglietti",
+    "uploading": "Caricamento {{n}} di {{total}}…",
+    "uploadHint": "PDF, foto o screenshot (il QR o codice a barre viene letto in automatico) e file Apple Wallet (.pkpass). Puoi selezionarne più di uno.",
+    "assignInOrder": "Assegna in ordine ai partecipanti",
+    "addCode": "Codice o link Wallet",
+    "format": "Formato",
+    "codeValue": "Contenuto del codice",
+    "walletPlaceholder": "Link \"Salva su Google Wallet\" (facoltativo)",
+    "labelPlaceholder": "Etichetta, es. Andata · posto 12A",
+    "assignee": "Assegnato a",
+    "everyone": "Per tutti",
+    "open": "Apri biglietto",
+    "confirmDelete": "Eliminare questo biglietto?",
+    "codesFound_one": "Letto {{count}} codice dalle immagini.",
+    "codesFound_other": "Letti {{count}} codici dalle immagini.",
+    "appleWallet": "Aggiungi a Apple Wallet",
+    "googleWallet": "Salva su Google Wallet",
+    "openFile": "Apri file",
+    "errors": {
+      "UNSUPPORTED_FILE": "formato non supportato",
+      "FILE_TOO_LARGE": "file troppo grande",
+      "UNKNOWN_MEMBER": "partecipante non valido"
+    }
   }
 }

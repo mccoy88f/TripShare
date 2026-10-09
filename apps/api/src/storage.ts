@@ -15,12 +15,42 @@ export const IMAGE_PRESETS = {
 export type ImagePreset = keyof typeof IMAGE_PRESETS;
 
 const NAME = /^[a-z]+-[a-f0-9]{32}\.webp$/;
+const PRIVATE_NAME = /^[a-f0-9]{32}\.[a-z0-9]{1,8}$/;
 
 export class FileStorage {
   constructor(private readonly dir: string) {}
 
   async init() {
-    await mkdir(this.dir, { recursive: true });
+    await mkdir(join(this.dir, 'private'), { recursive: true });
+  }
+
+  /**
+   * File privati (biglietti, ricevute): salvati così come sono, serviti solo dopo il controllo
+   * dei permessi. Restituisce il nome interno.
+   */
+  async savePrivate(input: Buffer, extension: string): Promise<string> {
+    const ext =
+      extension
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+        .slice(0, 8) || 'bin';
+    const name = `${randomBytes(16).toString('hex')}.${ext}`;
+    await writeFile(join(this.dir, 'private', name), input);
+    return name;
+  }
+
+  async readPrivate(name: string): Promise<Buffer | null> {
+    if (!PRIVATE_NAME.test(name)) return null;
+    try {
+      return await readFile(join(this.dir, 'private', name));
+    } catch {
+      return null;
+    }
+  }
+
+  async removePrivate(name: string | null | undefined) {
+    if (!name || !PRIVATE_NAME.test(name)) return;
+    await rm(join(this.dir, 'private', name), { force: true });
   }
 
   /** Elabora e salva un'immagine; restituisce l'URL pubblico. */

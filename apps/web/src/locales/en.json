@@ -680,5 +680,38 @@
       "food": "Food",
       "other": "Other"
     }
+  },
+  "tickets": {
+    "title": "Tickets",
+    "mine": "My tickets",
+    "ticket": "Ticket",
+    "button_one": "Tickets ({{count}})",
+    "button_other": "Tickets ({{count}})",
+    "show_one": "Ticket",
+    "show_other": "Tickets ({{count}})",
+    "empty": "No tickets for this booking.",
+    "upload": "Upload tickets",
+    "uploading": "Uploading {{n}} of {{total}}…",
+    "uploadHint": "PDFs, photos or screenshots (QR or barcodes are read automatically) and Apple Wallet files (.pkpass). You can select several.",
+    "assignInOrder": "Assign to travelers in order",
+    "addCode": "Code or Wallet link",
+    "format": "Format",
+    "codeValue": "Code content",
+    "walletPlaceholder": "\"Save to Google Wallet\" link (optional)",
+    "labelPlaceholder": "Label, e.g. Outbound · seat 12A",
+    "assignee": "Assigned to",
+    "everyone": "Everyone",
+    "open": "Open ticket",
+    "confirmDelete": "Delete this ticket?",
+    "codesFound_one": "Read {{count}} code from the images.",
+    "codesFound_other": "Read {{count}} codes from the images.",
+    "appleWallet": "Add to Apple Wallet",
+    "googleWallet": "Save to Google Wallet",
+    "openFile": "Open file",
+    "errors": {
+      "UNSUPPORTED_FILE": "unsupported format",
+      "FILE_TOO_LARGE": "file too large",
+      "UNKNOWN_MEMBER": "invalid traveler"
+    }
   }
 }
