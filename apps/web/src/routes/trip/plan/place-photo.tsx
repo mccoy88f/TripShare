@@ -14,13 +14,6 @@ export interface PlacePhoto {
   photoCredit?: string;
 }
 
-/** Oltre a Wikimedia, la ricerca di foto sul web è disponibile (SearXNG o Brave). */
-function useWebPhotosEnabled() {
-  const trpc = useTRPC();
-  const { data } = useQuery({ ...trpc.public.config.queryOptions(), staleTime: 300_000 });
-  return !!data?.placePhotosWeb;
-}
-
 /** Foto del luogo: anteprima, caricamento dal dispositivo, ricerca online e rimozione. */
 export function PlacePhotoField({
   tripId,
@@ -140,12 +133,10 @@ function PhotoSearchDialog({
 }) {
   const { t } = useTranslation();
   const trpc = useTRPC();
-  const webEnabled = useWebPhotosEnabled();
-  const [source, setSource] = useState<'commons' | 'web'>('commons');
   const [draft, setDraft] = useState(initialQuery);
   const [query, setQuery] = useState(initialQuery.trim());
   const search = useQuery({
-    ...trpc.plan.placePhotoSearch.queryOptions({ tripId, query, source }),
+    ...trpc.plan.placePhotoSearch.queryOptions({ tripId, query }),
     enabled: query.length >= 2,
     staleTime: 600_000,
     retry: false,
@@ -159,27 +150,9 @@ function PhotoSearchDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent
         title={t('placePhoto.searchTitle')}
-        description={t(source === 'commons' ? 'placePhoto.rightsCommons' : 'placePhoto.rights')}
+        description={t('placePhoto.rights')}
         className="sm:max-w-2xl"
       >
-        {webEnabled && (
-          <div className="mt-2 inline-flex rounded-full bg-muted p-1">
-            {(['commons', 'web'] as const).map((x) => (
-              <button
-                key={x}
-                type="button"
-                onClick={() => setSource(x)}
-                className={
-                  source === x
-                    ? 'rounded-full bg-card px-3.5 py-1 text-sm font-medium shadow-sm'
-                    : 'rounded-full px-3.5 py-1 text-sm font-medium text-muted-foreground'
-                }
-              >
-                {t(`placePhoto.sources.${x}`)}
-              </button>
-            ))}
-          </div>
-        )}
         <form onSubmit={submit} className="flex gap-2 pt-2">
           <Input
             autoFocus

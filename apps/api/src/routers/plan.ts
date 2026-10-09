@@ -10,8 +10,8 @@ import {
   readPlan,
   removeOrphanPhotos,
 } from '../services/plan.js';
-import { downloadImage, ImageDownloadError, searchImages } from '../brave.js';
-import { searchCommons, searchSearxng } from '../photo-search.js';
+import { downloadImage, ImageDownloadError } from '../image-download.js';
+import { searchCommons } from '../photo-search.js';
 import { requireMember } from '../services/trips.js';
 import { authedProcedure, router } from '../trpc/init.js';
 import { forecast, forecastWindow, geocode } from '../weather.js';
@@ -63,37 +63,18 @@ export const planRouter = router({
       }
     }),
 
-  /**
-   * Cerca foto di un luogo. "commons" (Wikimedia, sempre disponibile) oppure "web" (SearXNG
-   * se il super admin ha indicato un'istanza, altrimenti Brave Search se ha la chiave).
-   */
+  /** Cerca foto di un luogo su Wikimedia Commons (libere, con autore e licenza). */
   placePhotoSearch: authedProcedure
-    .input(
-      z.object({
-        tripId: z.uuid(),
-        query: z.string().trim().min(2).max(120),
-        source: z.enum(['commons', 'web']).default('commons'),
-      }),
-    )
+    .input(z.object({ tripId: z.uuid(), query: z.string().trim().min(2).max(120) }))
     .query(async ({ ctx, input }) => {
       await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
-      const language = localeOf(ctx.session?.user.locale);
       try {
-        if (input.source === 'commons') {
-          return await searchCommons(
-            input.query,
-            (await ctx.settings.get('general.appName')) ?? ctx.env.APP_NAME,
-            ctx.httpFetch,
-          );
-        }
-        const searx = await ctx.settings.get('searxng.url');
-        if (searx) return await searchSearxng(searx, input.query, language, ctx.httpFetch);
-        const key = await ctx.settings.get('brave.apiKey');
-        if (!key)
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'WEB_PHOTOS_NOT_CONFIGURED' });
-        return await searchImages(key, input.query, language, ctx.httpFetch);
+        return await searchCommons(
+          input.query,
+          (await ctx.settings.get('general.appName')) ?? ctx.env.APP_NAME,
+          ctx.httpFetch,
+        );
       } catch (err) {
-        if (err instanceof TRPCError) throw err;
         throw new TRPCError({
           code: 'BAD_GATEWAY',
           message: err instanceof Error ? err.message : 'PHOTO_SEARCH_UNAVAILABLE',

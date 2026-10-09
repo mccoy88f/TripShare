@@ -100,20 +100,6 @@ export const SETTINGS = {
     default: null,
     secret: true,
   },
-  /** Istanza SearXNG propria per cercare foto sul web senza chiavi a pagamento. */
-  'searxng.url': {
-    schema: z
-      .url({ protocol: /^https?$/ })
-      .max(300)
-      .nullable(),
-    default: null,
-    secret: false,
-  },
-  'brave.apiKey': {
-    schema: z.string().min(10).max(200).nullable(),
-    default: null,
-    secret: true,
-  },
 } as const;
 
 export type SettingKey = keyof typeof SETTINGS;

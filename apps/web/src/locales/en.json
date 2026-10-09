@@ -302,10 +302,7 @@
     "aiTest": "Test",
     "aiTestOk": "Working · {{model}} · {{ms}} ms · answer: {{content}}",
     "aiTestError": "Error with {{model}}: {{error}}",
-    "aiErrors": "Latest errors",
-    "brave": "Brave Search key (web photos, alternative to SearXNG)",
-    "searxng": "SearXNG address (web photo search)",
-    "searxngHint": "Optional, e.g. http://searxng:8080. Free alternative to Brave."
+    "aiErrors": "Latest errors"
   },
   "legal": {
     "privacyTitle": "Privacy policy",
@@ -1091,28 +1088,17 @@
     "remove": "Remove",
     "searchTitle": "Find a photo of the place",
     "placeholder": "Search, e.g. Edinburgh Castle",
-    "rights": "Photos come from third-party sites: make sure you can use them. The one you pick is saved on TripShare.",
     "noResults": "No photos found.",
     "searchError": "Search unavailable.",
     "error": "The photo could not be saved.",
     "errors": {
-      "BRAVE_INVALID_KEY": "The Brave Search key is not valid.",
-      "BRAVE_RATE_LIMIT": "Too many requests to Brave Search: try again shortly.",
-      "BRAVE_NOT_CONFIGURED": "Photo search is not configured.",
       "INVALID_URL": "Invalid image address.",
       "NOT_AN_IMAGE": "The file is not an image.",
       "FILE_TOO_LARGE": "The image is too large.",
       "DOWNLOAD_FAILED": "Could not download the image.",
       "INVALID_IMAGE": "Invalid image.",
-      "COMMONS_RATE_LIMIT": "Too many requests to Wikimedia: try again shortly.",
-      "WEB_PHOTOS_NOT_CONFIGURED": "Web search is not configured.",
-      "SEARXNG_JSON_DISABLED": "SearXNG does not allow JSON output: enable it in its settings.",
-      "SEARXNG_RATE_LIMIT": "SearXNG rate-limited the requests: try again shortly."
+      "COMMONS_RATE_LIMIT": "Too many requests to Wikimedia: try again shortly."
     },
-    "sources": {
-      "commons": "Wikimedia",
-      "web": "Web"
-    },
-    "rightsCommons": "Free photos from Wikimedia Commons: the author and licence are saved as the credit."
+    "rights": "Free photos from Wikimedia Commons: the author and licence are saved as the credit."
   }
 }

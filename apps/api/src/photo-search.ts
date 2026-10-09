@@ -1,10 +1,17 @@
-import type { BraveImage } from './brave.js';
-
 /**
- * Fonti di foto senza chiave a pagamento: Wikimedia Commons (foto libere, con autore e licenza)
- * e un'istanza SearXNG propria (metamotore ospitato dal super admin).
+ * Ricerca di foto di luoghi su Wikimedia Commons: libere, senza chiave, con autore e licenza.
+ * Le foto scelte vengono scaricate e salvate su TripShare.
  */
-export type PhotoResult = BraveImage;
+export interface PhotoResult {
+  thumb: string;
+  /** Indirizzo dell'immagine da scaricare quando viene scelta. */
+  full: string;
+  title: string;
+  /** Sito di provenienza (dominio). */
+  source: string;
+  /** Autore e licenza. */
+  credit?: string;
+}
 
 const COMMONS = () => process.env.COMMONS_BASE_URL ?? 'https://commons.wikimedia.org';
 
@@ -79,54 +86,6 @@ export async function searchCommons(
       source: 'commons.wikimedia.org',
       credit: [artist, license].filter(Boolean).join(' · ').slice(0, 160) || 'Wikimedia Commons',
     });
-  }
-  return out;
-}
-
-interface SearxResult {
-  title?: string;
-  img_src?: string;
-  thumbnail_src?: string;
-  thumbnail?: string;
-  url?: string;
-}
-
-/** Cerca immagini su un'istanza SearXNG (API JSON, da abilitare in settings.yml). */
-export async function searchSearxng(
-  baseUrl: string,
-  query: string,
-  language: string,
-  fetchImpl: typeof fetch = fetch,
-): Promise<PhotoResult[]> {
-  const params = new URLSearchParams({
-    q: query,
-    format: 'json',
-    categories: 'images',
-    language,
-    safesearch: '2',
-  });
-  const res = await fetchImpl(`${baseUrl.replace(/\/$/, '')}/search?${params}`, {
-    headers: { accept: 'application/json' },
-    signal: AbortSignal.timeout(20_000),
-  });
-  if (res.status === 403) throw new Error('SEARXNG_JSON_DISABLED');
-  if (res.status === 429) throw new Error('SEARXNG_RATE_LIMIT');
-  if (!res.ok) throw new Error(`SEARXNG_HTTP_${res.status}`);
-  const data = (await res.json()) as { results?: SearxResult[] };
-  const out: PhotoResult[] = [];
-  for (const r of data.results ?? []) {
-    const full = r.img_src;
-    const thumb = r.thumbnail_src ?? r.thumbnail ?? full;
-    if (!full?.startsWith('https://') || !thumb) continue;
-    const source = (() => {
-      try {
-        return new URL(r.url ?? full).hostname.replace(/^www\./, '');
-      } catch {
-        return '';
-      }
-    })();
-    out.push({ thumb, full, title: r.title ?? '', source });
-    if (out.length >= 30) break;
   }
   return out;
 }

@@ -17,7 +17,7 @@ run('place photos (integration)', () => {
     })
       .jpeg()
       .toBuffer();
-    const fakeFetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    const fakeFetch = (async (input: string | URL | Request) => {
       const url = String(input);
       if (url.startsWith('https://commons.wikimedia.org/w/api.php')) {
         return Response.json({
@@ -62,41 +62,6 @@ run('place photos (integration)', () => {
           },
         });
       }
-      if (url.startsWith('https://searx.example.org/search')) {
-        return Response.json({
-          results: [
-            {
-              title: 'Da SearXNG',
-              img_src: 'https://93.184.216.34/castello.jpg',
-              thumbnail_src: 'https://searx.example.org/t.jpg',
-              url: 'https://www.sito.it/p',
-            },
-            { title: 'http', img_src: 'http://insecure.example.com/y.jpg' },
-          ],
-        });
-      }
-      if (url.startsWith('https://api.search.brave.com/')) {
-        if (new Headers(init?.headers).get('x-subscription-token') === 'wrong-key-0000')
-          return new Response('{}', { status: 401 });
-        return Response.json({
-          results: [
-            {
-              title: 'Castello',
-              url: 'https://www.example.com/castello',
-              source: 'www.example.com',
-              thumbnail: { src: 'https://imgs.search.brave.com/t.jpg' },
-              properties: { url: 'https://93.184.216.34/castello.jpg' },
-            },
-            // senza immagine originale o non https: scartati
-            { title: 'x', thumbnail: { src: 'https://imgs.search.brave.com/u.jpg' } },
-            {
-              title: 'y',
-              thumbnail: { src: 'https://imgs.search.brave.com/v.jpg' },
-              properties: { url: 'http://insecure.example.com/y.jpg' },
-            },
-          ],
-        });
-      }
       if (url === 'https://93.184.216.34/castello.jpg')
         return new Response(new Uint8Array(image), { headers: { 'content-type': 'image/jpeg' } });
       if (url === 'https://93.184.216.34/page.html')
@@ -112,7 +77,7 @@ run('place photos (integration)', () => {
   beforeEach(async () => t.reset());
   afterAll(async () => t?.close());
 
-  it('searches, downloads safely, stores and cleans up place photos', async () => {
+  it('searches Commons, downloads safely, stores and cleans up place photos', async () => {
     const owner = (await t.signUp('owner@example.com', 'Owner')).cookie;
     const { data: trip } = await t.trpc<{ id: string }>('trips.create', owner, {
       title: 'Scozia',
@@ -130,53 +95,6 @@ run('place photos (integration)', () => {
     expect(commons.data.map((p) => p.title)).toEqual(['Edinburgh Castle', 'Altro castello']);
     expect(commons.data[0]!.credit).toBe('Ada & Bob · CC BY 2.0');
     expect(commons.data[1]!.credit).toBe('Mario Rossi · CC BY-SA 4.0');
-
-    // Ricerca sul web: serve SearXNG o la chiave Brave.
-    const web = { tripId, query: 'castello', source: 'web' };
-    const off = await t.trpc('plan.placePhotoSearch', owner, web, 'query');
-    expect(off.error?.message).toBe('WEB_PHOTOS_NOT_CONFIGURED');
-    const before = await t.trpc<{ placePhotosWeb: boolean }>(
-      'public.config',
-      '',
-      undefined,
-      'query',
-    );
-    expect(before.data.placePhotosWeb).toBe(false);
-
-    await t.settings.set('searxng.url', 'https://searx.example.org/');
-    const searx = await t.trpc<{ full: string; source: string }[]>(
-      'plan.placePhotoSearch',
-      owner,
-      web,
-      'query',
-    );
-    expect(searx.data).toEqual([
-      expect.objectContaining({ full: 'https://93.184.216.34/castello.jpg', source: 'sito.it' }),
-    ]);
-    await t.settings.set('searxng.url', null);
-
-    await t.settings.set('brave.apiKey', 'wrong-key-0000');
-    const bad = await t.trpc('plan.placePhotoSearch', owner, web, 'query');
-    expect(bad.error?.message).toBe('BRAVE_INVALID_KEY');
-    await t.settings.set('brave.apiKey', 'good-brave-key-123');
-    const config = await t.trpc<{ placePhotosWeb: boolean }>(
-      'public.config',
-      '',
-      undefined,
-      'query',
-    );
-    expect(config.data.placePhotosWeb).toBe(true);
-    const found = await t.trpc<{ thumb: string; full: string; source: string }[]>(
-      'plan.placePhotoSearch',
-      owner,
-      web,
-      'query',
-    );
-    expect(found.data).toHaveLength(1);
-    expect(found.data[0]).toMatchObject({
-      full: 'https://93.184.216.34/castello.jpg',
-      source: 'example.com',
-    });
 
     for (const url of [
       'http://93.184.216.34/castello.jpg',
@@ -196,7 +114,7 @@ run('place photos (integration)', () => {
 
     const saved = await t.trpc<{ url: string }>('plan.placePhotoFromUrl', owner, {
       tripId,
-      url: found.data[0]!.full,
+      url: 'https://93.184.216.34/castello.jpg',
     });
     expect(saved.data.url).toMatch(/^\/api\/files\/place-[a-f0-9]{32}\.webp$/);
     const served = await t.app.inject({ method: 'GET', url: saved.data.url });
