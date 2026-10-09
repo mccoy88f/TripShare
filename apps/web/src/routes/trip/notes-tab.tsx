@@ -14,6 +14,7 @@ import type { TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { textareaClass } from './plan/fields';
 import { confirmDialog } from '@/components/confirm';
+import { searchId } from '@/lib/search-focus';
 
 type Visibility = 'public' | 'private';
 interface Draft {
@@ -65,6 +66,7 @@ export function NotesTab({ trip }: { trip: TripDetail }) {
             return (
               <Card
                 key={n.id}
+                {...searchId(`note:${n.id}`)}
                 onClick={() =>
                   mine &&
                   setEditing({

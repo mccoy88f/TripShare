@@ -19,6 +19,7 @@ import { useTRPC } from '@/lib/trpc';
 import type { ExpenseT, TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ALL, ExpenseDialog, paidByEveryone } from './expense-dialog';
+import { searchId } from '@/lib/search-focus';
 
 export function ExpensesTab({ trip }: { trip: TripDetail }) {
   const { t } = useTranslation();
@@ -64,7 +65,11 @@ export function ExpensesTab({ trip }: { trip: TripDetail }) {
           </h3>
           <div className="divide-y rounded-xl border border-dashed border-warning bg-warning/5">
             {planned.map((e) => (
-              <div key={e.id} className="flex items-center gap-3 px-4 py-3">
+              <div
+                key={e.id}
+                {...searchId(`expense:${e.id}`)}
+                className="flex items-center gap-3 px-4 py-3"
+              >
                 <button
                   type="button"
                   className="flex min-w-0 flex-1 items-center gap-3 text-left"
@@ -116,6 +121,7 @@ export function ExpensesTab({ trip }: { trip: TripDetail }) {
               return (
                 <button
                   key={e.id}
+                  {...searchId(`expense:${e.id}`)}
                   onClick={() => canEdit && setEditing(e)}
                   className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-muted/50"
                 >

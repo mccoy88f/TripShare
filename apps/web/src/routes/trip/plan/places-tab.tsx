@@ -51,6 +51,7 @@ import {
   textareaClass,
 } from './fields';
 import { confirmDialog } from '@/components/confirm';
+import { searchId } from '@/lib/search-focus';
 
 export function PlacesTab({ trip }: { trip: TripDetail }) {
   const { t } = useTranslation();
@@ -118,6 +119,7 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
           return (
             <Card
               key={p.id}
+              {...searchId(`place:${p.id}`)}
               onClick={() => canEdit && setEditing(p)}
               className={cn(
                 'flex flex-col gap-2 p-4',

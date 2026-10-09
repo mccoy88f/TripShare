@@ -1055,5 +1055,25 @@
       "links_one": "{{count}} link",
       "links_other": "{{count}} link"
     }
+  },
+  "search": {
+    "button": "Cerca",
+    "close": "Chiudi la ricerca",
+    "placeholder": "Cerca nel viaggio…",
+    "hint": "Cerca tra attività, luoghi, prenotazioni, spese, bagaglio, note e consigli.",
+    "empty": "Nessun risultato per «{{query}}».",
+    "more_one": "e altro {{count}} risultato: restringi la ricerca",
+    "more_other": "e altri {{count}} risultati: restringi la ricerca",
+    "groups": {
+      "activity": "Programma",
+      "place": "Luoghi",
+      "booking": "Prenotazioni",
+      "ticket": "Biglietti",
+      "expense": "Spese",
+      "budget": "Budget",
+      "packing": "Bagaglio",
+      "tip": "Consigli",
+      "note": "Note"
+    }
   }
 }

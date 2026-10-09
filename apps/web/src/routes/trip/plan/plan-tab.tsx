@@ -42,6 +42,7 @@ import { GeneratePlanButton } from './generate-trip';
 import { ImportPlanButton } from './import-export';
 import { myTickets, TicketViewer, useTickets, type Ticket } from './tickets';
 import { confirmDialog } from '@/components/confirm';
+import { searchId, takeFocusDate, useFocusRequest } from '@/lib/search-focus';
 
 type Weather = {
   date: string;
@@ -70,6 +71,12 @@ export function PlanTab({ trip }: { trip: TripDetail }) {
   /** Consiglio in modifica: indice nella lista, oppure -1 per uno nuovo. */
   const [tipIndex, setTipIndex] = useState<number | null>(null);
   const stripRef = useRef<HTMLDivElement>(null);
+  // Un risultato di ricerca può chiedere di aprire un giorno preciso.
+  const focusRequest = useFocusRequest();
+  useEffect(() => {
+    const date = takeFocusDate();
+    if (date) setSelected(date);
+  }, [focusRequest]);
   useOnAdd('plan', () => {
     if (plan && plan.days.length === 0) toast.info(t('trip.fab.noDays'));
   });
@@ -78,7 +85,11 @@ export function PlanTab({ trip }: { trip: TripDetail }) {
   useEffect(() => {
     if (!plan || selected) return;
     const today = todayIso();
-    setSelected(plan.days.find((d) => d.date === today)?.date ?? plan.days[0]?.date ?? null);
+    // Un giorno già scelto (anche da una ricerca nello stesso istante) non va sovrascritto.
+    setSelected(
+      (current) =>
+        current ?? plan.days.find((d) => d.date === today)?.date ?? plan.days[0]?.date ?? null,
+    );
   }, [plan, selected]);
 
   const weatherByDate = useMemo(
@@ -191,6 +202,7 @@ export function PlanTab({ trip }: { trip: TripDetail }) {
             {plan.tips.map((tip, i) => (
               <Card
                 key={i}
+                {...searchId(`tip:${i}`)}
                 className={cn('p-4', canEdit && 'cursor-pointer transition hover:bg-muted/40')}
                 onClick={() => canEdit && setTipIndex(i)}
               >
@@ -443,6 +455,7 @@ function ActivityCard({
         )}
       />
       <div
+        {...searchId(`activity:${a.id}`)}
         role={onEdit ? 'button' : undefined}
         tabIndex={onEdit ? 0 : undefined}
         onClick={onEdit}

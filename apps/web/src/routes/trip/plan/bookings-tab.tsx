@@ -29,6 +29,7 @@ import {
   textareaClass,
 } from './fields';
 import { confirmDialog } from '@/components/confirm';
+import { searchId } from '@/lib/search-focus';
 
 const CATEGORY_OF: Record<Booking['type'], ExpenseCategory> = {
   flight: 'flights',
@@ -140,6 +141,7 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
         {bookings.map((b) => (
           <Card
             key={b.id}
+            {...searchId(`booking:${b.id}`)}
             onClick={() => canEdit && setEditing(b)}
             className={cn(
               'grid grid-cols-1 gap-3 p-4',

@@ -17,6 +17,7 @@ import { useTRPC } from '@/lib/trpc';
 import type { TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useOnAdd } from '@/lib/fab';
+import { searchId } from '@/lib/search-focus';
 
 const GROUPS: PackingItem['group'][] = [
   'documents',
@@ -211,7 +212,11 @@ export function PackingTab({ trip }: { trip: TripDetail }) {
                 const mine = checkedBy.includes(trip.myMemberId);
                 const doneItem = isDone(p);
                 return (
-                  <div key={p.id} className="flex items-center gap-3 px-4 py-3">
+                  <div
+                    key={p.id}
+                    {...searchId(`packing:${p.id}`)}
+                    className="flex items-center gap-3 px-4 py-3"
+                  >
                     <button
                       type="button"
                       onClick={() =>

@@ -1,12 +1,24 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
-import { ArrowLeft, CalendarDays, Loader2, Settings, Sparkles, Users } from 'lucide-react';
+import {
+  ArrowLeft,
+  CalendarDays,
+  Loader2,
+  Search,
+  Settings,
+  Sparkles,
+  Users,
+  X,
+} from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AvatarStack } from '@/components/avatar-stack';
 import { TripCover } from '@/components/trip-cover';
 import { CoverCredit } from '@/components/unsplash-picker';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { focusItem } from '@/lib/search-focus';
+import { SearchPanel, type SearchResult } from './search';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { dateRange, money } from '@/lib/format';
 import { useTRPC } from '@/lib/trpc';
@@ -69,6 +81,8 @@ export function TripPage() {
     });
   const { data: trip, error } = useQuery(trpc.trips.get.queryOptions({ id: tripId }));
   const [adding, setAdding] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState('');
   const ai = useAiStatus();
   const [addRequest, setAddRequest] = useState({ target: '', n: 0 });
   // Il "+" in basso aggiunge qualcosa nel tab attivo.
@@ -109,6 +123,16 @@ export function TripPage() {
   if (!trip) return <Loader2 className="mx-auto mt-20 animate-spin text-muted-foreground" />;
 
   const canEdit = trip.role !== 'viewer';
+  const closeSearch = () => {
+    setSearching(false);
+    setQuery('');
+  };
+  // Il risultato apre il tab giusto e vi evidenzia l'elemento, senza aprirne la scheda.
+  const pick = (r: SearchResult) => {
+    closeSearch();
+    go(r.tab, r.view);
+    focusItem(r.key, r.date);
+  };
   const myBalance = trip.ledger.balances[trip.myMemberId] ?? 0;
   const activeMembers = trip.members.filter((m) => !m.removed);
 
@@ -177,84 +201,130 @@ export function TripPage() {
       <div className="mx-auto max-w-4xl px-4 pt-5 lg:px-8">
         <AddRequestContext.Provider value={addRequest}>
           <Tabs value={tab} onValueChange={(value) => go(value as Tab)}>
-            <div className="flex items-center gap-2">
-              <TabsList className="min-w-0">
-                {MAIN_TABS.map((x) => (
-                  <TabsTrigger key={x} value={x}>
-                    {t(`trip.tabs.${x}`)}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              {ai.data?.available && (
+            {searching ? (
+              <div className="flex items-center gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    autoFocus
+                    type="search"
+                    enterKeyHint="search"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Escape' && closeSearch()}
+                    placeholder={t('search.placeholder')}
+                    aria-label={t('search.placeholder')}
+                    className="rounded-full pl-10"
+                  />
+                </div>
                 <button
                   type="button"
-                  onClick={() => go(tab === 'assistant' ? 'plan' : 'assistant')}
-                  aria-label={t('trip.tabs.assistant')}
-                  title={t('trip.tabs.assistant')}
-                  aria-pressed={tab === 'assistant'}
-                  className={cn(
-                    'ml-auto flex size-10 shrink-0 items-center justify-center rounded-full transition [&_svg]:size-5',
-                    tab === 'assistant'
-                      ? 'bg-amber-400 text-amber-950 shadow-sm'
-                      : 'bg-amber-400/15 text-amber-500 hover:bg-amber-400/25',
-                  )}
+                  onClick={closeSearch}
+                  aria-label={t('search.close')}
+                  title={t('search.close')}
+                  className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted transition hover:bg-muted/70 [&_svg]:size-5"
                 >
-                  <Sparkles />
+                  <X />
                 </button>
-              )}
-            </div>
-            <TabsContent value="plan">
-              <PlanTab trip={trip} />
-            </TabsContent>
-            <TabsContent value="assistant">
-              <AssistantTab trip={trip} />
-            </TabsContent>
-            <TabsContent value="expenses">
-              <div className="mb-5 flex items-center gap-3">
-                <div className="inline-flex rounded-full bg-muted p-1">
-                  {MONEY_VIEWS.map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => go('expenses', v)}
-                      className={cn(
-                        'rounded-full px-3.5 py-1 text-sm font-medium transition',
-                        view === v ? 'bg-card shadow-sm' : 'text-muted-foreground',
-                      )}
-                    >
-                      {t(`trip.money.${v}`)}
-                    </button>
-                  ))}
-                </div>
-                <BalancePill
-                  amount={myBalance}
-                  currency={trip.currency}
-                  className="ml-auto text-sm"
-                />
               </div>
-              {view === 'list' && <ExpensesTab trip={trip} />}
-              {view === 'balances' && <BalancesTab trip={trip} />}
-              {view === 'budget' && <BudgetTab trip={trip} />}
-            </TabsContent>
-            <TabsContent value="bookings">
-              <BookingsTab trip={trip} />
-            </TabsContent>
-            <TabsContent value="places">
-              <PlacesTab trip={trip} />
-            </TabsContent>
-            <TabsContent value="packing">
-              <PackingTab trip={trip} />
-            </TabsContent>
-            <TabsContent value="notes">
-              <NotesTab trip={trip} />
-            </TabsContent>
-            <TabsContent value="members">
-              <MembersTab trip={trip} />
-            </TabsContent>
-            {trip.role === 'owner' && (
-              <TabsContent value="settings">
-                <SettingsTab trip={trip} />
-              </TabsContent>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSearching(true)}
+                  aria-label={t('search.button')}
+                  title={t('search.button')}
+                  className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition hover:text-foreground [&_svg]:size-5"
+                >
+                  <Search />
+                </button>
+                <TabsList className="min-w-0">
+                  {MAIN_TABS.map((x) => (
+                    <TabsTrigger key={x} value={x}>
+                      {t(`trip.tabs.${x}`)}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                {ai.data?.available && (
+                  <button
+                    type="button"
+                    onClick={() => go(tab === 'assistant' ? 'plan' : 'assistant')}
+                    aria-label={t('trip.tabs.assistant')}
+                    title={t('trip.tabs.assistant')}
+                    aria-pressed={tab === 'assistant'}
+                    className={cn(
+                      'ml-auto flex size-10 shrink-0 items-center justify-center rounded-full transition [&_svg]:size-5',
+                      tab === 'assistant'
+                        ? 'bg-amber-400 text-amber-950 shadow-sm'
+                        : 'bg-amber-400/15 text-amber-500 hover:bg-amber-400/25',
+                    )}
+                  >
+                    <Sparkles />
+                  </button>
+                )}
+              </div>
+            )}
+            {searching && (
+              <div className="mt-6">
+                <SearchPanel trip={trip} query={query} onPick={pick} />
+              </div>
+            )}
+            {!searching && (
+              <>
+                <TabsContent value="plan">
+                  <PlanTab trip={trip} />
+                </TabsContent>
+                <TabsContent value="assistant">
+                  <AssistantTab trip={trip} />
+                </TabsContent>
+                <TabsContent value="expenses">
+                  <div className="mb-5 flex items-center gap-3">
+                    <div className="inline-flex rounded-full bg-muted p-1">
+                      {MONEY_VIEWS.map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => go('expenses', v)}
+                          className={cn(
+                            'rounded-full px-3.5 py-1 text-sm font-medium transition',
+                            view === v ? 'bg-card shadow-sm' : 'text-muted-foreground',
+                          )}
+                        >
+                          {t(`trip.money.${v}`)}
+                        </button>
+                      ))}
+                    </div>
+                    <BalancePill
+                      amount={myBalance}
+                      currency={trip.currency}
+                      className="ml-auto text-sm"
+                    />
+                  </div>
+                  {view === 'list' && <ExpensesTab trip={trip} />}
+                  {view === 'balances' && <BalancesTab trip={trip} />}
+                  {view === 'budget' && <BudgetTab trip={trip} />}
+                </TabsContent>
+                <TabsContent value="bookings">
+                  <BookingsTab trip={trip} />
+                </TabsContent>
+                <TabsContent value="places">
+                  <PlacesTab trip={trip} />
+                </TabsContent>
+                <TabsContent value="packing">
+                  <PackingTab trip={trip} />
+                </TabsContent>
+                <TabsContent value="notes">
+                  <NotesTab trip={trip} />
+                </TabsContent>
+                <TabsContent value="members">
+                  <MembersTab trip={trip} />
+                </TabsContent>
+                {trip.role === 'owner' && (
+                  <TabsContent value="settings">
+                    <SettingsTab trip={trip} />
+                  </TabsContent>
+                )}
+              </>
             )}
           </Tabs>
         </AddRequestContext.Provider>

@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { useOnAdd } from '@/lib/fab';
 import { moneyDraft, MoneyFields, moneyFromDraft, moneyLabel, textareaClass } from './fields';
 import { confirmDialog } from '@/components/confirm';
+import { searchId } from '@/lib/search-focus';
 
 export function BudgetTab({ trip }: { trip: TripDetail }) {
   const { t, i18n } = useTranslation();
@@ -161,6 +162,7 @@ export function BudgetTab({ trip }: { trip: TripDetail }) {
           {summary.lines.map(({ item, total }) => (
             <div
               key={item.id}
+              {...searchId(`budget:${item.id}`)}
               className={cn('flex items-center gap-3 px-4 py-3', !item.included && 'opacity-55')}
             >
               <span className="text-xl">
