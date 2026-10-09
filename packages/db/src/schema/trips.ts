@@ -1,0 +1,170 @@
+import { sql } from 'drizzle-orm';
+import {
+  bigint,
+  date,
+  doublePrecision,
+  index,
+  integer,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
+import { user } from './auth.js';
+
+// Gli importi sono interi in unità minori (centesimi) della valuta indicata accanto.
+
+export const trip = pgTable('trip', {
+  id: uuid().primaryKey().defaultRandom(),
+  title: text().notNull(),
+  emoji: text(),
+  description: text(),
+  destination: text(),
+  startDate: date(),
+  endDate: date(),
+  /** Valuta del viaggio: saldi e budget sono calcolati in questa valuta. */
+  currency: text().notNull(),
+  coverImage: text(),
+  coverColor: text(),
+  createdBy: text().references(() => user.id, { onDelete: 'set null' }),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Partecipante a un viaggio. `userId` è nullo per i membri segnaposto (persone senza account),
+ * che vengono collegati all'account quando accettano un invito.
+ */
+export const tripMember = pgTable(
+  'trip_member',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    tripId: uuid()
+      .notNull()
+      .references(() => trip.id, { onDelete: 'cascade' }),
+    userId: text().references(() => user.id, { onDelete: 'set null' }),
+    name: text().notNull(),
+    avatarEmoji: text(),
+    avatarColor: text(),
+    role: text().notNull().default('editor'),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    removedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [
+    index('trip_member_trip_idx').on(t.tripId),
+    index('trip_member_user_idx').on(t.userId),
+    uniqueIndex('trip_member_trip_user_uq')
+      .on(t.tripId, t.userId)
+      .where(sql`${t.userId} is not null`),
+  ],
+);
+
+export const tripInvitation = pgTable(
+  'trip_invitation',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    tripId: uuid()
+      .notNull()
+      .references(() => trip.id, { onDelete: 'cascade' }),
+    token: text().notNull().unique(),
+    /** Se impostata, l'invito è per questo indirizzo (e gli viene inviato via email). */
+    email: text(),
+    role: text().notNull().default('editor'),
+    /** Membro segnaposto che l'invitato prenderà in carico. */
+    memberId: uuid().references(() => tripMember.id, { onDelete: 'set null' }),
+    maxUses: integer(),
+    uses: integer().notNull().default(0),
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    createdBy: text().references(() => user.id, { onDelete: 'set null' }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    revokedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [
+    index('trip_invitation_trip_idx').on(t.tripId),
+    index('trip_invitation_email_idx').on(t.email),
+  ],
+);
+
+export const expense = pgTable(
+  'expense',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    tripId: uuid()
+      .notNull()
+      .references(() => trip.id, { onDelete: 'cascade' }),
+    title: text().notNull(),
+    emoji: text(),
+    category: text().notNull(),
+    amount: bigint({ mode: 'number' }).notNull(),
+    currency: text().notNull(),
+    /** Unità della valuta del viaggio per 1 unità di `currency`. */
+    rate: doublePrecision().notNull().default(1),
+    /** Importo convertito nella valuta del viaggio. */
+    amountTrip: bigint({ mode: 'number' }).notNull(),
+    date: date().notNull(),
+    splitMethod: text().notNull(),
+    notes: text(),
+    createdBy: text().references(() => user.id, { onDelete: 'set null' }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [index('expense_trip_idx').on(t.tripId, t.date)],
+);
+
+export const expensePayer = pgTable(
+  'expense_payer',
+  {
+    expenseId: uuid()
+      .notNull()
+      .references(() => expense.id, { onDelete: 'cascade' }),
+    memberId: uuid()
+      .notNull()
+      .references(() => tripMember.id, { onDelete: 'cascade' }),
+    amount: bigint({ mode: 'number' }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.expenseId, t.memberId] })],
+);
+
+export const expenseShare = pgTable(
+  'expense_share',
+  {
+    expenseId: uuid()
+      .notNull()
+      .references(() => expense.id, { onDelete: 'cascade' }),
+    memberId: uuid()
+      .notNull()
+      .references(() => tripMember.id, { onDelete: 'cascade' }),
+    amount: bigint({ mode: 'number' }).notNull(),
+    /** Quota o percentuale indicata dall'utente, per ripresentare il modulo. */
+    weight: doublePrecision(),
+  },
+  (t) => [primaryKey({ columns: [t.expenseId, t.memberId] })],
+);
+
+/** Rimborso tra due membri, nella valuta del viaggio. */
+export const settlement = pgTable(
+  'settlement',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    tripId: uuid()
+      .notNull()
+      .references(() => trip.id, { onDelete: 'cascade' }),
+    fromMemberId: uuid()
+      .notNull()
+      .references(() => tripMember.id, { onDelete: 'cascade' }),
+    toMemberId: uuid()
+      .notNull()
+      .references(() => tripMember.id, { onDelete: 'cascade' }),
+    amount: bigint({ mode: 'number' }).notNull(),
+    method: text().notNull().default('manual'),
+    note: text(),
+    date: date().notNull(),
+    createdBy: text().references(() => user.id, { onDelete: 'set null' }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [index('settlement_trip_idx').on(t.tripId)],
+);

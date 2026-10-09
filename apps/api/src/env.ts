@@ -28,6 +28,7 @@ const EnvSchema = z
       ),
     SUPERADMIN_EMAIL: optional(z.email()),
     TRUSTED_ORIGINS: optional(z.string()),
+    UPLOADS_DIR: z.string().default('./data/uploads'),
 
     SMTP_HOST: z.string().min(1),
     SMTP_PORT: z.coerce.number().int().positive().default(587),

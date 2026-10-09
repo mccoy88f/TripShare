@@ -40,6 +40,19 @@ export const meRouter = router({
     };
   }),
 
+  removeAvatar: authedProcedure.mutation(async ({ ctx }) => {
+    const [row] = await ctx.db
+      .select({ image: user.image })
+      .from(user)
+      .where(eq(user.id, ctx.user.id));
+    await ctx.db
+      .update(user)
+      .set({ image: null, updatedAt: new Date() })
+      .where(eq(user.id, ctx.user.id));
+    await ctx.storage?.removeByUrl(row?.image);
+    return { ok: true };
+  }),
+
   update: authedProcedure.input(ProfileUpdate).mutation(async ({ ctx, input }) => {
     const patch: Partial<typeof user.$inferInsert> = { ...input, updatedAt: new Date() };
     if (input.paypalMe !== undefined && input.paypalMe !== null && input.paypalMe !== '') {

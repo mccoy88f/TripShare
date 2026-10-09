@@ -6,6 +6,7 @@ import type { Auth, AuthSession } from '../auth.js';
 import type { EmailJob, EmailSender } from '../email/index.js';
 import type { Env } from '../env.js';
 import type { SettingsService } from '../settings.js';
+import type { FileStorage } from '../storage.js';
 
 export interface AppServices {
   env: Env;
@@ -18,6 +19,9 @@ export interface AppServices {
   /** Invio diretto, senza coda, per l'email di prova del pannello. */
   sendDirect?: (job: EmailJob) => Promise<void>;
   verifySmtp?: () => Promise<void>;
+  storage?: FileStorage;
+  /** Tasso di cambio (iniettabile nei test). */
+  fxRate?: (from: string, to: string, date?: string) => Promise<{ rate: number; date: string }>;
 }
 
 export interface Context extends AppServices {

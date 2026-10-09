@@ -14,6 +14,7 @@ import {
   type Locale,
 } from '@tripshare/shared';
 import type { EmailSender } from './email/index.js';
+import { findValidInvitation, hasPendingInvitationFor } from './routers/invitations.js';
 import type { Env } from './env.js';
 import type { SettingsService } from './settings.js';
 
@@ -40,7 +41,11 @@ function localeOf(user: { locale?: unknown }, request?: Request): Locale {
 }
 
 /** Verifica se un indirizzo può registrarsi, in base alle impostazioni dell'istanza. */
-export async function checkRegistration(deps: AuthDeps, email: string): Promise<void> {
+export async function checkRegistration(
+  deps: AuthDeps,
+  email: string,
+  inviteToken?: string | null,
+): Promise<void> {
   const normalized = email.toLowerCase();
   if (deps.env.SUPERADMIN_EMAIL && normalized === deps.env.SUPERADMIN_EMAIL.toLowerCase()) return;
 
@@ -54,7 +59,12 @@ export async function checkRegistration(deps: AuthDeps, email: string): Promise<
     });
   }
   if (mode === 'invite_only') {
-    // Gli inviti ai viaggi arrivano nella fase 2: per ora la modalità blocca le registrazioni.
+    // Si può registrare chi ha un invito valido: il link (header x-invite-token) o un invito via email.
+    const byLink = inviteToken ? await findValidInvitation(deps.db, inviteToken) : null;
+    const allowed =
+      (byLink && (!byLink.invitation.email || byLink.invitation.email === normalized)) ||
+      (await hasPendingInvitationFor(deps.db, normalized));
+    if (allowed) return;
     throw new APIError('BAD_REQUEST', {
       message: 'Registration requires an invitation',
       code: 'INVITATION_REQUIRED',
@@ -162,8 +172,12 @@ export function createAuth(deps: AuthDeps) {
     databaseHooks: {
       user: {
         create: {
-          async before(user) {
-            await checkRegistration(deps, user.email);
+          async before(user, ctx) {
+            await checkRegistration(
+              deps,
+              user.email,
+              ctx?.headers?.get('x-invite-token') ?? ctx?.request?.headers.get('x-invite-token'),
+            );
             const isSuperadmin =
               !!env.SUPERADMIN_EMAIL &&
               user.email.toLowerCase() === env.SUPERADMIN_EMAIL.toLowerCase();

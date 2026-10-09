@@ -5,6 +5,13 @@ export type EmailTemplate =
   | { kind: 'reset-password'; url: string; name: string }
   | { kind: 'set-password'; url: string; name: string }
   | { kind: 'magic-link'; url: string }
+  | {
+      kind: 'trip-invite';
+      url: string;
+      inviter: string;
+      tripTitle: string;
+      tripEmoji?: string | null;
+    }
   | { kind: 'test' };
 
 export interface RenderedEmail {
@@ -80,6 +87,24 @@ function copy(t: EmailTemplate, locale: Locale, appName: string): Copy {
             cta: 'Sign in',
             footer: 'If you did not ask for this, ignore this email.',
           };
+    case 'trip-invite': {
+      const title = `${t.tripEmoji ? `${t.tripEmoji} ` : ''}${t.tripTitle}`;
+      return it
+        ? {
+            subject: `${t.inviter} ti invita a "${t.tripTitle}" · ${appName}`,
+            title: `Sei invitato a ${title}`,
+            body: `${t.inviter} ti ha invitato a unirti al viaggio su ${appName}: programma, spese condivise e saldi in un unico posto. Se non hai ancora un account, potrai crearlo in pochi secondi.`,
+            cta: 'Unisciti al viaggio',
+            footer: "L'invito scade tra 14 giorni.",
+          }
+        : {
+            subject: `${t.inviter} invited you to "${t.tripTitle}" · ${appName}`,
+            title: `You're invited to ${title}`,
+            body: `${t.inviter} invited you to join the trip on ${appName}: plan, shared expenses and balances in one place. If you don't have an account yet, you can create one in seconds.`,
+            cta: 'Join the trip',
+            footer: 'The invitation expires in 14 days.',
+          };
+    }
     case 'test':
       return it
         ? {

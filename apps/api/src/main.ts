@@ -12,6 +12,7 @@ import {
 import { envWarnings, loadEnv } from './env.js';
 import { buildServer } from './server.js';
 import { SettingsService } from './settings.js';
+import { FileStorage } from './storage.js';
 
 const env = loadEnv();
 const logger =
@@ -28,6 +29,8 @@ const email = createQueuedEmailSender(emailQueue);
 const direct = createDirectEmailSender(env);
 const settings = new SettingsService(db, env.ENCRYPTION_KEY);
 const auth = createAuth({ env, db, settings, email });
+const storage = new FileStorage(env.UPLOADS_DIR);
+await storage.init();
 
 const app = await buildServer(
   {
@@ -39,6 +42,7 @@ const app = await buildServer(
     redis,
     emailQueue,
     sendDirect: direct.send,
+    storage,
     verifySmtp: async () => {
       await direct.transport.verify();
     },
