@@ -1,7 +1,7 @@
 import { Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { EMAIL_QUEUE, createDirectEmailSender, type EmailJob } from './email/index.js';
-import { loadEnv } from './env.js';
+import { envWarnings, loadEnv } from './env.js';
 
 // Worker per i lavori in background. Per ora gestisce l'invio delle email; nelle fasi successive
 // si aggiungono le code per AI, immagini, notifiche push ed export.
@@ -27,6 +27,7 @@ emailWorker.on('failed', (job, err) =>
   ),
 );
 
+for (const warning of envWarnings(env)) console.warn(`[config] ${warning}`);
 console.log(`Worker avviato, SMTP ${env.smtp.host}:${env.smtp.port}`);
 
 const shutdown = async () => {

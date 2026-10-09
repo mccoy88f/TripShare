@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { decrypt, encrypt, maskSecret } from '../src/crypto.js';
-import { loadEnv, resolveMailFrom } from '../src/env.js';
+import { envWarnings, loadEnv, resolveMailFrom } from '../src/env.js';
 
 const base = {
   APP_URL: 'https://trip.example.com',
@@ -43,6 +43,13 @@ describe('env', () => {
     expect(env.smtp.port).toBe(587);
     expect(env.smtp.secure).toBe(false);
     expect(Buffer.from(env.ENCRYPTION_KEY, 'base64').toString('hex')).toBe(hex);
+  });
+
+  it('warns when the SMTP password is missing', () => {
+    expect(envWarnings(loadEnv({ ...base, SMTP_USER: 'u@example.com' }))).toHaveLength(1);
+    expect(
+      envWarnings(loadEnv({ ...base, SMTP_USER: 'u@example.com', SMTP_PASSWORD: 'x' })),
+    ).toHaveLength(0);
   });
 
   it('reports invalid configuration', () => {

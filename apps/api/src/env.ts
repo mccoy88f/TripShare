@@ -64,6 +64,18 @@ const EnvSchema = z
 
 export type Env = z.output<typeof EnvSchema>;
 
+/** Avvisi su configurazioni probabilmente sbagliate che non impediscono l'avvio. */
+export function envWarnings(env: Env): string[] {
+  const warnings: string[] = [];
+  if (env.SMTP_USER && !env.SMTP_PASSWORD) {
+    warnings.push(
+      "SMTP_USER è impostata ma SMTP_PASSWORD è vuota o mancante: il server SMTP rifiuterà l'accesso " +
+        '("Missing credentials"). Se la password contiene "$", scrivilo come "$$" o segna la variabile come letterale.',
+    );
+  }
+  return warnings;
+}
+
 /**
  * Mittente delle email. SMTP_FROM è facoltativa: se manca si usa SMTP_USER quando è un indirizzo
  * email (molti server accettano solo quello), altrimenti noreply@<dominio dell'app>.

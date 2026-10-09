@@ -9,7 +9,7 @@ import {
   createQueuedEmailSender,
   type EmailJob,
 } from './email/index.js';
-import { loadEnv } from './env.js';
+import { envWarnings, loadEnv } from './env.js';
 import { buildServer } from './server.js';
 import { SettingsService } from './settings.js';
 
@@ -45,6 +45,8 @@ const app = await buildServer(
   },
   { logger },
 );
+
+for (const warning of envWarnings(env)) app.log.warn(warning);
 
 direct.transport.verify().then(
   () => app.log.info(`SMTP pronto (${env.smtp.host}:${env.smtp.port}), mittente ${env.smtp.from}`),
