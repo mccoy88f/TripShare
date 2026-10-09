@@ -42,7 +42,9 @@ export default defineConfig({
     localEmojibase(),
     tailwindcss(),
     VitePWA({
-      registerType: 'prompt',
+      // Le nuove versioni si attivano da sole (skipWaiting + clientsClaim) e la pagina si
+      // ricarica: nessuno resta su una versione vecchia perché ha perso l'avviso.
+      registerType: 'autoUpdate',
       injectRegister: false,
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
@@ -71,6 +73,9 @@ export default defineConfig({
       workbox: {
         // Il modulo dei codici a barre (wasm) è precaricato: i biglietti si mostrano anche offline.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,wasm}'],
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: '/index.html',
         // Le API non passano dalla cache del service worker.

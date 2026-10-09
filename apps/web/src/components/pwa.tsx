@@ -5,22 +5,27 @@ import { toast } from 'sonner';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Button } from '@/components/ui/button';
 
-/** Avvisa quando è disponibile una nuova versione dell'app. */
+/**
+ * Aggiornamenti dell'app: il service worker nuovo si attiva da solo e la pagina si ricarica.
+ * Si controlla se c'è una nuova versione all'avvio, ogni 30 minuti e quando l'app torna in
+ * primo piano (sul telefono una PWA resta aperta anche per giorni).
+ */
 export function PwaUpdater() {
   const { t } = useTranslation();
   const {
-    needRefresh: [needRefresh],
     offlineReady: [offlineReady, setOfflineReady],
-    updateServiceWorker,
-  } = useRegisterSW();
-
-  useEffect(() => {
-    if (!needRefresh) return;
-    toast(t('app.updateAvailable'), {
-      duration: Infinity,
-      action: { label: t('app.reload'), onClick: () => void updateServiceWorker(true) },
-    });
-  }, [needRefresh, t, updateServiceWorker]);
+  } = useRegisterSW({
+    onRegisteredSW(_url, registration) {
+      if (!registration) return;
+      const check = () => {
+        if (navigator.onLine) void registration.update().catch(() => undefined);
+      };
+      setInterval(check, 30 * 60 * 1000);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') check();
+      });
+    },
+  });
 
   useEffect(() => {
     if (!offlineReady) return;
