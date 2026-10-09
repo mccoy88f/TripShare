@@ -321,12 +321,23 @@ function DayView({
               </Badge>
             )}
             {weather && (
-              <Badge variant="outline" className="text-sm font-medium">
-                {weatherEmoji(weather.code)} {weather.place && `${weather.place} `}
-                {Math.round(weather.max)}° / {Math.round(weather.min)}°
-                {weather.precipitation != null && ` · 💧 ${weather.precipitation}%`}
-                {weather.sunset && ` · 🌇 ${weather.sunset}`}
-              </Badge>
+              <a
+                href={`https://www.google.com/search?q=${encodeURIComponent(
+                  `${t('plan.weatherQuery')} ${weather.place ?? trip.destination ?? plan.trip.destination.name} ${longDate(day.date)}`,
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={t('plan.weatherOpen')}
+                className="rounded-full transition hover:brightness-95 focus-visible:ring-4 focus-visible:ring-ring/30 focus-visible:outline-none"
+              >
+                <Badge variant="outline" className="cursor-pointer text-sm font-medium">
+                  {weatherEmoji(weather.code)} {weather.place && `${weather.place} `}
+                  {Math.round(weather.max)}° / {Math.round(weather.min)}°
+                  {weather.precipitation != null && ` · 💧 ${weather.precipitation}%`}
+                  {weather.sunset && ` · 🌇 ${weather.sunset}`}
+                  <ExternalLink className="size-3.5 opacity-60" />
+                </Badge>
+              </a>
             )}
           </div>
           {day.summary && <p className="mt-2 max-w-2xl text-sm">{day.summary}</p>}

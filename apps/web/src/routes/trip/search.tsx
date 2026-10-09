@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EXPENSE_CATEGORIES, categoryLabel, type Locale } from '@tripshare/shared';
 import { normalizeText } from '@tripshare/shared/trip-format';
+import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { longDate, money, shortDate } from '@/lib/format';
 import { BOOKING_EMOJI, usePlan } from '@/lib/plan';
@@ -26,6 +27,8 @@ export interface SearchResult {
   /** Giorno del programma da aprire per le attività. */
   date?: string;
   haystack: string;
+  titleN: string;
+  subN: string;
 }
 
 const KIND_ORDER: SearchKind[] = [
@@ -39,7 +42,23 @@ const KIND_ORDER: SearchKind[] = [
   'tip',
   'note',
 ];
-const PER_GROUP = 8;
+const MAX_RESULTS = 40;
+
+/** Più alto = corrispondenza migliore: titolo uguale, che inizia con la ricerca, poi parole nel titolo. */
+function score(r: SearchResult, words: string[], phrase: string) {
+  let n = 0;
+  if (r.titleN === phrase) n += 200;
+  else if (r.titleN.startsWith(phrase)) n += 120;
+  else if (r.titleN.includes(phrase)) n += 80;
+  for (const w of words) {
+    if (r.titleN.split(' ').some((t) => t.startsWith(w))) n += 30;
+    else if (r.titleN.includes(w)) n += 20;
+    else if (r.subN.includes(w)) n += 10;
+    else n += 2;
+  }
+  // A parità, il titolo più corto è la corrispondenza più precisa.
+  return n - r.titleN.length / 100;
+}
 
 /** Cerca in tutto il viaggio: programma, luoghi, prenotazioni, spese, bagaglio, note e consigli. */
 export function SearchPanel({
@@ -63,8 +82,16 @@ export function SearchPanel({
     const out: SearchResult[] = [];
     const plan = planData?.plan;
     const names = Object.fromEntries(trip.members.map((m) => [m.id, m.name]));
-    const add = (r: Omit<SearchResult, 'haystack'>, ...texts: (string | undefined | null)[]) =>
-      out.push({ ...r, haystack: normalizeText([r.title, r.subtitle, ...texts].join(' ')) });
+    const add = (
+      r: Omit<SearchResult, 'haystack' | 'titleN' | 'subN'>,
+      ...texts: (string | undefined | null)[]
+    ) =>
+      out.push({
+        ...r,
+        titleN: normalizeText(r.title),
+        subN: normalizeText(r.subtitle),
+        haystack: normalizeText([r.title, r.subtitle, ...texts].join(' ')),
+      });
     if (plan) {
       const placeName = (id: string) => plan.places.find((p) => p.id === id)?.name;
       for (const d of plan.days)
@@ -206,7 +233,14 @@ export function SearchPanel({
       <p className="px-2 py-10 text-center text-sm text-muted-foreground">{t('search.hint')}</p>
     );
 
-  const found = items.filter((r) => words.every((w) => r.haystack.includes(w)));
+  const phrase = words.join(' ');
+  const found = items
+    .filter((r) => words.every((w) => r.haystack.includes(w)))
+    .map((r) => ({ r, score: score(r, words, phrase) }))
+    .sort(
+      (a, b) => b.score - a.score || KIND_ORDER.indexOf(a.r.kind) - KIND_ORDER.indexOf(b.r.kind),
+    )
+    .map((x) => x.r);
   if (found.length === 0)
     return (
       <p className="px-2 py-10 text-center text-sm text-muted-foreground">
@@ -214,44 +248,36 @@ export function SearchPanel({
       </p>
     );
   return (
-    <div className="grid grid-cols-1 gap-5 pb-8">
-      {KIND_ORDER.map((kind) => {
-        const group = found.filter((r) => r.kind === kind);
-        if (group.length === 0) return null;
-        return (
-          <section key={kind}>
-            <h3 className="mb-2 px-1 text-sm font-semibold">
-              {t(`search.groups.${kind}`)}{' '}
-              <span className="font-normal text-muted-foreground">{group.length}</span>
-            </h3>
-            <Card className="divide-y">
-              {group.slice(0, PER_GROUP).map((r) => (
-                <button
-                  key={`${r.kind}-${r.key}`}
-                  type="button"
-                  onClick={() => onPick(r)}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-muted/50"
-                >
-                  <span className="text-xl">{r.emoji}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{r.title}</span>
-                    {r.subtitle && (
-                      <span className="block truncate text-sm text-muted-foreground">
-                        {r.subtitle}
-                      </span>
-                    )}
-                  </span>
-                </button>
-              ))}
-              {group.length > PER_GROUP && (
-                <p className="px-4 py-2 text-xs text-muted-foreground">
-                  {t('search.more', { count: group.length - PER_GROUP })}
-                </p>
+    <div className="grid grid-cols-1 gap-3 pb-8">
+      <p className="px-1 text-sm text-muted-foreground">
+        {t('search.count', { count: found.length })}
+      </p>
+      <Card className="divide-y">
+        {found.slice(0, MAX_RESULTS).map((r) => (
+          <button
+            key={`${r.kind}-${r.key}`}
+            type="button"
+            onClick={() => onPick(r)}
+            className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-muted/50"
+          >
+            <span className="text-xl">{r.emoji}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-medium">{r.title}</span>
+              {r.subtitle && (
+                <span className="block truncate text-sm text-muted-foreground">{r.subtitle}</span>
               )}
-            </Card>
-          </section>
-        );
-      })}
+            </span>
+            <Badge variant="outline" className="shrink-0">
+              {t(`search.groups.${r.kind}`)}
+            </Badge>
+          </button>
+        ))}
+        {found.length > MAX_RESULTS && (
+          <p className="px-4 py-2 text-xs text-muted-foreground">
+            {t('search.more', { count: found.length - MAX_RESULTS })}
+          </p>
+        )}
+      </Card>
     </div>
   );
 }

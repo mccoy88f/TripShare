@@ -192,7 +192,8 @@ export function TripPage() {
       <div className="mx-auto max-w-4xl px-4 pt-5 lg:px-8">
         <AddRequestContext.Provider value={addRequest}>
           <Tabs value={tab} onValueChange={(value) => go(value as Tab)}>
-            <div className="flex items-center gap-2">
+            {/* La riga resta ferma sotto l'intestazione mentre si scorre. */}
+            <div className="sticky top-14 z-20 -mx-4 flex items-center gap-2 bg-background/90 px-4 py-2 backdrop-blur lg:top-0 lg:-mx-8 lg:px-8">
               <button
                 type="button"
                 onClick={() => (searching ? closeSearch() : setSearching(true))}
@@ -203,7 +204,7 @@ export function TripPage() {
                   'flex size-10 shrink-0 items-center justify-center rounded-full transition [&_svg]:size-5',
                   searching
                     ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'bg-muted text-muted-foreground hover:text-foreground',
+                    : 'bg-primary/15 text-primary hover:bg-primary/25',
                 )}
               >
                 <Search />

@@ -754,7 +754,9 @@
       "title": "Title",
       "text": "Text",
       "confirmDelete": "Delete this tip?"
-    }
+    },
+    "weatherQuery": "weather",
+    "weatherOpen": "Open the weather for this day"
   },
   "budget": {
     "planned": "Planned",
@@ -1074,6 +1076,8 @@
       "packing": "Packing",
       "tip": "Tips",
       "note": "Notes"
-    }
+    },
+    "count_one": "{{count}} result",
+    "count_other": "{{count}} results"
   }
 }

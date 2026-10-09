@@ -754,7 +754,9 @@
       "title": "Titolo",
       "text": "Testo",
       "confirmDelete": "Eliminare questo consiglio?"
-    }
+    },
+    "weatherQuery": "meteo",
+    "weatherOpen": "Apri il meteo di questo giorno"
   },
   "budget": {
     "planned": "Previsto",
@@ -1074,6 +1076,8 @@
       "packing": "Bagaglio",
       "tip": "Consigli",
       "note": "Note"
-    }
+    },
+    "count_one": "{{count}} risultato",
+    "count_other": "{{count}} risultati"
   }
 }
