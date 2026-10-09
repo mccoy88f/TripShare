@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Loader2, Send, XCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, RefreshCw, Send, X, XCircle } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useMe } from '@/components/layouts/app-layout';
+import { ModelInfo, ModelPicker } from '@/components/model-picker';
 import { UserAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -388,25 +389,82 @@ function GeneralSettings() {
 }
 
 const MODEL_KEYS = ['vision', 'planner', 'chat', 'web', 'light'] as const;
-type Models = Record<(typeof MODEL_KEYS)[number], string> & { fallbacks: string[] };
+type ModelKey = (typeof MODEL_KEYS)[number];
+type Models = Record<ModelKey, string> & { fallbacks: string[] };
+/** Scopi che ricevono immagini in input (scontrini, screenshot). */
+const IMAGE_PURPOSES: ModelKey[] = ['vision'];
+
+function KeyStatus({ hasKey }: { hasKey: boolean }) {
+  const { t } = useTranslation();
+  const trpc = useTRPC();
+  const check = useMutation(trpc.admin.openrouter.checkKey.mutationOptions());
+  if (!hasKey) return null;
+  const usd = (n: number | null) => (n === null ? '∞' : `$${n.toFixed(2)}`);
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-xl bg-muted/60 px-4 py-3 text-sm">
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        disabled={check.isPending}
+        onClick={() => check.mutate()}
+      >
+        {check.isPending ? <Loader2 className="animate-spin" /> : <CheckCircle2 />}
+        {t('admin.checkKey')}
+      </Button>
+      {check.data && (
+        <span className="text-success">
+          {t('admin.keyOk', {
+            usage: usd(check.data.usage),
+            limit: usd(check.data.limit),
+            remaining: usd(check.data.limitRemaining),
+          })}
+          {check.data.freeTier && ` · ${t('admin.freeTier')}`}
+        </span>
+      )}
+      {check.error && (
+        <span className="text-destructive">
+          {t(`admin.openrouterErrors.${check.error.message}`, {
+            defaultValue: check.error.message,
+          })}
+        </span>
+      )}
+    </div>
+  );
+}
 
 function AiSettings() {
   const { t } = useTranslation();
+  const trpc = useTRPC();
   const { settings, value, save } = useSettings();
   const [models, setModels] = useState<Models | null>(null);
-  const [fallbacks, setFallbacks] = useState('');
   const [quota, setQuota] = useState('2');
+  const [refresh, setRefresh] = useState(false);
+  const catalog = useQuery({
+    ...trpc.admin.openrouter.models.queryOptions({ refresh }),
+    staleTime: 3600_000,
+    retry: false,
+  });
   useEffect(() => {
     if (!settings) return;
     const m = value<Models>('openrouter.models');
-    if (m) {
-      setModels(m);
-      setFallbacks(m.fallbacks.join(', '));
-    }
+    if (m) setModels(m);
     setQuota(String(value<number>('openrouter.monthlyQuotaUsd') ?? 2));
   }, [settings]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!settings || !models)
     return <Loader2 className="mx-auto mt-10 animate-spin text-muted-foreground" />;
+
+  const keySetting = settings['openrouter.apiKey'];
+  const hasKey = !!keySetting?.secret && keySetting.set;
+  const list = catalog.data?.models ?? [];
+  const byId = new Map(list.map((m) => [m.id, m]));
+  const warning = (k: ModelKey) => {
+    const m = byId.get(models[k]);
+    if (!m) return null;
+    if (IMAGE_PURPOSES.includes(k) && !m.imageInput) return t('admin.needsImages');
+    if (k === 'planner' && !m.structuredOutput) return t('admin.noStructured');
+    return null;
+  };
 
   return (
     <div className="grid gap-6">
@@ -437,6 +495,7 @@ function AiSettings() {
             settings={settings}
             save={save}
           />
+          <KeyStatus hasKey={hasKey} />
           <SaveRow onSave={() => save('openrouter.monthlyQuotaUsd', Number(quota))}>
             <Field label={t('admin.quota')} htmlFor="quota">
               <Input
@@ -460,40 +519,111 @@ function AiSettings() {
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>{t('admin.models')}</CardTitle>
-          <CardDescription>{t('admin.modelHint')}</CardDescription>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="grid gap-1">
+              <CardTitle>{t('admin.models')}</CardTitle>
+              <CardDescription>{t('admin.modelHint')}</CardDescription>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={catalog.isFetching}
+              onClick={() => (refresh ? void catalog.refetch() : setRefresh(true))}
+            >
+              {catalog.isFetching ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+              {t('admin.refreshModels')}
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className="grid gap-4">
+        <CardContent className="grid gap-5">
+          {catalog.isError && (
+            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {t('admin.modelsUnavailable')} ({catalog.error.message})
+            </p>
+          )}
+          {catalog.data && (
+            <p className="text-xs text-muted-foreground">
+              {t('admin.modelsCount', {
+                count: list.length,
+                free: list.filter((m) => m.free).length,
+                images: list.filter((m) => m.imageInput).length,
+              })}
+            </p>
+          )}
           {MODEL_KEYS.map((k) => (
-            <Field key={k} label={t(`admin.modelNames.${k}`)} htmlFor={`model-${k}`}>
-              <Input
-                id={`model-${k}`}
-                className="font-mono text-sm"
-                value={models[k]}
-                onChange={(e) => setModels({ ...models, [k]: e.target.value })}
-              />
+            <Field
+              key={k}
+              label={
+                <span className="flex items-center gap-2">
+                  {t(`admin.modelNames.${k}`)}
+                  {IMAGE_PURPOSES.includes(k) ? (
+                    <Badge variant="outline">🖼️ {t('admin.textAndImages')}</Badge>
+                  ) : (
+                    <Badge variant="outline">📝 {t('admin.textOnly')}</Badge>
+                  )}
+                </span>
+              }
+              hint={t(`admin.modelPurposes.${k}`)}
+              error={warning(k)}
+            >
+              {catalog.isError ? (
+                <Input
+                  className="font-mono text-sm"
+                  value={models[k]}
+                  onChange={(e) => setModels({ ...models, [k]: e.target.value })}
+                />
+              ) : (
+                <ModelPicker
+                  models={list}
+                  value={models[k]}
+                  requireImage={IMAGE_PURPOSES.includes(k)}
+                  onChange={(id) => setModels({ ...models, [k]: id })}
+                />
+              )}
             </Field>
           ))}
-          <Field label={t('admin.fallbacks')} htmlFor="fallbacks" hint={t('admin.fallbacksHint')}>
-            <Input
-              id="fallbacks"
-              className="font-mono text-sm"
-              value={fallbacks}
-              onChange={(e) => setFallbacks(e.target.value)}
-            />
+          <Field label={t('admin.fallbacks')} hint={t('admin.fallbacksHint')}>
+            <div className="grid gap-2">
+              {models.fallbacks.map((id) => (
+                <div key={id} className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">
+                      {byId.get(id)?.name ?? id}
+                    </span>
+                    {byId.get(id) && <ModelInfo model={byId.get(id)!} />}
+                  </span>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="size-8"
+                    aria-label={t('admin.remove')}
+                    onClick={() =>
+                      setModels({ ...models, fallbacks: models.fallbacks.filter((f) => f !== id) })
+                    }
+                  >
+                    <X />
+                  </Button>
+                </div>
+              ))}
+              {models.fallbacks.length < 5 && !catalog.isError && (
+                <ModelPicker
+                  models={list.filter((m) => !models.fallbacks.includes(m.id))}
+                  value={null}
+                  placeholder={t('admin.addFallback')}
+                  onChange={(id) =>
+                    !models.fallbacks.includes(id) &&
+                    setModels({ ...models, fallbacks: [...models.fallbacks, id] })
+                  }
+                />
+              )}
+            </div>
           </Field>
           <Button
             type="button"
             className="justify-self-end"
-            onClick={() =>
-              save('openrouter.models', {
-                ...models,
-                fallbacks: fallbacks
-                  .split(',')
-                  .map((f) => f.trim())
-                  .filter(Boolean),
-              })
-            }
+            onClick={() => save('openrouter.models', models)}
           >
             {t('common.save')}
           </Button>

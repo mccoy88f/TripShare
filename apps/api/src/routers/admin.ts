@@ -2,6 +2,7 @@ import { count, desc, ilike, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { auditLog, user } from '@tripshare/db';
 import { TRPCError } from '@trpc/server';
+import { checkKey, clearModelsCache, listModels } from '../openrouter.js';
 import { SETTINGS, isSettingKey, type SettingKey } from '../settings.js';
 import { router, superadminProcedure } from '../trpc/init.js';
 import type { Context } from '../trpc/init.js';
@@ -56,12 +57,43 @@ export const adminRouter = router({
           });
         }
         await ctx.settings.set(key, parsed.data as never, ctx.session!.user.id);
+        if (key === 'openrouter.apiKey') clearModelsCache();
         await audit(ctx, 'settings.update', {
           key,
           value: SETTINGS[key].secret ? '[secret]' : parsed.data,
         });
         return { ok: true };
       }),
+  }),
+
+  openrouter: router({
+    /** Modelli disponibili su OpenRouter, con prezzi e tipo di input. */
+    models: superadminProcedure
+      .input(z.object({ refresh: z.boolean().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        const key = await ctx.settings.get('openrouter.apiKey');
+        try {
+          return await listModels(key, ctx.httpFetch, input?.refresh);
+        } catch (err) {
+          throw new TRPCError({
+            code: 'BAD_GATEWAY',
+            message: err instanceof Error ? err.message : 'OPENROUTER_UNAVAILABLE',
+          });
+        }
+      }),
+
+    checkKey: superadminProcedure.mutation(async ({ ctx }) => {
+      const key = await ctx.settings.get('openrouter.apiKey');
+      if (!key) throw new TRPCError({ code: 'BAD_REQUEST', message: 'OPENROUTER_NO_KEY' });
+      try {
+        return await checkKey(key, ctx.httpFetch);
+      } catch (err) {
+        throw new TRPCError({
+          code: 'BAD_GATEWAY',
+          message: err instanceof Error ? err.message : 'OPENROUTER_UNAVAILABLE',
+        });
+      }
+    }),
   }),
 
   users: router({

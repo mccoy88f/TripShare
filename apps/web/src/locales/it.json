@@ -219,7 +219,7 @@
     "apiKeyReplace": "Incolla una nuova chiave per sostituirla",
     "remove": "Rimuovi",
     "models": "Modelli per funzione",
-    "modelHint": "ID dei modelli OpenRouter, es. google/gemini-2.5-flash. \"openrouter/auto\" sceglie in automatico.",
+    "modelHint": "Elenco aggiornato da OpenRouter, con prezzi per milione di token (input / output).",
     "modelNames": {
       "vision": "Scontrini e screenshot",
       "planner": "Generatore di viaggi",
@@ -228,7 +228,7 @@
       "light": "Compiti leggeri"
     },
     "fallbacks": "Modelli di riserva",
-    "fallbacksHint": "Separati da virgola, usati se il modello principale non risponde.",
+    "fallbacksHint": "Usati in ordine se il modello principale non risponde (massimo 5).",
     "quota": "Quota mensile per utente (USD)",
     "denyDataCollection": "Usa solo provider che non conservano i dati",
     "aiComing": "Le funzioni AI arrivano nella fase 4: qui intanto si configurano chiave e modelli.",
@@ -239,7 +239,29 @@
     "banned": "Sospeso",
     "joined": "Iscritto il",
     "auditEmpty": "Nessuna azione registrata.",
-    "forbidden": "Questa sezione è riservata al super admin."
+    "forbidden": "Questa sezione è riservata al super admin.",
+    "checkKey": "Verifica chiave",
+    "keyOk": "Chiave valida · spesi {{usage}} su {{limit}} · restano {{remaining}}",
+    "freeTier": "account gratuito",
+    "openrouterErrors": {
+      "OPENROUTER_INVALID_KEY": "Chiave non valida o revocata.",
+      "OPENROUTER_NO_KEY": "Inserisci prima la chiave."
+    },
+    "refreshModels": "Aggiorna elenco",
+    "modelsUnavailable": "Elenco dei modelli non disponibile: puoi scrivere l'ID a mano",
+    "modelsCount": "{{count}} modelli disponibili · {{free}} gratis · {{images}} accettano immagini",
+    "textAndImages": "testo + immagini",
+    "textOnly": "testo",
+    "modelPurposes": {
+      "vision": "Legge scontrini, ricevute e screenshot di prenotazioni: serve un modello che accetti immagini.",
+      "planner": "Genera interi viaggi nel formato JSON standard: meglio un modello capace e con output strutturato.",
+      "chat": "Risponde alle domande sul viaggio e propone azioni.",
+      "web": "Verifica orari e prezzi cercando sul web (con il plugin web di OpenRouter).",
+      "light": "Compiti brevi ed economici: categorie, emoji, lista bagagli."
+    },
+    "needsImages": "Questo modello non accetta immagini: non potrà leggere gli scontrini.",
+    "noStructured": "Questo modello non dichiara il supporto all'output JSON strutturato: i risultati potrebbero essere meno affidabili.",
+    "addFallback": "Aggiungi modello di riserva…"
   },
   "legal": {
     "privacyTitle": "Informativa sulla privacy",
@@ -407,5 +429,27 @@
     "errors": {
       "CURRENCY_LOCKED": "La valuta non si può cambiare dopo aver inserito spese."
     }
+  },
+  "models": {
+    "free": "Gratis",
+    "price": "${{input}} in / ${{output}} out per 1M token",
+    "imageInput": "Accetta immagini in input",
+    "images": "immagini",
+    "structuredHint": "Supporta output JSON strutturato",
+    "context": "{{size}} contesto",
+    "auto": "Automatico (OpenRouter sceglie)",
+    "autoHint": "openrouter/auto: OpenRouter sceglie il modello per ogni richiesta.",
+    "choose": "Scegli un modello",
+    "search": "Cerca per nome o ID…",
+    "filters": {
+      "all": "Tutti",
+      "free": "Gratis",
+      "paid": "A pagamento"
+    },
+    "imagesOnly": "Solo con immagini in input",
+    "imagesRequired": "Solo modelli con immagini (necessario)",
+    "groupFree": "Gratis · {{count}}",
+    "groupPaid": "A pagamento · {{count}}",
+    "none": "Nessun modello corrisponde ai filtri."
   }
 }

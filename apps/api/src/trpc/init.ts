@@ -20,6 +20,8 @@ export interface AppServices {
   sendDirect?: (job: EmailJob) => Promise<void>;
   verifySmtp?: () => Promise<void>;
   storage?: FileStorage;
+  /** fetch per le chiamate esterne (OpenRouter), sostituibile nei test. */
+  httpFetch?: typeof fetch;
   /** Tasso di cambio (iniettabile nei test). */
   fxRate?: (from: string, to: string, date?: string) => Promise<{ rate: number; date: string }>;
 }

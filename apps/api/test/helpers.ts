@@ -8,7 +8,11 @@ import { SettingsService } from '../src/settings.js';
 import { FileStorage } from '../src/storage.js';
 
 /** Server completo su un database di test, con email catturate in memoria. */
-export async function createTestApp(databaseUrl: string, uploadsDir?: string) {
+export async function createTestApp(
+  databaseUrl: string,
+  uploadsDir?: string,
+  httpFetch?: typeof fetch,
+) {
   const env = loadEnv({
     NODE_ENV: 'test',
     APP_URL: 'http://localhost:5173',
@@ -33,6 +37,7 @@ export async function createTestApp(databaseUrl: string, uploadsDir?: string) {
     settings,
     email,
     storage,
+    httpFetch,
     fxRate: async (from, to) => ({
       rate: from === 'GBP' && to === 'EUR' ? 1.16 : 1,
       date: '2026-10-12',

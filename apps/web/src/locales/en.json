@@ -219,7 +219,7 @@
     "apiKeyReplace": "Paste a new key to replace it",
     "remove": "Remove",
     "models": "Models per feature",
-    "modelHint": "OpenRouter model IDs, e.g. google/gemini-2.5-flash. \"openrouter/auto\" picks automatically.",
+    "modelHint": "List fetched from OpenRouter, with prices per million tokens (input / output).",
     "modelNames": {
       "vision": "Receipts and screenshots",
       "planner": "Trip generator",
@@ -228,7 +228,7 @@
       "light": "Light tasks"
     },
     "fallbacks": "Fallback models",
-    "fallbacksHint": "Comma separated, used when the main model fails.",
+    "fallbacksHint": "Used in order when the main model doesn't respond (up to 5).",
     "quota": "Monthly quota per user (USD)",
     "denyDataCollection": "Only use providers that don't retain data",
     "aiComing": "AI features arrive in phase 4: meanwhile, key and models are configured here.",
@@ -239,7 +239,29 @@
     "banned": "Suspended",
     "joined": "Joined",
     "auditEmpty": "No actions recorded.",
-    "forbidden": "This section is reserved to the super admin."
+    "forbidden": "This section is reserved to the super admin.",
+    "checkKey": "Check key",
+    "keyOk": "Valid key · spent {{usage}} of {{limit}} · {{remaining}} left",
+    "freeTier": "free account",
+    "openrouterErrors": {
+      "OPENROUTER_INVALID_KEY": "Invalid or revoked key.",
+      "OPENROUTER_NO_KEY": "Enter the key first."
+    },
+    "refreshModels": "Refresh list",
+    "modelsUnavailable": "Model list unavailable: you can type the ID manually",
+    "modelsCount": "{{count}} models available · {{free}} free · {{images}} accept images",
+    "textAndImages": "text + images",
+    "textOnly": "text",
+    "modelPurposes": {
+      "vision": "Reads receipts and booking screenshots: needs a model that accepts images.",
+      "planner": "Generates whole trips in the standard JSON format: prefer a capable model with structured output.",
+      "chat": "Answers questions about the trip and suggests actions.",
+      "web": "Checks opening hours and prices on the web (OpenRouter web plugin).",
+      "light": "Short, cheap tasks: categories, emoji, packing list."
+    },
+    "needsImages": "This model doesn't accept images: it won't be able to read receipts.",
+    "noStructured": "This model doesn't declare structured JSON output: results may be less reliable.",
+    "addFallback": "Add fallback model…"
   },
   "legal": {
     "privacyTitle": "Privacy policy",
@@ -407,5 +429,27 @@
     "errors": {
       "CURRENCY_LOCKED": "The currency can't be changed after expenses were added."
     }
+  },
+  "models": {
+    "free": "Free",
+    "price": "${{input}} in / ${{output}} out per 1M tokens",
+    "imageInput": "Accepts image input",
+    "images": "images",
+    "structuredHint": "Supports structured JSON output",
+    "context": "{{size}} context",
+    "auto": "Automatic (OpenRouter picks)",
+    "autoHint": "openrouter/auto: OpenRouter picks the model for each request.",
+    "choose": "Choose a model",
+    "search": "Search by name or ID…",
+    "filters": {
+      "all": "All",
+      "free": "Free",
+      "paid": "Paid"
+    },
+    "imagesOnly": "Image input only",
+    "imagesRequired": "Image-capable models only (required)",
+    "groupFree": "Free · {{count}}",
+    "groupPaid": "Paid · {{count}}",
+    "none": "No model matches the filters."
   }
 }

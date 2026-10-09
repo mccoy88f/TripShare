@@ -7,6 +7,7 @@ import type { EmailJob, EmailSender } from '../src/email/index.js';
 import { loadEnv } from '../src/env.js';
 import { buildServer } from '../src/server.js';
 import { SettingsService } from '../src/settings.js';
+import { fakeOpenRouterFetch } from './fixtures-openrouter.js';
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
 const run = DATABASE_URL ? describe : describe.skip;
@@ -22,6 +23,7 @@ run('auth and profile (integration)', () => {
     SUPERADMIN_EMAIL: 'admin@example.com',
   });
   const sent: EmailJob[] = [];
+  const calls: string[] = [];
   const email: EmailSender = { send: async (job) => void sent.push(job) };
   const { db, close } = createDb(env.DATABASE_URL, { max: 2 });
   const settings = new SettingsService(db, env.ENCRYPTION_KEY);
@@ -70,7 +72,14 @@ run('auth and profile (integration)', () => {
 
   beforeAll(async () => {
     await runMigrations(env.DATABASE_URL);
-    app = await buildServer({ env, db, auth, settings, email });
+    app = await buildServer({
+      env,
+      db,
+      auth,
+      settings,
+      email,
+      httpFetch: fakeOpenRouterFetch(calls),
+    });
   });
 
   beforeEach(async () => {
@@ -193,6 +202,29 @@ run('auth and profile (integration)', () => {
       value: 'everyone',
     });
     expect(bad.statusCode).toBe(400);
+    const models = await trpc('admin.openrouter.models', cookie);
+    expect(models.statusCode).toBe(200);
+    const modelList = models.json().result.data.models as {
+      id: string;
+      free: boolean;
+      imageInput: boolean;
+    }[];
+    expect(modelList.filter((m) => m.free).map((m) => m.id)).toEqual([
+      'meta-llama/llama-3.3-70b-instruct:free',
+      'qwen/qwen2.5-vl-72b-instruct:free',
+    ]);
+    expect(calls.some((c) => c.endsWith('/models'))).toBe(true);
+
+    const badKey = await trpc('admin.openrouter.checkKey', cookie, {});
+    expect(badKey.json().error.message).toBe('OPENROUTER_INVALID_KEY');
+    await settings.set('openrouter.apiKey', 'sk-or-v1-valid-key-1234');
+    const goodKey = await trpc('admin.openrouter.checkKey', cookie, {});
+    expect(goodKey.json().result.data).toMatchObject({
+      usage: 1.25,
+      limit: 10,
+      limitRemaining: 8.75,
+    });
+
     const users = await trpc(
       `admin.users.list?input=${encodeURIComponent(JSON.stringify({}))}`,
       cookie,
