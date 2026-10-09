@@ -779,7 +779,9 @@
     "amountRequired": "Serve un importo, tranne per le voci con importo da inserire.",
     "stepWhat": "Voce",
     "stepMore": "Note",
-    "confirmDelete": "Eliminare questa voce di budget?"
+    "confirmDelete": "Eliminare questa voce di budget?",
+    "chart": "Budget e spese per categoria",
+    "chartHint": "Anello interno: budget · anello esterno: speso"
   },
   "packing": {
     "progress": "{{done}} di {{total}} pronti",

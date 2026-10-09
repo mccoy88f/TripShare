@@ -779,7 +779,9 @@
     "amountRequired": "An amount is required, except for items with amount to enter.",
     "stepWhat": "Item",
     "stepMore": "Notes",
-    "confirmDelete": "Delete this budget item?"
+    "confirmDelete": "Delete this budget item?",
+    "chart": "Budget and spending by category",
+    "chartHint": "Inner ring: budget · outer ring: spent"
   },
   "packing": {
     "progress": "{{done}} of {{total}} ready",

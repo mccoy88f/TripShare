@@ -121,6 +121,16 @@ export function BudgetTab({ trip }: { trip: TripDetail }) {
       )}
 
       {categories.length > 0 && (
+        <BudgetDonut
+          categories={categories}
+          planned={summary.byCategory}
+          actual={actualByCategory}
+          currency={trip.currency}
+          locale={locale}
+        />
+      )}
+
+      {categories.length > 0 && (
         <Card className="grid grid-cols-1 gap-3 p-4">
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
@@ -401,5 +411,164 @@ function BudgetDialog({
         </StepForm>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Palette categoriale leggibile in chiaro e scuro; oltre 12 categorie si ricomincia. */
+const PALETTE = [
+  '#4f7cff',
+  '#f59e0b',
+  '#10b981',
+  '#a855f7',
+  '#ef4444',
+  '#06b6d4',
+  '#ec4899',
+  '#84cc16',
+  '#f97316',
+  '#6366f1',
+  '#14b8a6',
+  '#eab308',
+];
+/** Il colore dipende dalla posizione tra le categorie mostrate, così sono sempre ben distinte. */
+const categoryColor = (c: string, order: string[]) =>
+  PALETTE[Math.max(order.indexOf(c), 0) % PALETTE.length]!;
+
+const pct = (value: number, total: number) => (total > 0 ? Math.round((value / total) * 100) : 0);
+
+/** Anello diviso per categoria: ogni arco è lungo quanto la quota sul totale. */
+function Ring({
+  radius,
+  width,
+  values,
+  order,
+  label,
+}: {
+  radius: number;
+  width: number;
+  values: Record<string, number>;
+  order: string[];
+  label: string;
+}) {
+  const circumference = 2 * Math.PI * radius;
+  const total = order.reduce((n, c) => n + (values[c] ?? 0), 0);
+  let offset = 0;
+  return (
+    <g transform="rotate(-90 100 100)">
+      <circle
+        cx="100"
+        cy="100"
+        r={radius}
+        fill="none"
+        strokeWidth={width}
+        className="stroke-muted"
+      />
+      {total > 0 &&
+        order.map((c) => {
+          const v = values[c] ?? 0;
+          if (v <= 0) return null;
+          const length = (v / total) * circumference;
+          const arc = (
+            <circle
+              key={c}
+              cx="100"
+              cy="100"
+              r={radius}
+              fill="none"
+              strokeWidth={width}
+              stroke={categoryColor(c, order)}
+              strokeDasharray={`${Math.max(length - 1.2, 0.5)} ${circumference}`}
+              strokeDashoffset={-offset}
+            >
+              <title>{`${label}: ${pct(v, total)}%`}</title>
+            </circle>
+          );
+          offset += length;
+          return arc;
+        })}
+    </g>
+  );
+}
+
+/** Doppio anello: dentro il budget previsto, fuori lo speso reale, per categoria. */
+function BudgetDonut({
+  categories,
+  planned,
+  actual,
+  currency,
+  locale,
+}: {
+  categories: ExpenseCategory[];
+  planned: Record<string, number | undefined>;
+  actual: Record<string, number>;
+  currency: string;
+  locale: Locale;
+}) {
+  const { t } = useTranslation();
+  const plannedValues = Object.fromEntries(categories.map((c) => [c, planned[c] ?? 0]));
+  const plannedTotal = Object.values(plannedValues).reduce((a, b) => a + b, 0);
+  const actualTotal = categories.reduce((n, c) => n + (actual[c] ?? 0), 0);
+  return (
+    <Card className="grid grid-cols-1 gap-4 p-4">
+      <div className="mx-auto w-full max-w-64">
+        <svg
+          viewBox="0 0 200 200"
+          role="img"
+          aria-label={`${t('budget.chart')}: ${t('budget.planned')} ${money(plannedTotal, currency)}, ${t('budget.spent')} ${money(actualTotal, currency)}`}
+        >
+          <Ring
+            radius={88}
+            width={20}
+            values={actual}
+            order={categories}
+            label={`${t('budget.spent')}`}
+          />
+          <Ring
+            radius={62}
+            width={20}
+            values={plannedValues}
+            order={categories}
+            label={`${t('budget.planned')}`}
+          />
+          <text x="100" y="96" textAnchor="middle" className="fill-muted-foreground text-[9px]">
+            {t('budget.planned')}
+          </text>
+          <text
+            x="100"
+            y="110"
+            textAnchor="middle"
+            className="fill-foreground text-[11px] font-semibold"
+          >
+            {money(plannedTotal, currency)}
+          </text>
+        </svg>
+        <p className="mt-1 text-center text-xs text-muted-foreground">{t('budget.chartHint')}</p>
+      </div>
+      <div className="grid grid-cols-1 gap-1.5 text-sm">
+        <div className="grid grid-cols-[1fr_4rem_4rem] items-center gap-2 text-xs text-muted-foreground">
+          <span />
+          <span className="text-right">{t('budget.planned')}</span>
+          <span className="text-right">{t('budget.spent')}</span>
+        </div>
+        {categories.map((c) => (
+          <div key={c} className="grid grid-cols-[1fr_4rem_4rem] items-center gap-2">
+            <span className="flex min-w-0 items-center gap-2">
+              <span
+                className="size-3 shrink-0 rounded-full"
+                style={{ backgroundColor: categoryColor(c, categories) }}
+              />
+              <span className="truncate">
+                {EXPENSE_CATEGORIES[c].emoji} {categoryLabel(c, locale)}
+              </span>
+            </span>
+            <span className="tabular text-right text-muted-foreground">
+              {pct(plannedValues[c] ?? 0, plannedTotal)}%
+            </span>
+            <span className="tabular text-right font-medium">
+              {pct(actual[c] ?? 0, actualTotal)}%
+            </span>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
