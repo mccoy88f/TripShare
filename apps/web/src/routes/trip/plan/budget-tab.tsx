@@ -452,40 +452,68 @@ function Ring({
   const circumference = 2 * Math.PI * radius;
   const total = order.reduce((n, c) => n + (values[c] ?? 0), 0);
   let offset = 0;
-  return (
-    <g transform="rotate(-90 100 100)">
+  const labels: { c: string; x: number; y: number; text: string }[] = [];
+  const arcs = order.map((c) => {
+    const v = values[c] ?? 0;
+    if (v <= 0 || total <= 0) return null;
+    const length = (v / total) * circumference;
+    // Percentuale al centro dell'arco, solo se c'è spazio per leggerla.
+    if (v / total >= 0.06) {
+      const angle = ((offset + length / 2) / circumference) * 2 * Math.PI - Math.PI / 2;
+      labels.push({
+        c,
+        x: 100 + radius * Math.cos(angle),
+        y: 100 + radius * Math.sin(angle),
+        text: `${pct(v, total)}%`,
+      });
+    }
+    const arc = (
       <circle
+        key={c}
         cx="100"
         cy="100"
         r={radius}
         fill="none"
         strokeWidth={width}
-        className="stroke-muted"
-      />
-      {total > 0 &&
-        order.map((c) => {
-          const v = values[c] ?? 0;
-          if (v <= 0) return null;
-          const length = (v / total) * circumference;
-          const arc = (
-            <circle
-              key={c}
-              cx="100"
-              cy="100"
-              r={radius}
-              fill="none"
-              strokeWidth={width}
-              stroke={categoryColor(c, order)}
-              strokeDasharray={`${Math.max(length - 1.2, 0.5)} ${circumference}`}
-              strokeDashoffset={-offset}
-            >
-              <title>{`${label}: ${pct(v, total)}%`}</title>
-            </circle>
-          );
-          offset += length;
-          return arc;
-        })}
-    </g>
+        stroke={categoryColor(c, order)}
+        strokeDasharray={`${Math.max(length - 1.2, 0.5)} ${circumference}`}
+        strokeDashoffset={-offset}
+      >
+        <title>{`${label}: ${pct(v, total)}%`}</title>
+      </circle>
+    );
+    offset += length;
+    return arc;
+  });
+  return (
+    <>
+      <g transform="rotate(-90 100 100)">
+        <circle
+          cx="100"
+          cy="100"
+          r={radius}
+          fill="none"
+          strokeWidth={width}
+          className="stroke-muted"
+        />
+        {arcs}
+      </g>
+      {labels.map((l) => (
+        <text
+          key={l.c}
+          x={l.x}
+          y={l.y}
+          textAnchor="middle"
+          dominantBaseline="central"
+          className="pointer-events-none fill-white text-[8px] font-bold"
+          stroke="rgba(0,0,0,0.45)"
+          strokeWidth="2"
+          paintOrder="stroke"
+        >
+          {l.text}
+        </text>
+      ))}
+    </>
   );
 }
 
