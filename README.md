@@ -58,7 +58,7 @@ Per aggiornare: `./deploy.sh`.
 | `OPENROUTER_API_KEY`           | no           | Valore iniziale; si gestisce dal pannello admin                                                                        |
 
 Le email passano da una coda (Redis + BullMQ) gestita dal servizio `worker`: se il server
-SMTP non risponde, l'invio viene ritentato più volte nel giro di circa 30 minuti.
+SMTP non risponde, l'invio viene ritentato fino a 6 volte nel giro di circa 15 minuti.
 
 ## Sviluppo
 
