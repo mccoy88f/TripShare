@@ -1,8 +1,10 @@
+# SITE_ADDRESS: il dominio (HTTPS automatico con Let's Encrypt) oppure ":80" dietro un altro
+# proxy che gestisce già HTTPS, come Traefik in Coolify.
 {
 	email {$ACME_EMAIL}
 }
 
-{$DOMAIN} {
+{$SITE_ADDRESS} {
 	encode zstd gzip
 
 	header {

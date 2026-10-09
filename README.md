@@ -38,6 +38,15 @@ Al primo avvio succede quanto segue:
 
 Per aggiornare: `./deploy.sh`.
 
+### Installazione con Coolify
+
+Coolify ha già un proxy (Traefik) sulle porte 80 e 443 e gestisce lui HTTPS. Per questo c'è un compose dedicato, senza porte pubblicate, con Caddy in HTTP.
+
+1. Crea una risorsa **Docker Compose** dal repository, branch `main`.
+2. Imposta **Docker Compose Location** a `/docker-compose.coolify.yml`.
+3. Nella scheda del servizio **caddy** imposta il dominio, es. `https://trip.example.com:80`.
+4. Nelle variabili d'ambiente di Coolify inserisci le stesse variabili della tabella qui sotto; `DOMAIN` deve corrispondere al dominio del punto 3.
+
 ### Variabili d'ambiente
 
 | Variabile                      | Obbligatoria | Note                                                                                                                   |

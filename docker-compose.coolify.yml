@@ -1,8 +1,8 @@
-# TripShare in produzione su un VPS.
-#   1. punta il record DNS di DOMAIN al server (porte 80 e 443 aperte)
-#   2. cp .env.example .env  e compila i valori
-#   3. docker compose up -d --build
-name: tripshare
+# TripShare su Coolify (o dietro un altro reverse proxy che gestisce HTTPS).
+# Differenze rispetto a docker-compose.yml: nessuna porta pubblicata sull'host e Caddy in HTTP
+# sulla porta 80; HTTPS e certificati li gestisce il proxy di Coolify (Traefik).
+# In Coolify: Docker Compose Location = /docker-compose.coolify.yml, poi assegna il dominio
+# al servizio "caddy" (es. https://trip.example.com:80) e imposta DOMAIN con lo stesso dominio.
 
 x-app-env: &app-env
   APP_URL: https://${DOMAIN:?imposta DOMAIN nel file .env}
@@ -16,17 +16,11 @@ services:
     build: { context: ., target: web }
     image: ${IMAGE_PREFIX:-tripshare}-web:${TAG:-latest}
     restart: unless-stopped
-    ports:
-      - '80:80'
-      - '443:443'
-      - '443:443/udp'
+    expose:
+      - '80'
     environment:
-      SITE_ADDRESS: ${DOMAIN}
-      # Let's Encrypt usa l'email solo per gli avvisi di scadenza.
+      SITE_ADDRESS: ':80'
       ACME_EMAIL: ${ACME_EMAIL:-admin@${DOMAIN}}
-    volumes:
-      - caddy-data:/data
-      - caddy-config:/config
     depends_on:
       api: { condition: service_healthy }
 
@@ -79,7 +73,5 @@ services:
       retries: 5
 
 volumes:
-  caddy-data:
-  caddy-config:
   postgres-data:
   redis-data:

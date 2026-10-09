@@ -37,6 +37,14 @@ describe('env', () => {
     );
   });
 
+  it('treats empty variables as unset and accepts hex encryption keys', () => {
+    const hex = 'ab'.repeat(32);
+    const env = loadEnv({ ...base, SMTP_PORT: '', SMTP_SECURE: ' ', ENCRYPTION_KEY: hex });
+    expect(env.smtp.port).toBe(587);
+    expect(env.smtp.secure).toBe(false);
+    expect(Buffer.from(env.ENCRYPTION_KEY, 'base64').toString('hex')).toBe(hex);
+  });
+
   it('reports invalid configuration', () => {
     expect(() => loadEnv({ ...base, SMTP_HOST: undefined, AUTH_SECRET: 'short' })).toThrow(
       /SMTP_HOST[\s\S]*AUTH_SECRET|AUTH_SECRET[\s\S]*SMTP_HOST/,

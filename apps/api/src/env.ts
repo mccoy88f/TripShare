@@ -17,9 +17,15 @@ const EnvSchema = z
     DATABASE_URL: z.string().min(1),
     REDIS_URL: z.string().min(1).default('redis://localhost:6379'),
     AUTH_SECRET: z.string().min(32, 'AUTH_SECRET deve avere almeno 32 caratteri'),
+    // 32 byte in base64 (openssl rand -base64 32) oppure 64 caratteri esadecimali (openssl rand -hex 32).
     ENCRYPTION_KEY: z
       .string()
-      .refine((v) => Buffer.from(v, 'base64').length === 32, 'ENCRYPTION_KEY: 32 byte in base64'),
+      .trim()
+      .transform((v) => (/^[0-9a-f]{64}$/i.test(v) ? Buffer.from(v, 'hex').toString('base64') : v))
+      .refine(
+        (v) => Buffer.from(v, 'base64').length === 32,
+        'ENCRYPTION_KEY: servono 32 byte (openssl rand -base64 32 oppure openssl rand -hex 32)',
+      ),
     SUPERADMIN_EMAIL: optional(z.email()),
     TRUSTED_ORIGINS: optional(z.string()),
 
@@ -74,7 +80,11 @@ export function resolveMailFrom(
 }
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
-  const result = EnvSchema.safeParse(source);
+  // Le variabili presenti ma vuote (es. "SMTP_PORT=" in .env) valgono come non impostate.
+  const cleaned = Object.fromEntries(
+    Object.entries(source).filter(([, v]) => v !== undefined && v.trim() !== ''),
+  );
+  const result = EnvSchema.safeParse(cleaned);
   if (!result.success) {
     const details = result.error.issues
       .map((i) => `  - ${i.path.join('.') || '(env)'}: ${i.message}`)
