@@ -1,15 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
-import {
-  ArrowLeft,
-  CalendarDays,
-  Loader2,
-  Search,
-  Settings,
-  Sparkles,
-  Users,
-  X,
-} from 'lucide-react';
+import { ArrowLeft, CalendarDays, Loader2, Search, Settings, Sparkles, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AvatarStack } from '@/components/avatar-stack';
@@ -201,43 +192,35 @@ export function TripPage() {
       <div className="mx-auto max-w-4xl px-4 pt-5 lg:px-8">
         <AddRequestContext.Provider value={addRequest}>
           <Tabs value={tab} onValueChange={(value) => go(value as Tab)}>
-            {searching ? (
-              <div className="flex items-center gap-2">
-                <div className="relative min-w-0 flex-1">
-                  <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    autoFocus
-                    type="search"
-                    enterKeyHint="search"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Escape' && closeSearch()}
-                    placeholder={t('search.placeholder')}
-                    aria-label={t('search.placeholder')}
-                    className="rounded-full pl-10"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={closeSearch}
-                  aria-label={t('search.close')}
-                  title={t('search.close')}
-                  className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted transition hover:bg-muted/70 [&_svg]:size-5"
-                >
-                  <X />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSearching(true)}
-                  aria-label={t('search.button')}
-                  title={t('search.button')}
-                  className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition hover:text-foreground [&_svg]:size-5"
-                >
-                  <Search />
-                </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => (searching ? closeSearch() : setSearching(true))}
+                aria-label={searching ? t('search.close') : t('search.button')}
+                title={searching ? t('search.close') : t('search.button')}
+                aria-pressed={searching}
+                className={cn(
+                  'flex size-10 shrink-0 items-center justify-center rounded-full transition [&_svg]:size-5',
+                  searching
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-muted text-muted-foreground hover:text-foreground',
+                )}
+              >
+                <Search />
+              </button>
+              {searching ? (
+                <Input
+                  autoFocus
+                  type="search"
+                  enterKeyHint="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Escape' && closeSearch()}
+                  placeholder={t('search.placeholder')}
+                  aria-label={t('search.placeholder')}
+                  className="min-w-0 flex-1 rounded-full"
+                />
+              ) : (
                 <TabsList className="min-w-0">
                   {MAIN_TABS.map((x) => (
                     <TabsTrigger key={x} value={x}>
@@ -245,25 +228,29 @@ export function TripPage() {
                     </TabsTrigger>
                   ))}
                 </TabsList>
-                {ai.data?.available && (
-                  <button
-                    type="button"
-                    onClick={() => go(tab === 'assistant' ? 'plan' : 'assistant')}
-                    aria-label={t('trip.tabs.assistant')}
-                    title={t('trip.tabs.assistant')}
-                    aria-pressed={tab === 'assistant'}
-                    className={cn(
-                      'ml-auto flex size-10 shrink-0 items-center justify-center rounded-full transition [&_svg]:size-5',
-                      tab === 'assistant'
-                        ? 'bg-amber-400 text-amber-950 shadow-sm'
-                        : 'bg-amber-400/15 text-amber-500 hover:bg-amber-400/25',
-                    )}
-                  >
-                    <Sparkles />
-                  </button>
-                )}
-              </div>
-            )}
+              )}
+              {ai.data?.available && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    // L'assistente chiude la ricerca e si apre (o si richiude) come al solito.
+                    closeSearch();
+                    go(tab === 'assistant' && !searching ? 'plan' : 'assistant');
+                  }}
+                  aria-label={t('trip.tabs.assistant')}
+                  title={t('trip.tabs.assistant')}
+                  aria-pressed={tab === 'assistant' && !searching}
+                  className={cn(
+                    'ml-auto flex size-10 shrink-0 items-center justify-center rounded-full transition [&_svg]:size-5',
+                    tab === 'assistant' && !searching
+                      ? 'bg-amber-400 text-amber-950 shadow-sm'
+                      : 'bg-amber-400/15 text-amber-500 hover:bg-amber-400/25',
+                  )}
+                >
+                  <Sparkles />
+                </button>
+              )}
+            </div>
             {searching && (
               <div className="mt-6">
                 <SearchPanel trip={trip} query={query} onPick={pick} />
