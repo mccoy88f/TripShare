@@ -3,6 +3,8 @@ import { TripDocumentSchema, type TripDocument } from './schema.js';
 export * from './schema.js';
 export * from './json-schema.js';
 export * from './prompt.js';
+export * from './ops.js';
+export * from './budget.js';
 
 export interface TripFormatIssue {
   path: string;

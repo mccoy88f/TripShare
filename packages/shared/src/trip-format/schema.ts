@@ -303,6 +303,7 @@ export const BudgetItemSchema = z
 
 export const PackingItemSchema = z
   .object({
+    id: RefSchema.optional().meta(d('Facoltativo: lo assegna TripShare.')),
     item: z.string().min(1).max(160),
     group: z
       .enum(['documents', 'clothing', 'electronics', 'health', 'gear', 'food', 'other'])
@@ -330,11 +331,15 @@ export const TripDocumentSchema = z
         name: z.string().min(1).max(120),
         countryCodes: z
           .array(z.string().regex(/^[A-Z]{2}$/))
-          .min(1)
+          .default([])
           .meta(d('Paesi visitati, codici ISO 3166-1 alpha-2.')),
       }),
-      startDate: IsoDateSchema,
-      endDate: IsoDateSchema,
+      startDate: IsoDateSchema.optional().meta(
+        d('Primo giorno del viaggio. Obbligatorio se le date sono note.'),
+      ),
+      endDate: IsoDateSchema.optional().meta(
+        d('Ultimo giorno del viaggio. Obbligatorio se le date sono note.'),
+      ),
       timezone: z.string().max(64).optional().meta(d('Fuso IANA principale, es. "Europe/London".')),
       currency: CurrencySchema.meta(d('Valuta del viaggio, usata per saldi e budget.')),
       travelers: z.number().int().min(1).max(100),
@@ -350,7 +355,7 @@ export const TripDocumentSchema = z
     }),
     places: z.array(PlaceSchema).default([]),
     bookings: z.array(BookingSchema).default([]),
-    days: z.array(DaySchema).min(1).meta(d('Un elemento per ogni giorno, in ordine di data.')),
+    days: z.array(DaySchema).default([]).meta(d('Un elemento per ogni giorno, in ordine di data.')),
     budget: z.array(BudgetItemSchema).default([]),
     packing: z.array(PackingItemSchema).default([]),
     tips: z
@@ -374,7 +379,7 @@ export const TripDocumentSchema = z
     const issue = (path: (string | number)[], message: string) =>
       ctx.addIssue({ code: 'custom', path, message });
 
-    if (doc.trip.endDate < doc.trip.startDate) {
+    if (doc.trip.startDate && doc.trip.endDate && doc.trip.endDate < doc.trip.startDate) {
       issue(['trip', 'endDate'], 'endDate must not be before startDate');
     }
 
@@ -387,6 +392,7 @@ export const TripDocumentSchema = z
     doc.places.forEach((p, i) => register(p.id, ['places', i, 'id']));
     doc.bookings.forEach((b, i) => register(b.id, ['bookings', i, 'id']));
     doc.budget.forEach((b, i) => register(b.id, ['budget', i, 'id']));
+    doc.packing.forEach((p, i) => p.id && register(p.id, ['packing', i, 'id']));
     doc.days.forEach((day, di) => {
       day.activities.forEach((a, ai) => register(a.id, ['days', di, 'activities', ai, 'id']));
       day.alternatives.forEach((alt, li) => {
@@ -416,7 +422,10 @@ export const TripDocumentSchema = z
       if (day.date < previousDate)
         issue(['days', di, 'date'], 'days must be in chronological order');
       previousDate = day.date;
-      if (day.date < doc.trip.startDate || day.date > doc.trip.endDate) {
+      if (
+        (doc.trip.startDate && day.date < doc.trip.startDate) ||
+        (doc.trip.endDate && day.date > doc.trip.endDate)
+      ) {
         issue(['days', di, 'date'], 'day is outside the trip dates');
       }
       if (day.stayBookingId && !bookingIds.has(day.stayBookingId)) {

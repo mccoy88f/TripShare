@@ -42,8 +42,9 @@ export const tripsRouter = router({
     ]);
     return mine.map((m, i) => {
       const ledger = ledgers.get(m.trip.id)!;
+      const { plan: _plan, ...tripData } = m.trip;
       return {
-        ...m.trip,
+        ...tripData,
         role: m.role,
         myMemberId: m.memberId,
         myBalance: ledger.balances[m.memberId] ?? 0,
@@ -60,8 +61,9 @@ export const tripsRouter = router({
       computeLedgers(ctx.db, [input.id]),
       ctx.settings.get('payments.paypalEnabled'),
     ]);
+    const { plan: _plan, ...tripData } = t;
     return {
-      ...t,
+      ...tripData,
       role: member.role,
       myMemberId: member.id,
       members: members.map((m) => ({ ...m, paypalMe: paypalEnabled ? m.paypalMe : null })),

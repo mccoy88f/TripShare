@@ -5,6 +5,7 @@ import {
   doublePrecision,
   index,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   text,
@@ -28,6 +29,9 @@ export const trip = pgTable('trip', {
   currency: text().notNull(),
   coverImage: text(),
   coverColor: text(),
+  /** Programma nel formato standard TripShare (TripDocument v1). */
+  plan: jsonb(),
+  planVersion: integer().notNull().default(0),
   createdBy: text().references(() => user.id, { onDelete: 'set null' }),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -167,4 +171,20 @@ export const settlement = pgTable(
     deletedAt: timestamp({ withTimezone: true }),
   },
   (t) => [index('settlement_trip_idx').on(t.tripId)],
+);
+
+/** Spunte della lista bagagli: per le voci "a persona" ognuno spunta la propria. */
+export const packingCheck = pgTable(
+  'packing_check',
+  {
+    tripId: uuid()
+      .notNull()
+      .references(() => trip.id, { onDelete: 'cascade' }),
+    itemId: text().notNull(),
+    memberId: uuid()
+      .notNull()
+      .references(() => tripMember.id, { onDelete: 'cascade' }),
+    checkedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.tripId, t.itemId, t.memberId] })],
 );
