@@ -5,6 +5,7 @@ import {
   Loader2,
   MapPin,
   Plus,
+  Sparkles,
   Trash2,
 } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
@@ -16,9 +17,19 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Input, Select } from '@/components/ui/input';
-import { money, shortDate } from '@/lib/format';
+import { toast } from 'sonner';
+import { useAiStatus, useAiTask } from '@/lib/ai';
+import { money, shortDate, todayIso } from '@/lib/format';
 import { mapsUrl, PLACE_KIND_EMOJI, usePlan, usePlanOps } from '@/lib/plan';
 import type { TripDetail } from '@/lib/types';
+
+interface VerifyResult {
+  openingHours?: string;
+  price?: Place['price'];
+  verified: boolean;
+  sources: { title: string; url: string }[];
+  notes?: string;
+}
 import {
   cleanLines,
   formatLinks,
@@ -36,6 +47,38 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
   const { data } = usePlan(trip.id);
   const [editing, setEditing] = useState<Place | 'new' | null>(null);
   const canEdit = trip.role !== 'viewer';
+  const ai = useAiStatus();
+  const { run } = useAiTask();
+  const { apply } = usePlanOps(trip.id);
+  const [verifying, setVerifying] = useState<string | null>(null);
+  const verify = async (p: Place) => {
+    setVerifying(p.id);
+    try {
+      const r = await run<VerifyResult>(trip.id, { kind: 'verify', placeId: p.id });
+      if (!r) return;
+      const tips = r.notes && !p.tips.includes(r.notes) ? [...p.tips, r.notes].slice(-10) : p.tips;
+      await apply([
+        {
+          type: 'upsertPlace',
+          place: {
+            ...p,
+            ...(r.openingHours ? { openingHours: r.openingHours } : {}),
+            ...(r.price ? { price: r.price } : {}),
+            tips,
+            verification: {
+              status: r.verified ? 'verified' : 'unverified',
+              checkedAt: todayIso(),
+              sources: r.sources,
+            },
+          },
+        },
+      ]);
+      if (r.verified) toast.success(t('ai.verify.verified', { name: p.name }));
+      else toast.warning(t('ai.verify.unverified', { name: p.name }));
+    } finally {
+      setVerifying(null);
+    }
+  };
   if (!data) return <Loader2 className="mx-auto mt-10 animate-spin text-muted-foreground" />;
   const { plan } = data;
 
@@ -131,14 +174,23 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
                   </a>
                 ))}
                 {canEdit && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="ml-auto"
-                    onClick={() => setEditing(p)}
-                  >
-                    {t('plan.edit')}
-                  </Button>
+                  <span className="ml-auto flex gap-1">
+                    {ai.data?.available && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={verifying !== null}
+                        onClick={() => verify(p)}
+                        title={t('ai.verify.hint')}
+                      >
+                        {verifying === p.id ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                        {t('ai.verify.button')}
+                      </Button>
+                    )}
+                    <Button size="sm" variant="ghost" onClick={() => setEditing(p)}>
+                      {t('plan.edit')}
+                    </Button>
+                  </span>
                 )}
               </div>
             </Card>

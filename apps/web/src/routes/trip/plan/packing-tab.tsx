@@ -1,12 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, Loader2, Plus, X } from 'lucide-react';
+import { Check, Loader2, Plus, Sparkles, X } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PackingItem } from '@tripshare/shared/trip-format';
 import { UserAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input, Select } from '@/components/ui/input';
+import { toast } from 'sonner';
+import { useAiStatus, useAiTask } from '@/lib/ai';
 import { usePlan, usePlanOps } from '@/lib/plan';
 import { useTRPC } from '@/lib/trpc';
 import type { TripDetail } from '@/lib/types';
@@ -40,6 +43,11 @@ export function PackingTab({ trip }: { trip: TripDetail }) {
   const [item, setItem] = useState('');
   const [group, setGroup] = useState<PackingItem['group']>('clothing');
   const [perPerson, setPerPerson] = useState(false);
+  const ai = useAiStatus();
+  const { run, running } = useAiTask();
+  const [suggested, setSuggested] = useState<{ items: PackingItem[]; selected: boolean[] } | null>(
+    null,
+  );
   const toggle = useMutation(
     trpc.plan.togglePacking.mutationOptions({
       // Aggiornamento ottimistico: la spunta appare subito.
@@ -74,6 +82,27 @@ export function PackingTab({ trip }: { trip: TripDetail }) {
     return p.perPerson ? c.includes(trip.myMemberId) : c.length > 0;
   };
   const done = plan.packing.filter(isDone).length;
+
+  const suggest = async () => {
+    const r = await run<{ items: PackingItem[] }>(trip.id, { kind: 'packing' });
+    if (!r) return;
+    const existing = new Set(plan.packing.map((p) => p.item.toLowerCase()));
+    const items = r.items.filter((i) => !existing.has(i.item.toLowerCase()));
+    if (items.length === 0) toast.info(t('ai.packing.nothing'));
+    else setSuggested({ items, selected: items.map(() => true) });
+  };
+
+  const addSuggested = async () => {
+    if (!suggested) return;
+    const ops = suggested.items
+      .filter((_, i) => suggested.selected[i])
+      .map(({ id: _id, ...item }) => {
+        void _id;
+        return { type: 'upsertPackingItem' as const, item };
+      });
+    if (ops.length) await apply(ops);
+    setSuggested(null);
+  };
 
   const add = async (e: FormEvent) => {
     e.preventDefault();
@@ -138,6 +167,18 @@ export function PackingTab({ trip }: { trip: TripDetail }) {
             {t('members.add')}
           </Button>
         </form>
+      )}
+
+      {canEdit && ai.data?.available && (
+        <Button
+          variant="outline"
+          className="justify-self-start"
+          disabled={running}
+          onClick={suggest}
+        >
+          {running ? <Loader2 className="animate-spin" /> : <Sparkles />}
+          {running ? t('ai.packing.thinking') : t('ai.packing.suggest')}
+        </Button>
       )}
 
       {plan.packing.length === 0 && (
@@ -225,6 +266,50 @@ export function PackingTab({ trip }: { trip: TripDetail }) {
           </section>
         );
       })}
+      {suggested && (
+        <Dialog open onOpenChange={(o) => !o && setSuggested(null)}>
+          <DialogContent title={`✨ ${t('ai.packing.title')}`}>
+            <div className="grid grid-cols-1 gap-2 pt-2">
+              {suggested.items.map((item, i) => (
+                <label
+                  key={i}
+                  className="flex cursor-pointer items-start gap-3 rounded-lg px-1 py-1.5"
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-1 size-5 accent-[var(--primary)]"
+                    checked={suggested.selected[i] ?? false}
+                    onChange={(e) =>
+                      setSuggested({
+                        ...suggested,
+                        selected: suggested.selected.map((v, j) =>
+                          j === i ? e.target.checked : v,
+                        ),
+                      })
+                    }
+                  />
+                  <span className="min-w-0 flex-1 text-sm">
+                    <span className="font-medium">
+                      {GROUP_EMOJI[item.group]} {item.item}
+                    </span>
+                    {item.reason && (
+                      <span className="block text-muted-foreground">{item.reason}</span>
+                    )}
+                  </span>
+                </label>
+              ))}
+              <Button
+                className="mt-2 justify-self-end"
+                disabled={pending || !suggested.selected.some(Boolean)}
+                onClick={addSuggested}
+              >
+                <Plus />
+                {t('ai.packing.add', { count: suggested.selected.filter(Boolean).length })}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

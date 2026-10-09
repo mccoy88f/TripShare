@@ -160,14 +160,27 @@
     "uploadPhoto": "Carica foto",
     "changePhoto": "Cambia foto",
     "removePhoto": "Rimuovi foto",
-    "photoTooLarge": "La foto è troppo grande."
+    "photoTooLarge": "La foto è troppo grande.",
+    "ai": {
+      "title": "Intelligenza artificiale",
+      "mode": {
+        "central": "L'AI usa la chiave dell'istanza, con un limite mensile per utente.",
+        "per_user": "Per usare l'AI serve una tua chiave OpenRouter o Google Gemini.",
+        "mixed": "Puoi usare la chiave dell'istanza o aggiungere la tua (OpenRouter o Google Gemini): se c'è, si usa la tua."
+      },
+      "usage": "Richieste questo mese con la chiave dell'istanza: {{requests}} su {{limit}}.",
+      "keySet": "Chiave salvata: {{preview}}",
+      "getKey": "Come ottenere una chiave",
+      "inUse": "In uso",
+      "use": "Usa questa"
+    }
   },
   "admin": {
     "title": "Amministrazione",
     "tabs": {
       "overview": "Panoramica",
       "settings": "Impostazioni",
-      "ai": "OpenRouter",
+      "ai": "AI",
       "users": "Utenti",
       "audit": "Registro"
     },
@@ -231,7 +244,6 @@
     "fallbacksHint": "Usati in ordine se il modello principale non risponde (massimo 5).",
     "quota": "Quota mensile per utente (USD)",
     "denyDataCollection": "Usa solo provider che non conservano i dati",
-    "aiComing": "Le funzioni AI arrivano nella fase 4: qui intanto si configurano chiave e modelli.",
     "search": "Cerca per nome o email",
     "role": "Ruolo",
     "verified": "Verificato",
@@ -245,7 +257,9 @@
     "freeTier": "account gratuito",
     "openrouterErrors": {
       "OPENROUTER_INVALID_KEY": "Chiave non valida o revocata.",
-      "OPENROUTER_NO_KEY": "Inserisci prima la chiave."
+      "OPENROUTER_NO_KEY": "Inserisci prima la chiave.",
+      "GEMINI_INVALID_KEY": "Chiave Gemini non valida.",
+      "GEMINI_NO_KEY": "Nessuna chiave Gemini impostata."
     },
     "refreshModels": "Aggiorna elenco",
     "modelsUnavailable": "Elenco dei modelli non disponibile: puoi scrivere l'ID a mano",
@@ -256,12 +270,31 @@
       "vision": "Legge scontrini, ricevute e screenshot di prenotazioni: serve un modello che accetti immagini.",
       "planner": "Genera interi viaggi nel formato JSON standard: meglio un modello capace e con output strutturato.",
       "chat": "Risponde alle domande sul viaggio e propone azioni.",
-      "web": "Verifica orari e prezzi cercando sul web (con il plugin web di OpenRouter).",
+      "web": "Verifica orari e prezzi cercando sul web (plugin web di OpenRouter o ricerca Google di Gemini).",
       "light": "Compiti brevi ed economici: categorie, emoji, lista bagagli."
     },
     "needsImages": "Questo modello non accetta immagini: non potrà leggere gli scontrini.",
     "noStructured": "Questo modello non dichiara il supporto all'output JSON strutturato: i risultati potrebbero essere meno affidabili.",
-    "addFallback": "Aggiungi modello di riserva…"
+    "addFallback": "Aggiungi modello di riserva…",
+    "aiGeneral": "Intelligenza artificiale",
+    "aiGeneralHint": "Provider della chiave centrale, chiavi personali e limiti per utente.",
+    "centralProvider": "Provider della chiave centrale",
+    "centralProviderHint": "Usato da tutti gli utenti che non hanno una chiave personale.",
+    "centralProviderNoKey": "Manca la chiave di questo provider.",
+    "requestsQuota": "Richieste AI al mese per utente (chiave centrale)",
+    "requestsQuotaHint": "0 = nessun limite. Vale per entrambi i provider.",
+    "centralBadge": "centrale",
+    "openrouterHint": "Centinaia di modelli con un'unica chiave, prezzi per token e modelli gratuiti.",
+    "geminiHint": "Chiave di Google AI Studio (aistudio.google.com/apikey). Modelli Gemini con immagini, PDF e ricerca Google.",
+    "geminiKey": "Chiave API Gemini",
+    "geminiKeyOk": "Chiave valida · {{count}} modelli disponibili",
+    "geminiModelHint": "Google non pubblica i prezzi nell'elenco: \"Gratis\" indica i modelli con piano gratuito su AI Studio (Flash, Flash-Lite, Gemma).",
+    "aiUsage": "Uso dell'AI questo mese",
+    "aiUsageTotal": "{{requests}} richieste · {{tokens}} token · ${{cost}} (costo riportato da OpenRouter)",
+    "aiUsageEmpty": "Nessuna richiesta questo mese.",
+    "aiUsageRow": "{{requests}} richieste · {{errors}} errori · {{tokens}} token",
+    "ownKey": "chiave personale",
+    "centralKey": "chiave centrale"
   },
   "legal": {
     "privacyTitle": "Informativa sulla privacy",
@@ -418,7 +451,8 @@
       "budget": "Budget",
       "packing": "Bagagli",
       "tickets": "Biglietti",
-      "notes": "Note"
+      "notes": "Note",
+      "assistant": "Assistente"
     },
     "new": {
       "title": "Nuovo viaggio",
@@ -475,7 +509,8 @@
     "imagesRequired": "Solo modelli con immagini (necessario)",
     "groupFree": "Gratis · {{count}}",
     "groupPaid": "A pagamento · {{count}}",
-    "none": "Nessun modello corrisponde ai filtri."
+    "none": "Nessun modello corrisponde ai filtri.",
+    "paid": "A pagamento"
   },
   "plan": {
     "empty": "Nessun programma, per ora",
@@ -750,5 +785,124 @@
     "add": "Aggiungi nota",
     "empty": "Nessuna nota. Le note pubbliche le vede tutto il gruppo, quelle private solo tu.",
     "confirmDelete": "Eliminare questa nota?"
+  },
+  "ai": {
+    "notAvailable": "L'AI non è configurata: chiedi all'amministratore di impostare una chiave, oppure aggiungi la tua nel profilo se è consentito.",
+    "errors": {
+      "AI_NOT_CONFIGURED": "L'AI non è ancora configurata dall'amministratore.",
+      "AI_KEY_REQUIRED": "Per usare l'AI aggiungi la tua chiave OpenRouter o Gemini nel profilo.",
+      "AI_QUOTA_EXCEEDED": "Hai raggiunto il limite mensile di richieste AI.",
+      "AI_INVALID_KEY": "La chiave AI non è valida.",
+      "AI_NO_CREDIT": "Credito AI esaurito sulla chiave.",
+      "AI_RATE_LIMITED": "Troppe richieste al provider AI: riprova tra poco.",
+      "AI_PROVIDER_ERROR": "Il provider AI ha risposto con un errore. Riprova o cambia modello.",
+      "AI_EMPTY_RESPONSE": "L'AI non ha risposto. Riprova.",
+      "AI_INVALID_RESPONSE": "L'AI ha dato una risposta non valida. Riprova o usa un modello più capace.",
+      "AI_TOO_MANY_JOBS": "Hai già altre richieste AI in corso: attendi che finiscano.",
+      "AI_FILE_NOT_FOUND": "File non trovato: caricalo di nuovo.",
+      "AI_INVALID_IMAGE": "L'immagine non è leggibile.",
+      "AI_BLOCKED": "Il provider ha bloccato la richiesta.",
+      "AI_TIMEOUT": "L'AI ci sta mettendo troppo: riprova più tardi.",
+      "AI_OWN_KEYS_DISABLED": "Le chiavi personali non sono abilitate su questa istanza.",
+      "TRIP_NOT_FOUND": "Viaggio non trovato.",
+      "AI_FAILED": "Qualcosa è andato storto con l'AI. Riprova."
+    },
+    "receipt": {
+      "scan": "Leggi scontrino con l'AI",
+      "reading": "Lettura in corso…",
+      "read": "Scontrino letto: controlla i dati prima di salvare.",
+      "lowConfidence": "Lettura incerta: controlla bene importo e data.",
+      "open": "Vedi scontrino",
+      "attached": "Scontrino allegato",
+      "byItems": "Dividi per voce ({{count}} righe)",
+      "itemsHint": "Tocca chi ha preso ogni voce; servizio, mance e tasse si ripartiscono in proporzione."
+    },
+    "booking": {
+      "fromScreenshot": "Da screenshot o PDF",
+      "reading": "Lettura in corso…",
+      "none": "Nessuna prenotazione trovata nel documento.",
+      "found": "Prenotazioni trovate",
+      "foundHint": "Controlla e scegli quali aggiungere. Puoi modificarle dopo.",
+      "travelers": "Passeggeri: {{names}}",
+      "add_one": "Aggiungi {{count}} prenotazione",
+      "add_other": "Aggiungi {{count}} prenotazioni",
+      "added_one": "{{count}} prenotazione aggiunta",
+      "added_other": "{{count}} prenotazioni aggiunte"
+    },
+    "generate": {
+      "button": "Genera con l'AI",
+      "title": "Programma con l'AI",
+      "hint": "Descrivi il viaggio che vorresti: l'AI prepara giorni, attività, luoghi, prenotazioni da fare, budget e bagagli. Potrai modificare tutto.",
+      "prompt": "Che viaggio vorresti?",
+      "promptHint": "Interessi, ritmo, mezzi di trasporto, cose da non perdere o da evitare.",
+      "promptPlaceholder": "Es. Scozia in auto, 5 giorni, castelli e Loch Ness, niente trekking impegnativi",
+      "travelers": "Persone",
+      "from": "Partenza da",
+      "fromPlaceholder": "Es. Roma",
+      "budget": "Budget",
+      "total": "Totale",
+      "perPerson": "A persona",
+      "style": "Stile",
+      "styles": {
+        "relax": "🧘 Relax",
+        "culture": "🏛️ Cultura",
+        "nature": "🌲 Natura",
+        "food": "🍝 Cibo",
+        "nightlife": "🍸 Vita notturna",
+        "kids": "🧒 Con bambini",
+        "adventure": "🧗 Avventura",
+        "budget": "💸 Economico"
+      },
+      "working": "L'AI sta preparando il programma: può richiedere fino a un paio di minuti.",
+      "submit": "Genera il programma",
+      "create": "Crea il viaggio con l'AI",
+      "done": "Programma creato!",
+      "withAi": "Crea con l'AI",
+      "manual": "Compila a mano"
+    },
+    "chat": {
+      "intro": "Chiedi consigli sul viaggio o modifiche al programma: l'assistente le propone e tu le applichi con un tocco.",
+      "s1": "Cosa non dobbiamo perderci?",
+      "s2": "Aggiungi una mattina libera per riposare",
+      "s3": "Dove mangiare bene vicino all'alloggio?",
+      "s4": "Cosa facciamo se piove?",
+      "placeholder": "Scrivi all'assistente…",
+      "send": "Invia",
+      "thinking": "Sto pensando…",
+      "clear": "Cancella conversazione",
+      "confirmClear": "Cancellare la conversazione con l'assistente?",
+      "proposed_one": "{{count}} modifica proposta",
+      "proposed_other": "{{count}} modifiche proposte",
+      "apply": "Applica al programma",
+      "applied": "Applicate al programma",
+      "ops": {
+        "deleteActivity": "Rimuovi attività",
+        "moveActivity": "Sposta attività",
+        "deleteDay": "Rimuovi giorno",
+        "ensureDays": "Giorni",
+        "applyAlternative": "Usa alternativa",
+        "setTips": "{{count}} consigli",
+        "deletePlace": "Rimuovi luogo",
+        "deleteBooking": "Rimuovi prenotazione",
+        "deleteBudgetItem": "Rimuovi voce di budget",
+        "deletePackingItem": "Rimuovi dai bagagli",
+        "deleteAlternative": "Rimuovi alternativa",
+        "setExchangeRates": "Tassi di cambio"
+      }
+    },
+    "verify": {
+      "button": "Verifica",
+      "hint": "Controlla sul web orari e prezzi per le date del viaggio",
+      "verified": "{{name}}: orari verificati su fonte ufficiale.",
+      "unverified": "{{name}}: informazioni aggiornate ma da ricontrollare."
+    },
+    "packing": {
+      "suggest": "Suggerisci con l'AI",
+      "thinking": "Preparo i suggerimenti…",
+      "nothing": "Nessun suggerimento nuovo: la lista è già completa.",
+      "title": "Suggerimenti per i bagagli",
+      "add_one": "Aggiungi {{count}} voce",
+      "add_other": "Aggiungi {{count}} voci"
+    }
   }
 }

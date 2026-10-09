@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { dateRange, money } from '@/lib/format';
 import { useTRPC } from '@/lib/trpc';
 import { BalancePill } from '@/routes/trips';
+import { useAiStatus } from '@/lib/ai';
+import { AssistantTab } from './assistant-tab';
 import { BalancesTab } from './balances-tab';
 import { ExpenseDialog } from './expense-dialog';
 import { ExpensesTab } from './expenses-tab';
@@ -27,6 +29,7 @@ import { cn } from '@/lib/utils';
 /** Tab visibili nella barra; membri e impostazioni sono icone a destra. */
 const MAIN_TABS = [
   'plan',
+  'assistant',
   'expenses',
   'bookings',
   'tickets',
@@ -67,6 +70,7 @@ export function TripPage() {
     });
   const { data: trip, error } = useQuery(trpc.trips.get.queryOptions({ id: tripId }));
   const [adding, setAdding] = useState(false);
+  const ai = useAiStatus();
 
   if (error) {
     return (
@@ -131,9 +135,9 @@ export function TripPage() {
         <Tabs value={tab} onValueChange={(value) => go(value as Tab)}>
           <div className="flex items-center gap-2">
             <TabsList className="min-w-0 flex-1 sm:flex-none">
-              {MAIN_TABS.map((x) => (
+              {MAIN_TABS.filter((x) => x !== 'assistant' || ai.data?.available).map((x) => (
                 <TabsTrigger key={x} value={x}>
-                  {t(`trip.tabs.${x}`)}
+                  {x === 'assistant' ? `✨ ${t('trip.tabs.assistant')}` : t(`trip.tabs.${x}`)}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -158,6 +162,9 @@ export function TripPage() {
           </div>
           <TabsContent value="plan">
             <PlanTab trip={trip} />
+          </TabsContent>
+          <TabsContent value="assistant">
+            <AssistantTab trip={trip} />
           </TabsContent>
           <TabsContent value="expenses">
             <div className="mb-5 flex items-center gap-3">

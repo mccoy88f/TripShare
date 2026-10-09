@@ -160,14 +160,27 @@
     "uploadPhoto": "Upload photo",
     "changePhoto": "Change photo",
     "removePhoto": "Remove photo",
-    "photoTooLarge": "The photo is too large."
+    "photoTooLarge": "The photo is too large.",
+    "ai": {
+      "title": "Artificial intelligence",
+      "mode": {
+        "central": "AI uses the instance key, with a monthly limit per user.",
+        "per_user": "To use AI you need your own OpenRouter or Google Gemini key.",
+        "mixed": "You can use the instance key or add your own (OpenRouter or Google Gemini): if present, yours is used."
+      },
+      "usage": "Requests this month with the instance key: {{requests}} of {{limit}}.",
+      "keySet": "Key saved: {{preview}}",
+      "getKey": "How to get a key",
+      "inUse": "In use",
+      "use": "Use this one"
+    }
   },
   "admin": {
     "title": "Administration",
     "tabs": {
       "overview": "Overview",
       "settings": "Settings",
-      "ai": "OpenRouter",
+      "ai": "AI",
       "users": "Users",
       "audit": "Audit log"
     },
@@ -231,7 +244,6 @@
     "fallbacksHint": "Used in order when the main model doesn't respond (up to 5).",
     "quota": "Monthly quota per user (USD)",
     "denyDataCollection": "Only use providers that don't retain data",
-    "aiComing": "AI features arrive in phase 4: meanwhile, key and models are configured here.",
     "search": "Search by name or email",
     "role": "Role",
     "verified": "Verified",
@@ -245,7 +257,9 @@
     "freeTier": "free account",
     "openrouterErrors": {
       "OPENROUTER_INVALID_KEY": "Invalid or revoked key.",
-      "OPENROUTER_NO_KEY": "Enter the key first."
+      "OPENROUTER_NO_KEY": "Enter the key first.",
+      "GEMINI_INVALID_KEY": "Invalid Gemini key.",
+      "GEMINI_NO_KEY": "No Gemini key set."
     },
     "refreshModels": "Refresh list",
     "modelsUnavailable": "Model list unavailable: you can type the ID manually",
@@ -256,12 +270,31 @@
       "vision": "Reads receipts and booking screenshots: needs a model that accepts images.",
       "planner": "Generates whole trips in the standard JSON format: prefer a capable model with structured output.",
       "chat": "Answers questions about the trip and suggests actions.",
-      "web": "Checks opening hours and prices on the web (OpenRouter web plugin).",
+      "web": "Checks opening hours and prices on the web (OpenRouter web plugin or Gemini Google Search).",
       "light": "Short, cheap tasks: categories, emoji, packing list."
     },
     "needsImages": "This model doesn't accept images: it won't be able to read receipts.",
     "noStructured": "This model doesn't declare structured JSON output: results may be less reliable.",
-    "addFallback": "Add fallback model…"
+    "addFallback": "Add fallback model…",
+    "aiGeneral": "Artificial intelligence",
+    "aiGeneralHint": "Central key provider, personal keys and per-user limits.",
+    "centralProvider": "Central key provider",
+    "centralProviderHint": "Used by all users without a personal key.",
+    "centralProviderNoKey": "This provider's key is missing.",
+    "requestsQuota": "AI requests per user per month (central key)",
+    "requestsQuotaHint": "0 = no limit. Applies to both providers.",
+    "centralBadge": "central",
+    "openrouterHint": "Hundreds of models with a single key, per-token pricing and free models.",
+    "geminiHint": "Google AI Studio key (aistudio.google.com/apikey). Gemini models with images, PDFs and Google Search.",
+    "geminiKey": "Gemini API key",
+    "geminiKeyOk": "Valid key · {{count}} models available",
+    "geminiModelHint": "Google does not publish prices in the list: \"Free\" marks models with a free tier on AI Studio (Flash, Flash-Lite, Gemma).",
+    "aiUsage": "AI usage this month",
+    "aiUsageTotal": "{{requests}} requests · {{tokens}} tokens · ${{cost}} (cost reported by OpenRouter)",
+    "aiUsageEmpty": "No requests this month.",
+    "aiUsageRow": "{{requests}} requests · {{errors}} errors · {{tokens}} tokens",
+    "ownKey": "personal key",
+    "centralKey": "central key"
   },
   "legal": {
     "privacyTitle": "Privacy policy",
@@ -418,7 +451,8 @@
       "budget": "Budget",
       "packing": "Packing",
       "tickets": "Tickets",
-      "notes": "Notes"
+      "notes": "Notes",
+      "assistant": "Assistant"
     },
     "new": {
       "title": "New trip",
@@ -475,7 +509,8 @@
     "imagesRequired": "Image-capable models only (required)",
     "groupFree": "Free · {{count}}",
     "groupPaid": "Paid · {{count}}",
-    "none": "No model matches the filters."
+    "none": "No model matches the filters.",
+    "paid": "Paid"
   },
   "plan": {
     "empty": "No plan yet",
@@ -750,5 +785,124 @@
     "add": "Add note",
     "empty": "No notes yet. Public notes are visible to the whole group, private ones only to you.",
     "confirmDelete": "Delete this note?"
+  },
+  "ai": {
+    "notAvailable": "AI is not configured: ask the administrator to set a key, or add your own in your profile if allowed.",
+    "errors": {
+      "AI_NOT_CONFIGURED": "AI has not been configured by the administrator yet.",
+      "AI_KEY_REQUIRED": "To use AI, add your OpenRouter or Gemini key in your profile.",
+      "AI_QUOTA_EXCEEDED": "You reached your monthly AI request limit.",
+      "AI_INVALID_KEY": "The AI key is not valid.",
+      "AI_NO_CREDIT": "The AI key has run out of credit.",
+      "AI_RATE_LIMITED": "Too many requests to the AI provider: try again shortly.",
+      "AI_PROVIDER_ERROR": "The AI provider returned an error. Try again or change model.",
+      "AI_EMPTY_RESPONSE": "The AI did not answer. Try again.",
+      "AI_INVALID_RESPONSE": "The AI gave an invalid answer. Try again or use a more capable model.",
+      "AI_TOO_MANY_JOBS": "You already have other AI requests running: wait for them to finish.",
+      "AI_FILE_NOT_FOUND": "File not found: upload it again.",
+      "AI_INVALID_IMAGE": "The image cannot be read.",
+      "AI_BLOCKED": "The provider blocked the request.",
+      "AI_TIMEOUT": "The AI is taking too long: try again later.",
+      "AI_OWN_KEYS_DISABLED": "Personal keys are not enabled on this instance.",
+      "TRIP_NOT_FOUND": "Trip not found.",
+      "AI_FAILED": "Something went wrong with the AI. Try again."
+    },
+    "receipt": {
+      "scan": "Read receipt with AI",
+      "reading": "Reading…",
+      "read": "Receipt read: check the details before saving.",
+      "lowConfidence": "Uncertain reading: double-check amount and date.",
+      "open": "View receipt",
+      "attached": "Receipt attached",
+      "byItems": "Split by item ({{count}} lines)",
+      "itemsHint": "Tap who had each item; service, tips and taxes are shared proportionally."
+    },
+    "booking": {
+      "fromScreenshot": "From screenshot or PDF",
+      "reading": "Reading…",
+      "none": "No bookings found in the document.",
+      "found": "Bookings found",
+      "foundHint": "Check them and choose which to add. You can edit them later.",
+      "travelers": "Travelers: {{names}}",
+      "add_one": "Add {{count}} booking",
+      "add_other": "Add {{count}} bookings",
+      "added_one": "{{count}} booking added",
+      "added_other": "{{count}} bookings added"
+    },
+    "generate": {
+      "button": "Generate with AI",
+      "title": "Plan with AI",
+      "hint": "Describe the trip you have in mind: the AI prepares days, activities, places, bookings to make, budget and packing. You can edit everything.",
+      "prompt": "What trip would you like?",
+      "promptHint": "Interests, pace, means of transport, must-sees or things to avoid.",
+      "promptPlaceholder": "E.g. Scotland by car, 5 days, castles and Loch Ness, no hard hikes",
+      "travelers": "People",
+      "from": "Departing from",
+      "fromPlaceholder": "E.g. London",
+      "budget": "Budget",
+      "total": "Total",
+      "perPerson": "Per person",
+      "style": "Style",
+      "styles": {
+        "relax": "🧘 Relax",
+        "culture": "🏛️ Culture",
+        "nature": "🌲 Nature",
+        "food": "🍝 Food",
+        "nightlife": "🍸 Nightlife",
+        "kids": "🧒 With kids",
+        "adventure": "🧗 Adventure",
+        "budget": "💸 Budget"
+      },
+      "working": "The AI is preparing the plan: it can take up to a couple of minutes.",
+      "submit": "Generate the plan",
+      "create": "Create the trip with AI",
+      "done": "Plan created!",
+      "withAi": "Create with AI",
+      "manual": "Fill in manually"
+    },
+    "chat": {
+      "intro": "Ask for advice about the trip or changes to the plan: the assistant proposes them and you apply them with one tap.",
+      "s1": "What must we not miss?",
+      "s2": "Add a free morning to rest",
+      "s3": "Where to eat well near our stay?",
+      "s4": "What do we do if it rains?",
+      "placeholder": "Write to the assistant…",
+      "send": "Send",
+      "thinking": "Thinking…",
+      "clear": "Clear conversation",
+      "confirmClear": "Clear the conversation with the assistant?",
+      "proposed_one": "{{count}} proposed change",
+      "proposed_other": "{{count}} proposed changes",
+      "apply": "Apply to plan",
+      "applied": "Applied to the plan",
+      "ops": {
+        "deleteActivity": "Remove activity",
+        "moveActivity": "Move activity",
+        "deleteDay": "Remove day",
+        "ensureDays": "Days",
+        "applyAlternative": "Use alternative",
+        "setTips": "{{count}} tips",
+        "deletePlace": "Remove place",
+        "deleteBooking": "Remove booking",
+        "deleteBudgetItem": "Remove budget item",
+        "deletePackingItem": "Remove from packing",
+        "deleteAlternative": "Remove alternative",
+        "setExchangeRates": "Exchange rates"
+      }
+    },
+    "verify": {
+      "button": "Verify",
+      "hint": "Check opening hours and prices online for the trip dates",
+      "verified": "{{name}}: hours verified on an official source.",
+      "unverified": "{{name}}: information updated but to be double-checked."
+    },
+    "packing": {
+      "suggest": "Suggest with AI",
+      "thinking": "Preparing suggestions…",
+      "nothing": "No new suggestions: the list is already complete.",
+      "title": "Packing suggestions",
+      "add_one": "Add {{count}} item",
+      "add_other": "Add {{count}} items"
+    }
   }
 }

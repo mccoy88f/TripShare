@@ -15,6 +15,7 @@ import { BOOKING_EMOJI, usePlan, usePlanOps } from '@/lib/plan';
 import { useTRPC } from '@/lib/trpc';
 import type { ExpenseT, TripDetail } from '@/lib/types';
 import { ExpenseDialog, type ExpensePreset } from '../expense-dialog';
+import { BookingImportButton } from './booking-import';
 import { TicketsDialog, TicketViewer, useTickets, type Ticket } from './tickets';
 import {
   formatLinks,
@@ -92,10 +93,13 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
   return (
     <div className="grid grid-cols-1 gap-4 pb-8">
       {canEdit && (
-        <Button className="justify-self-start" onClick={() => setEditing('new')}>
-          <Plus />
-          {t('plan.booking.add')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => setEditing('new')}>
+            <Plus />
+            {t('plan.booking.add')}
+          </Button>
+          <BookingImportButton trip={trip} plan={plan} />
+        </div>
       )}
       {bookings.length === 0 && (
         <p className="rounded-xl border border-dashed px-6 py-10 text-center text-sm text-muted-foreground">

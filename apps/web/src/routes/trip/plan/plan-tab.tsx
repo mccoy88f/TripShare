@@ -35,6 +35,7 @@ import type { TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ActivityDialog } from './activity-dialog';
 import { moneyLabel, textareaClass } from './fields';
+import { GeneratePlanButton } from './generate-trip';
 import { ImportPlanButton } from './import-export';
 import { myTickets, TicketViewer, useTickets, type Ticket } from './tickets';
 
@@ -106,6 +107,7 @@ export function PlanTab({ trip }: { trip: TripDetail }) {
                 {t('plan.createDays')}
               </Button>
             )}
+            <GeneratePlanButton trip={trip} />
             <ImportPlanButton tripId={trip.id} />
           </div>
         )}

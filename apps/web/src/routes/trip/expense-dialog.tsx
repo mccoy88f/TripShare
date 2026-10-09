@@ -29,6 +29,14 @@ import { money, todayIso } from '@/lib/format';
 import { useTRPC } from '@/lib/trpc';
 import type { ExpenseT, TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import {
+  ItemSplit,
+  ReceiptScanButton,
+  receiptItems,
+  splitByItems,
+  type ReceiptItem,
+  type ReceiptResult,
+} from './receipt-scan';
 
 type Method = 'equal' | 'shares' | 'percent' | 'exact';
 
@@ -61,6 +69,10 @@ interface State {
   notes: string;
   status: 'paid' | 'planned';
   bookingId: string | null;
+  receipt: string | null;
+  /** Righe dello scontrino letto dall'AI, per dividere per voce. */
+  items: ReceiptItem[];
+  byItems: boolean;
 }
 
 /** Valori iniziali per una nuova spesa (da prenotazione, scontrino letto dall'AI…). */
@@ -100,6 +112,9 @@ function initialState(trip: TripDetail, expense?: ExpenseT, preset?: ExpensePres
       notes: preset?.notes ?? '',
       status: preset?.status ?? 'paid',
       bookingId: preset?.bookingId ?? null,
+      receipt: null,
+      items: [],
+      byItems: false,
     };
   }
   const currency = (
@@ -133,6 +148,9 @@ function initialState(trip: TripDetail, expense?: ExpenseT, preset?: ExpensePres
     notes: expense.notes ?? '',
     status: expense.status === 'planned' ? 'planned' : 'paid',
     bookingId: expense.bookingId,
+    receipt: expense.receipt,
+    items: [],
+    byItems: false,
   };
 }
 
@@ -269,12 +287,58 @@ export function ExpenseDialog({
       notes: s.notes.trim() || null,
       status: s.status,
       bookingId: s.bookingId,
+      receipt: s.receipt,
     };
     if (expense) await update.mutateAsync({ ...input, id: expense.id });
     else await create.mutateAsync(input);
     await invalidate();
     toast.success(expense ? t('common.saved') : t('expense.added'));
     onOpenChange(false);
+  };
+
+  /** Divisione "per voce": importi esatti calcolati dalle righe dello scontrino. */
+  const applyItems = (items: ReceiptItem[], total = amount) => {
+    const owed = total ? splitByItems(total, items) : null;
+    setS((prev) => ({
+      ...prev,
+      items,
+      byItems: true,
+      ...(owed
+        ? {
+            method: 'exact' as const,
+            members: Object.keys(owed).filter((id) => owed[id]! > 0),
+            exact: Object.fromEntries(
+              Object.entries(owed).map(([id, v]) => [id, fmtNumber(v, prev.currency)]),
+            ),
+          }
+        : {}),
+    }));
+  };
+
+  const onReceipt = (r: ReceiptResult, file: string) => {
+    const currency = isCurrencyCode(r.currency) ? r.currency : s.currency;
+    const total = toMinor(r.total, currency);
+    const inTrip =
+      r.date &&
+      (!trip.startDate || r.date >= trip.startDate) &&
+      (!trip.endDate || r.date <= trip.endDate);
+    const items = r.items.length >= 2 ? receiptItems({ ...r, currency }, s.members) : [];
+    setS((prev) => ({
+      ...prev,
+      title: prev.title.trim() ? prev.title : r.title,
+      emoji: prev.emojiTouched ? prev.emoji : r.emoji || null,
+      emojiTouched: prev.emojiTouched || !!r.emoji,
+      category: r.category in EXPENSE_CATEGORIES ? r.category : prev.category,
+      amount: fmtNumber(total, currency),
+      currency,
+      rate: currency === tripCurrency ? '1' : currency === prev.currency ? prev.rate : '',
+      rateTouched: currency === prev.currency && prev.rateTouched,
+      date: r.date && (inTrip || !trip.startDate) ? r.date : prev.date,
+      notes: prev.notes || [r.merchant, r.notes].filter(Boolean).join(' · ').slice(0, 1000),
+      receipt: file,
+      items,
+      byItems: false,
+    }));
   };
 
   const toggleMember = (id: string) =>
@@ -287,6 +351,20 @@ export function ExpenseDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent title={expense ? t('expense.editTitle') : t('expense.newTitle')}>
         <form onSubmit={submit} className="grid grid-cols-1 gap-5 pt-2">
+          {!expense && !s.receipt && <ReceiptScanButton trip={trip} onResult={onReceipt} />}
+          {s.receipt && (
+            <a
+              href={`/api/trips/${trip.id}/receipts/${s.receipt}`}
+              target="_blank"
+              rel="noreferrer"
+              className={cn(
+                'inline-flex items-center gap-2 justify-self-start rounded-full bg-secondary px-3 py-1 text-sm font-medium',
+                !expense && 'pointer-events-none',
+              )}
+            >
+              🧾 {expense ? t('ai.receipt.open') : t('ai.receipt.attached')}
+            </a>
+          )}
           <div className="flex items-end gap-3">
             <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
               <PopoverTrigger asChild>
@@ -459,6 +537,32 @@ export function ExpenseDialog({
               />
             </Field>
           </div>
+
+          {s.items.length > 0 && (
+            <div className="grid grid-cols-1 gap-3 rounded-xl bg-muted/50 p-3">
+              <label className="flex items-center justify-between gap-3 text-sm font-medium">
+                <span>🧾 {t('ai.receipt.byItems', { count: s.items.length })}</span>
+                <input
+                  type="checkbox"
+                  className="size-5 accent-[var(--primary)]"
+                  checked={s.byItems}
+                  onChange={(e) =>
+                    e.target.checked
+                      ? applyItems(s.items)
+                      : setS((prev) => ({ ...prev, byItems: false, method: 'equal' }))
+                  }
+                />
+              </label>
+              {s.byItems && (
+                <ItemSplit
+                  items={s.items}
+                  members={trip.members.filter((m) => !m.removed)}
+                  currency={s.currency}
+                  onChange={(items) => applyItems(items)}
+                />
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 gap-3">
             <div className="flex flex-wrap items-center justify-between gap-2">

@@ -38,6 +38,8 @@ export function ModelInfo({ model }: { model: ModelOption }) {
     <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
       {model.free ? (
         <Badge variant="success">{t('models.free')}</Badge>
+      ) : model.promptPerM === null && model.completionPerM === null ? (
+        <Badge variant="outline">{t('models.paid')}</Badge>
       ) : (
         <span className="tabular">
           {t('models.price', {
@@ -69,6 +71,7 @@ export function ModelPicker({
   value,
   onChange,
   requireImage = false,
+  allowAuto = true,
   id,
   placeholder,
 }: {
@@ -76,6 +79,8 @@ export function ModelPicker({
   value: string | null;
   onChange: (id: string) => void;
   requireImage?: boolean;
+  /** Mostra la voce "openrouter/auto" (solo per OpenRouter). */
+  allowAuto?: boolean;
   id?: string;
   placeholder?: string;
 }) {
@@ -201,28 +206,30 @@ export function ModelPicker({
           </div>
         </div>
         <div className="max-h-[50vh] overflow-y-auto p-1.5">
-          <button
-            type="button"
-            onClick={() => pick(AUTO_ID)}
-            className={cn(
-              'flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted',
-              value === AUTO_ID && 'bg-primary/10',
-            )}
-          >
-            <Check
+          {allowAuto && (
+            <button
+              type="button"
+              onClick={() => pick(AUTO_ID)}
               className={cn(
-                'mt-0.5 size-4 shrink-0 text-primary',
-                value !== AUTO_ID && 'invisible',
+                'flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted',
+                value === AUTO_ID && 'bg-primary/10',
               )}
-            />
-            <span>
-              <span className="inline-flex items-center gap-1.5 text-sm font-medium">
-                <Sparkles className="size-4 text-accent" />
-                {t('models.auto')}
+            >
+              <Check
+                className={cn(
+                  'mt-0.5 size-4 shrink-0 text-primary',
+                  value !== AUTO_ID && 'invisible',
+                )}
+              />
+              <span>
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+                  <Sparkles className="size-4 text-accent" />
+                  {t('models.auto')}
+                </span>
+                <span className="block text-xs text-muted-foreground">{t('models.autoHint')}</span>
               </span>
-              <span className="block text-xs text-muted-foreground">{t('models.autoHint')}</span>
-            </span>
-          </button>
+            </button>
+          )}
           {free.length > 0 && (
             <p className="px-2.5 pt-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               {t('models.groupFree', { count: free.length })}

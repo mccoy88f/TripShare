@@ -394,11 +394,15 @@ type Models = Record<ModelKey, string> & { fallbacks: string[] };
 /** Scopi che ricevono immagini in input (scontrini, screenshot). */
 const IMAGE_PURPOSES: ModelKey[] = ['vision'];
 
-function KeyStatus({ hasKey }: { hasKey: boolean }) {
+type Provider = 'openrouter' | 'gemini';
+
+function KeyStatus({ hasKey, provider }: { hasKey: boolean; provider: Provider }) {
   const { t } = useTranslation();
   const trpc = useTRPC();
-  const check = useMutation(trpc.admin.openrouter.checkKey.mutationOptions());
+  const checkOr = useMutation(trpc.admin.openrouter.checkKey.mutationOptions());
+  const checkGemini = useMutation(trpc.admin.gemini.checkKey.mutationOptions());
   if (!hasKey) return null;
+  const check = provider === 'gemini' ? checkGemini : checkOr;
   const usd = (n: number | null) => (n === null ? '∞' : `$${n.toFixed(2)}`);
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-xl bg-muted/60 px-4 py-3 text-sm">
@@ -412,14 +416,19 @@ function KeyStatus({ hasKey }: { hasKey: boolean }) {
         {check.isPending ? <Loader2 className="animate-spin" /> : <CheckCircle2 />}
         {t('admin.checkKey')}
       </Button>
-      {check.data && (
+      {checkOr.data && provider === 'openrouter' && (
         <span className="text-success">
           {t('admin.keyOk', {
-            usage: usd(check.data.usage),
-            limit: usd(check.data.limit),
-            remaining: usd(check.data.limitRemaining),
+            usage: usd(checkOr.data.usage),
+            limit: usd(checkOr.data.limit),
+            remaining: usd(checkOr.data.limitRemaining),
           })}
-          {check.data.freeTier && ` · ${t('admin.freeTier')}`}
+          {checkOr.data.freeTier && ` · ${t('admin.freeTier')}`}
+        </span>
+      )}
+      {checkGemini.data && provider === 'gemini' && (
+        <span className="text-success">
+          {t('admin.geminiKeyOk', { count: checkGemini.data.models })}
         </span>
       )}
       {check.error && (
@@ -435,45 +444,27 @@ function KeyStatus({ hasKey }: { hasKey: boolean }) {
 
 function AiSettings() {
   const { t } = useTranslation();
-  const trpc = useTRPC();
   const { settings, value, save } = useSettings();
-  const [models, setModels] = useState<Models | null>(null);
   const [quota, setQuota] = useState('2');
-  const [refresh, setRefresh] = useState(false);
-  const catalog = useQuery({
-    ...trpc.admin.openrouter.models.queryOptions({ refresh }),
-    staleTime: 3600_000,
-    retry: false,
-  });
+  const [requests, setRequests] = useState('300');
   useEffect(() => {
     if (!settings) return;
-    const m = value<Models>('openrouter.models');
-    if (m) setModels(m);
     setQuota(String(value<number>('openrouter.monthlyQuotaUsd') ?? 2));
+    setRequests(String(value<number>('ai.monthlyRequests') ?? 300));
   }, [settings]); // eslint-disable-line react-hooks/exhaustive-deps
-  if (!settings || !models)
-    return <Loader2 className="mx-auto mt-10 animate-spin text-muted-foreground" />;
-
-  const keySetting = settings['openrouter.apiKey'];
-  const hasKey = !!keySetting?.secret && keySetting.set;
-  const list = catalog.data?.models ?? [];
-  const byId = new Map(list.map((m) => [m.id, m]));
-  const warning = (k: ModelKey) => {
-    const m = byId.get(models[k]);
-    if (!m) return null;
-    if (IMAGE_PURPOSES.includes(k) && !m.imageInput) return t('admin.needsImages');
-    if (k === 'planner' && !m.structuredOutput) return t('admin.noStructured');
-    return null;
+  if (!settings) return <Loader2 className="mx-auto mt-10 animate-spin text-muted-foreground" />;
+  const hasKey = (key: string) => {
+    const s = settings[key];
+    return !!s?.secret && s.set;
   };
+  const central = value<Provider>('ai.provider') ?? 'openrouter';
 
   return (
     <div className="grid grid-cols-1 gap-6">
-      <p className="rounded-xl bg-secondary px-4 py-3 text-sm text-secondary-foreground">
-        ✨ {t('admin.aiComing')}
-      </p>
       <Card>
         <CardHeader>
-          <CardTitle>OpenRouter</CardTitle>
+          <CardTitle>✨ {t('admin.aiGeneral')}</CardTitle>
+          <CardDescription>{t('admin.aiGeneralHint')}</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-5">
           <Field label={t('admin.aiMode')} htmlFor="ai-mode">
@@ -489,13 +480,37 @@ function AiSettings() {
               ))}
             </Select>
           </Field>
-          <SecretField
-            label={t('admin.apiKey')}
-            settingKey="openrouter.apiKey"
-            settings={settings}
-            save={save}
-          />
-          <KeyStatus hasKey={hasKey} />
+          <Field
+            label={t('admin.centralProvider')}
+            htmlFor="ai-provider"
+            hint={t('admin.centralProviderHint')}
+            error={!hasKey(`${central}.apiKey`) ? t('admin.centralProviderNoKey') : null}
+          >
+            <Select
+              id="ai-provider"
+              value={central}
+              onChange={(e) => save('ai.provider', e.target.value)}
+            >
+              <option value="openrouter">OpenRouter</option>
+              <option value="gemini">Google Gemini</option>
+            </Select>
+          </Field>
+          <SaveRow onSave={() => save('ai.monthlyRequests', Number(requests))}>
+            <Field
+              label={t('admin.requestsQuota')}
+              htmlFor="req-quota"
+              hint={t('admin.requestsQuotaHint')}
+            >
+              <Input
+                id="req-quota"
+                type="number"
+                min={0}
+                step="10"
+                value={requests}
+                onChange={(e) => setRequests(e.target.value)}
+              />
+            </Field>
+          </SaveRow>
           <SaveRow onSave={() => save('openrouter.monthlyQuotaUsd', Number(quota))}>
             <Field label={t('admin.quota')} htmlFor="quota">
               <Input
@@ -508,6 +523,25 @@ function AiSettings() {
               />
             </Field>
           </SaveRow>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            OpenRouter
+            {central === 'openrouter' && <Badge variant="success">{t('admin.centralBadge')}</Badge>}
+          </CardTitle>
+          <CardDescription>{t('admin.openrouterHint')}</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-5">
+          <SecretField
+            label={t('admin.apiKey')}
+            settingKey="openrouter.apiKey"
+            settings={settings}
+            save={save}
+          />
+          <KeyStatus hasKey={hasKey('openrouter.apiKey')} provider="openrouter" />
           <label className="flex items-center justify-between gap-4">
             <span className="font-medium">{t('admin.denyDataCollection')}</span>
             <Switch
@@ -517,119 +551,247 @@ function AiSettings() {
           </label>
         </CardContent>
       </Card>
+      <ModelsCard provider="openrouter" />
+
       <Card>
         <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="grid grid-cols-1 gap-1">
-              <CardTitle>{t('admin.models')}</CardTitle>
-              <CardDescription>{t('admin.modelHint')}</CardDescription>
-            </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              disabled={catalog.isFetching}
-              onClick={() => (refresh ? void catalog.refetch() : setRefresh(true))}
-            >
-              {catalog.isFetching ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-              {t('admin.refreshModels')}
-            </Button>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            Google Gemini
+            {central === 'gemini' && <Badge variant="success">{t('admin.centralBadge')}</Badge>}
+          </CardTitle>
+          <CardDescription>{t('admin.geminiHint')}</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-5">
-          {catalog.isError && (
-            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {t('admin.modelsUnavailable')} ({catalog.error.message})
-            </p>
-          )}
-          {catalog.data && (
-            <p className="text-xs text-muted-foreground">
-              {t('admin.modelsCount', {
-                count: list.length,
-                free: list.filter((m) => m.free).length,
-                images: list.filter((m) => m.imageInput).length,
-              })}
-            </p>
-          )}
-          {MODEL_KEYS.map((k) => (
-            <Field
-              key={k}
-              label={
-                <span className="flex items-center gap-2">
-                  {t(`admin.modelNames.${k}`)}
-                  {IMAGE_PURPOSES.includes(k) ? (
-                    <Badge variant="outline">🖼️ {t('admin.textAndImages')}</Badge>
-                  ) : (
-                    <Badge variant="outline">📝 {t('admin.textOnly')}</Badge>
-                  )}
-                </span>
-              }
-              hint={t(`admin.modelPurposes.${k}`)}
-              error={warning(k)}
-            >
-              {catalog.isError ? (
-                <Input
-                  className="font-mono text-sm"
-                  value={models[k]}
-                  onChange={(e) => setModels({ ...models, [k]: e.target.value })}
-                />
-              ) : (
-                <ModelPicker
-                  models={list}
-                  value={models[k]}
-                  requireImage={IMAGE_PURPOSES.includes(k)}
-                  onChange={(id) => setModels({ ...models, [k]: id })}
-                />
-              )}
-            </Field>
-          ))}
-          <Field label={t('admin.fallbacks')} hint={t('admin.fallbacksHint')}>
-            <div className="grid grid-cols-1 gap-2">
-              {models.fallbacks.map((id) => (
-                <div key={id} className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2">
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium">
-                      {byId.get(id)?.name ?? id}
-                    </span>
-                    {byId.get(id) && <ModelInfo model={byId.get(id)!} />}
-                  </span>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="size-8"
-                    aria-label={t('admin.remove')}
-                    onClick={() =>
-                      setModels({ ...models, fallbacks: models.fallbacks.filter((f) => f !== id) })
-                    }
-                  >
-                    <X />
-                  </Button>
-                </div>
-              ))}
-              {models.fallbacks.length < 5 && !catalog.isError && (
-                <ModelPicker
-                  models={list.filter((m) => !models.fallbacks.includes(m.id))}
-                  value={null}
-                  placeholder={t('admin.addFallback')}
-                  onChange={(id) =>
-                    !models.fallbacks.includes(id) &&
-                    setModels({ ...models, fallbacks: [...models.fallbacks, id] })
-                  }
-                />
-              )}
-            </div>
-          </Field>
-          <Button
-            type="button"
-            className="justify-self-end"
-            onClick={() => save('openrouter.models', models)}
-          >
-            {t('common.save')}
-          </Button>
+          <SecretField
+            label={t('admin.geminiKey')}
+            settingKey="gemini.apiKey"
+            settings={settings}
+            save={save}
+          />
+          <KeyStatus hasKey={hasKey('gemini.apiKey')} provider="gemini" />
         </CardContent>
       </Card>
+      {hasKey('gemini.apiKey') && <ModelsCard provider="gemini" />}
+
+      <AiUsage />
     </div>
+  );
+}
+
+/** Modelli per ogni compito, scelti dall'elenco del provider. */
+function ModelsCard({ provider }: { provider: Provider }) {
+  const { t } = useTranslation();
+  const trpc = useTRPC();
+  const { settings, value, save } = useSettings();
+  const settingKey = `${provider}.models`;
+  const [models, setModels] = useState<Models | null>(null);
+  const [refresh, setRefresh] = useState(false);
+  const orCatalog = useQuery({
+    ...trpc.admin.openrouter.models.queryOptions({ refresh }),
+    staleTime: 3600_000,
+    retry: false,
+    enabled: provider === 'openrouter',
+  });
+  const geminiCatalog = useQuery({
+    ...trpc.admin.gemini.models.queryOptions({ refresh }),
+    staleTime: 3600_000,
+    retry: false,
+    enabled: provider === 'gemini',
+  });
+  const catalog = provider === 'gemini' ? geminiCatalog : orCatalog;
+  useEffect(() => {
+    if (!settings) return;
+    const m = value<Models>(settingKey);
+    if (m) setModels(m);
+  }, [settings]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!models) return null;
+
+  const list = catalog.data?.models ?? [];
+  const byId = new Map(list.map((m) => [m.id, m]));
+  const warning = (k: ModelKey) => {
+    const m = byId.get(models[k]);
+    if (!m) return null;
+    if (IMAGE_PURPOSES.includes(k) && !m.imageInput) return t('admin.needsImages');
+    if (k === 'planner' && !m.structuredOutput) return t('admin.noStructured');
+    return null;
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="grid grid-cols-1 gap-1">
+            <CardTitle>
+              {t('admin.models')} · {provider === 'gemini' ? 'Gemini' : 'OpenRouter'}
+            </CardTitle>
+            <CardDescription>
+              {provider === 'gemini' ? t('admin.geminiModelHint') : t('admin.modelHint')}
+            </CardDescription>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            disabled={catalog.isFetching}
+            onClick={() => (refresh ? void catalog.refetch() : setRefresh(true))}
+          >
+            {catalog.isFetching ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+            {t('admin.refreshModels')}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="grid grid-cols-1 gap-5">
+        {catalog.isError && (
+          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {t('admin.modelsUnavailable')} ({catalog.error.message})
+          </p>
+        )}
+        {catalog.data && (
+          <p className="text-xs text-muted-foreground">
+            {t('admin.modelsCount', {
+              count: list.length,
+              free: list.filter((m) => m.free).length,
+              images: list.filter((m) => m.imageInput).length,
+            })}
+          </p>
+        )}
+        {MODEL_KEYS.map((k) => (
+          <Field
+            key={k}
+            label={
+              <span className="flex flex-wrap items-center gap-2">
+                {t(`admin.modelNames.${k}`)}
+                {IMAGE_PURPOSES.includes(k) ? (
+                  <Badge variant="outline">🖼️ {t('admin.textAndImages')}</Badge>
+                ) : (
+                  <Badge variant="outline">📝 {t('admin.textOnly')}</Badge>
+                )}
+              </span>
+            }
+            hint={t(`admin.modelPurposes.${k}`)}
+            error={warning(k)}
+          >
+            {catalog.isError ? (
+              <Input
+                className="font-mono text-sm"
+                value={models[k]}
+                onChange={(e) => setModels({ ...models, [k]: e.target.value })}
+              />
+            ) : (
+              <ModelPicker
+                models={list}
+                value={models[k]}
+                allowAuto={provider === 'openrouter'}
+                requireImage={IMAGE_PURPOSES.includes(k)}
+                onChange={(id) => setModels({ ...models, [k]: id })}
+              />
+            )}
+          </Field>
+        ))}
+        <Field label={t('admin.fallbacks')} hint={t('admin.fallbacksHint')}>
+          <div className="grid grid-cols-1 gap-2">
+            {models.fallbacks.map((id) => (
+              <div key={id} className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">
+                    {byId.get(id)?.name ?? id}
+                  </span>
+                  {byId.get(id) && <ModelInfo model={byId.get(id)!} />}
+                </span>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="size-8"
+                  aria-label={t('admin.remove')}
+                  onClick={() =>
+                    setModels({ ...models, fallbacks: models.fallbacks.filter((f) => f !== id) })
+                  }
+                >
+                  <X />
+                </Button>
+              </div>
+            ))}
+            {models.fallbacks.length < 5 && !catalog.isError && (
+              <ModelPicker
+                models={list.filter((m) => !models.fallbacks.includes(m.id))}
+                value={null}
+                allowAuto={provider === 'openrouter'}
+                placeholder={t('admin.addFallback')}
+                onChange={(id) =>
+                  !models.fallbacks.includes(id) &&
+                  setModels({ ...models, fallbacks: [...models.fallbacks, id] })
+                }
+              />
+            )}
+          </div>
+        </Field>
+        <Button type="button" className="justify-self-end" onClick={() => save(settingKey, models)}>
+          {t('common.save')}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Uso dell'AI nel mese corrente. */
+function AiUsage() {
+  const { t } = useTranslation();
+  const trpc = useTRPC();
+  const { data } = useQuery(trpc.admin.aiUsage.queryOptions());
+  if (!data) return null;
+  const total = data.reduce(
+    (a, r) => ({
+      requests: a.requests + r.requests,
+      tokens: a.tokens + r.tokens,
+      cost: a.cost + r.cost,
+    }),
+    { requests: 0, tokens: 0, cost: 0 },
+  );
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>📊 {t('admin.aiUsage')}</CardTitle>
+        <CardDescription>
+          {t('admin.aiUsageTotal', {
+            requests: total.requests,
+            tokens: total.tokens.toLocaleString(),
+            cost: total.cost.toFixed(3),
+          })}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {data.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t('admin.aiUsageEmpty')}</p>
+        ) : (
+          <div className="divide-y rounded-xl border">
+            {data.map((r, i) => (
+              <div
+                key={i}
+                className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-sm"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{r.name}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{r.email}</span>
+                </span>
+                <Badge variant="outline">
+                  {r.provider === 'gemini' ? 'Gemini' : 'OpenRouter'} ·{' '}
+                  {r.keySource === 'user' ? t('admin.ownKey') : t('admin.centralKey')}
+                </Badge>
+                <span className="tabular text-muted-foreground">
+                  {t('admin.aiUsageRow', {
+                    requests: r.requests,
+                    errors: r.errors,
+                    tokens: r.tokens.toLocaleString(),
+                  })}
+                  {r.cost > 0 && ` · $${r.cost.toFixed(3)}`}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
