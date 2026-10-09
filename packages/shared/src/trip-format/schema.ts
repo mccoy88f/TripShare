@@ -435,7 +435,6 @@ export const TripDocumentSchema = z
     });
   })
   .meta({
-    id: 'TripDocument',
     title: 'TripShare Trip Format v1',
     description: 'Documento standard di un viaggio TripShare: programma, luoghi, prenotazioni, budget e lista.',
   });

@@ -1,638 +1,448 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$ref": "#/$defs/TripDocument",
-  "$defs": {
-    "TripDocument": {
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "formatVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "it",
+        "en"
+      ],
+      "description": "Lingua dei testi del documento."
+    },
+    "trip": {
       "type": "object",
       "properties": {
-        "$schema": {
-          "type": "string"
-        },
-        "formatVersion": {
-          "type": "number",
-          "const": 1
-        },
-        "language": {
+        "title": {
           "type": "string",
-          "enum": [
-            "it",
-            "en"
-          ],
-          "description": "Lingua dei testi del documento."
+          "minLength": 1,
+          "maxLength": 120
         },
-        "trip": {
+        "emoji": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600
+        },
+        "destination": {
           "type": "object",
           "properties": {
-            "title": {
+            "name": {
               "type": "string",
               "minLength": 1,
               "maxLength": 120
             },
-            "emoji": {
-              "type": "string",
-              "maxLength": 16
+            "countryCodes": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Z]{2}$"
+              },
+              "description": "Paesi visitati, codici ISO 3166-1 alpha-2."
+            }
+          },
+          "required": [
+            "name",
+            "countryCodes"
+          ]
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+          "description": "Data ISO 8601, es. \"2026-10-12\"."
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+          "description": "Data ISO 8601, es. \"2026-10-12\"."
+        },
+        "timezone": {
+          "description": "Fuso IANA principale, es. \"Europe/London\".",
+          "type": "string",
+          "maxLength": 64
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "EUR",
+            "USD",
+            "GBP",
+            "CHF",
+            "JPY",
+            "CAD",
+            "AUD",
+            "NZD",
+            "SEK",
+            "NOK",
+            "DKK",
+            "PLN",
+            "CZK",
+            "HUF",
+            "RON",
+            "BGN",
+            "ISK",
+            "TRY",
+            "MXN",
+            "BRL",
+            "CNY",
+            "HKD",
+            "SGD",
+            "THB",
+            "INR",
+            "ILS",
+            "ZAR",
+            "KRW",
+            "AED",
+            "MAD",
+            "EGP"
+          ],
+          "description": "Valuta del viaggio, usata per saldi e budget."
+        },
+        "travelers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "style": {
+          "default": [],
+          "description": "Parole chiave sullo stile, es. [\"in auto\", \"natura\", \"economico\"].",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 40
+          }
+        },
+        "coverQuery": {
+          "description": "Ricerca in inglese per una foto di copertina, es. \"Glenfinnan viaduct autumn\".",
+          "type": "string",
+          "maxLength": 120
+        }
+      },
+      "required": [
+        "title",
+        "destination",
+        "startDate",
+        "endDate",
+        "currency",
+        "travelers"
+      ]
+    },
+    "places": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "sight",
+              "museum",
+              "nature",
+              "viewpoint",
+              "restaurant",
+              "cafe",
+              "bar",
+              "lodging",
+              "airport",
+              "station",
+              "parking",
+              "car_rental",
+              "shop",
+              "neighborhood",
+              "city",
+              "other"
+            ]
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "mapsQuery": {
+            "description": "Testo da cercare su una mappa, es. \"Urquhart Castle, Drumnadrochit\".",
+            "type": "string",
+            "maxLength": 240
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "lat": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "lng": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              }
             },
-            "summary": {
-              "type": "string",
-              "maxLength": 600
+            "required": [
+              "lat",
+              "lng"
+            ]
+          },
+          "openingHours": {
+            "description": "Orari in testo libero per le date del viaggio, es. \"9:30–17:00, ultimo ingresso 16:00\".",
+            "type": "string",
+            "maxLength": 400
+          },
+          "price": {
+            "description": "Prezzo di ingresso o costo tipico.",
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Importo in unità maggiori, es. 23.5."
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "EUR",
+                  "USD",
+                  "GBP",
+                  "CHF",
+                  "JPY",
+                  "CAD",
+                  "AUD",
+                  "NZD",
+                  "SEK",
+                  "NOK",
+                  "DKK",
+                  "PLN",
+                  "CZK",
+                  "HUF",
+                  "RON",
+                  "BGN",
+                  "ISK",
+                  "TRY",
+                  "MXN",
+                  "BRL",
+                  "CNY",
+                  "HKD",
+                  "SGD",
+                  "THB",
+                  "INR",
+                  "ILS",
+                  "ZAR",
+                  "KRW",
+                  "AED",
+                  "MAD",
+                  "EGP"
+                ],
+                "description": "Codice valuta ISO 4217."
+              },
+              "basis": {
+                "default": "total",
+                "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
+                "type": "string",
+                "enum": [
+                  "total",
+                  "per_person",
+                  "per_night",
+                  "per_vehicle",
+                  "per_day"
+                ]
+              },
+              "approximate": {
+                "default": false,
+                "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
+                "type": "boolean"
+              },
+              "note": {
+                "description": "Es. \"14 £ online, 16 £ in loco\".",
+                "type": "string",
+                "maxLength": 200
+              }
             },
-            "destination": {
+            "required": [
+              "amount",
+              "currency"
+            ]
+          },
+          "priceLevel": {
+            "description": "Fascia di prezzo da 1 (economico) a 4 (caro), utile per ristoranti.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "meals": {
+            "description": "Per ristoranti e caffè: pasti consigliati.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "breakfast",
+                "lunch",
+                "dinner",
+                "snack"
+              ]
+            }
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "tips": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 300
+            }
+          },
+          "verification": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "verified",
+                  "unverified"
+                ],
+                "description": "\"verified\" solo se l'informazione è stata letta su una fonte ufficiale citata."
+              },
+              "checkedAt": {
+                "description": "Giorno in cui la fonte è stata controllata.",
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              "sources": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120
+                    },
+                    "url": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "required": [
+                    "title",
+                    "url"
+                  ],
+                  "description": "Link esterno utile: sito ufficiale, biglietti, guida."
+                }
+              }
+            },
+            "required": [
+              "status"
+            ],
+            "description": "Affidabilità di orari e prezzi."
+          },
+          "links": {
+            "default": [],
+            "type": "array",
+            "items": {
               "type": "object",
               "properties": {
-                "name": {
+                "title": {
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 120
                 },
-                "countryCodes": {
-                  "minItems": 1,
-                  "type": "array",
-                  "items": {
-                    "type": "string",
-                    "pattern": "^[A-Z]{2}$"
-                  },
-                  "description": "Paesi visitati, codici ISO 3166-1 alpha-2."
+                "url": {
+                  "type": "string",
+                  "format": "uri"
                 }
               },
               "required": [
-                "name",
-                "countryCodes"
-              ]
-            },
-            "startDate": {
-              "type": "string",
-              "format": "date",
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
-              "description": "Data ISO 8601, es. \"2026-10-12\"."
-            },
-            "endDate": {
-              "type": "string",
-              "format": "date",
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
-              "description": "Data ISO 8601, es. \"2026-10-12\"."
-            },
-            "timezone": {
-              "description": "Fuso IANA principale, es. \"Europe/London\".",
-              "type": "string",
-              "maxLength": 64
-            },
-            "currency": {
-              "type": "string",
-              "enum": [
-                "EUR",
-                "USD",
-                "GBP",
-                "CHF",
-                "JPY",
-                "CAD",
-                "AUD",
-                "NZD",
-                "SEK",
-                "NOK",
-                "DKK",
-                "PLN",
-                "CZK",
-                "HUF",
-                "RON",
-                "BGN",
-                "ISK",
-                "TRY",
-                "MXN",
-                "BRL",
-                "CNY",
-                "HKD",
-                "SGD",
-                "THB",
-                "INR",
-                "ILS",
-                "ZAR",
-                "KRW",
-                "AED",
-                "MAD",
-                "EGP"
+                "title",
+                "url"
               ],
-              "description": "Valuta del viaggio, usata per saldi e budget."
-            },
-            "travelers": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100
-            },
-            "style": {
-              "default": [],
-              "description": "Parole chiave sullo stile, es. [\"in auto\", \"natura\", \"economico\"].",
-              "type": "array",
-              "items": {
-                "type": "string",
-                "maxLength": 40
-              }
-            },
-            "coverQuery": {
-              "description": "Ricerca in inglese per una foto di copertina, es. \"Glenfinnan viaduct autumn\".",
-              "type": "string",
-              "maxLength": 120
+              "description": "Link esterno utile: sito ufficiale, biglietti, guida."
             }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind"
+        ],
+        "description": "Luogo citato dal programma: attrazione, ristorante, alloggio, aeroporto…"
+      }
+    },
+    "bookings": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
           },
-          "required": [
-            "title",
-            "destination",
-            "startDate",
-            "endDate",
-            "currency",
-            "travelers"
-          ]
-        },
-        "places": {
-          "default": [],
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
-                "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
-              },
-              "name": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 160
-              },
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "sight",
-                  "museum",
-                  "nature",
-                  "viewpoint",
-                  "restaurant",
-                  "cafe",
-                  "bar",
-                  "lodging",
-                  "airport",
-                  "station",
-                  "parking",
-                  "car_rental",
-                  "shop",
-                  "neighborhood",
-                  "city",
-                  "other"
-                ]
-              },
-              "address": {
-                "type": "string",
-                "maxLength": 240
-              },
-              "mapsQuery": {
-                "description": "Testo da cercare su una mappa, es. \"Urquhart Castle, Drumnadrochit\".",
-                "type": "string",
-                "maxLength": 240
-              },
-              "location": {
-                "type": "object",
-                "properties": {
-                  "lat": {
-                    "type": "number",
-                    "minimum": -90,
-                    "maximum": 90
-                  },
-                  "lng": {
-                    "type": "number",
-                    "minimum": -180,
-                    "maximum": 180
-                  }
-                },
-                "required": [
-                  "lat",
-                  "lng"
-                ]
-              },
-              "openingHours": {
-                "description": "Orari in testo libero per le date del viaggio, es. \"9:30–17:00, ultimo ingresso 16:00\".",
-                "type": "string",
-                "maxLength": 400
-              },
-              "price": {
-                "description": "Prezzo di ingresso o costo tipico.",
-                "type": "object",
-                "properties": {
-                  "amount": {
-                    "type": "number",
-                    "minimum": 0,
-                    "description": "Importo in unità maggiori, es. 23.5."
-                  },
-                  "currency": {
-                    "type": "string",
-                    "enum": [
-                      "EUR",
-                      "USD",
-                      "GBP",
-                      "CHF",
-                      "JPY",
-                      "CAD",
-                      "AUD",
-                      "NZD",
-                      "SEK",
-                      "NOK",
-                      "DKK",
-                      "PLN",
-                      "CZK",
-                      "HUF",
-                      "RON",
-                      "BGN",
-                      "ISK",
-                      "TRY",
-                      "MXN",
-                      "BRL",
-                      "CNY",
-                      "HKD",
-                      "SGD",
-                      "THB",
-                      "INR",
-                      "ILS",
-                      "ZAR",
-                      "KRW",
-                      "AED",
-                      "MAD",
-                      "EGP"
-                    ],
-                    "description": "Codice valuta ISO 4217."
-                  },
-                  "basis": {
-                    "default": "total",
-                    "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
-                    "type": "string",
-                    "enum": [
-                      "total",
-                      "per_person",
-                      "per_night",
-                      "per_vehicle",
-                      "per_day"
-                    ]
-                  },
-                  "approximate": {
-                    "default": false,
-                    "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
-                    "type": "boolean"
-                  },
-                  "note": {
-                    "description": "Es. \"14 £ online, 16 £ in loco\".",
-                    "type": "string",
-                    "maxLength": 200
-                  }
-                },
-                "required": [
-                  "amount",
-                  "currency"
-                ]
-              },
-              "priceLevel": {
-                "description": "Fascia di prezzo da 1 (economico) a 4 (caro), utile per ristoranti.",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 4
-              },
-              "meals": {
-                "description": "Per ristoranti e caffè: pasti consigliati.",
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "enum": [
-                    "breakfast",
-                    "lunch",
-                    "dinner",
-                    "snack"
-                  ]
-                }
-              },
-              "description": {
-                "type": "string",
-                "maxLength": 1000
-              },
-              "tips": {
-                "default": [],
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "maxLength": 300
-                }
-              },
-              "verification": {
-                "type": "object",
-                "properties": {
-                  "status": {
-                    "type": "string",
-                    "enum": [
-                      "verified",
-                      "unverified"
-                    ],
-                    "description": "\"verified\" solo se l'informazione è stata letta su una fonte ufficiale citata."
-                  },
-                  "checkedAt": {
-                    "description": "Giorno in cui la fonte è stata controllata.",
-                    "type": "string",
-                    "format": "date",
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                  },
-                  "sources": {
-                    "default": [],
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "title": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 120
-                        },
-                        "url": {
-                          "type": "string",
-                          "format": "uri"
-                        }
-                      },
-                      "required": [
-                        "title",
-                        "url"
-                      ],
-                      "description": "Link esterno utile: sito ufficiale, biglietti, guida."
-                    }
-                  }
-                },
-                "required": [
-                  "status"
-                ],
-                "description": "Affidabilità di orari e prezzi."
-              },
-              "links": {
-                "default": [],
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "title": {
-                      "type": "string",
-                      "minLength": 1,
-                      "maxLength": 120
-                    },
-                    "url": {
-                      "type": "string",
-                      "format": "uri"
-                    }
-                  },
-                  "required": [
-                    "title",
-                    "url"
-                  ],
-                  "description": "Link esterno utile: sito ufficiale, biglietti, guida."
-                }
-              }
-            },
-            "required": [
-              "id",
-              "name",
-              "kind"
+          "type": {
+            "type": "string",
+            "enum": [
+              "flight",
+              "lodging",
+              "car_rental",
+              "parking",
+              "train",
+              "bus",
+              "ferry",
+              "tour",
+              "ticket",
+              "insurance",
+              "other"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "description": "Es. \"Volo Ryanair FR5590 Ciampino → Edimburgo\"."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "booked",
+              "to_book",
+              "optional"
             ],
-            "description": "Luogo citato dal programma: attrazione, ristorante, alloggio, aeroporto…"
-          }
-        },
-        "bookings": {
-          "default": [],
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
-                "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
-              },
-              "type": {
-                "type": "string",
-                "enum": [
-                  "flight",
-                  "lodging",
-                  "car_rental",
-                  "parking",
-                  "train",
-                  "bus",
-                  "ferry",
-                  "tour",
-                  "ticket",
-                  "insurance",
-                  "other"
-                ]
-              },
-              "title": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 160,
-                "description": "Es. \"Volo Ryanair FR5590 Ciampino → Edimburgo\"."
-              },
-              "status": {
-                "type": "string",
-                "enum": [
-                  "booked",
-                  "to_book",
-                  "optional"
-                ],
-                "description": "\"booked\" se già prenotato, \"to_book\" se va prenotato, \"optional\" se facoltativo."
-              },
-              "provider": {
-                "type": "string",
-                "maxLength": 120
-              },
-              "confirmationCode": {
-                "type": "string",
-                "maxLength": 80
-              },
-              "start": {
-                "type": "object",
-                "properties": {
-                  "date": {
-                    "type": "string",
-                    "format": "date",
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
-                    "description": "Data ISO 8601, es. \"2026-10-12\"."
-                  },
-                  "time": {
-                    "type": "string",
-                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
-                    "description": "Orario locale HH:MM a 24 ore, es. \"08:15\"."
-                  }
-                },
-                "required": [
-                  "date"
-                ],
-                "description": "Inizio: partenza, check-in, ritiro."
-              },
-              "end": {
-                "description": "Fine: arrivo, check-out, riconsegna.",
-                "type": "object",
-                "properties": {
-                  "date": {
-                    "type": "string",
-                    "format": "date",
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
-                    "description": "Data ISO 8601, es. \"2026-10-12\"."
-                  },
-                  "time": {
-                    "type": "string",
-                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
-                    "description": "Orario locale HH:MM a 24 ore, es. \"08:15\"."
-                  }
-                },
-                "required": [
-                  "date"
-                ]
-              },
-              "placeId": {
-                "description": "Luogo principale (alloggio, parcheggio, punto di ritiro).",
-                "type": "string",
-                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
-              },
-              "flight": {
-                "type": "object",
-                "properties": {
-                  "number": {
-                    "type": "string",
-                    "maxLength": 12
-                  },
-                  "from": {
-                    "type": "string",
-                    "maxLength": 80,
-                    "description": "Aeroporto di partenza, preferibilmente con codice IATA."
-                  },
-                  "to": {
-                    "type": "string",
-                    "maxLength": 80
-                  }
-                },
-                "required": [
-                  "number",
-                  "from",
-                  "to"
-                ]
-              },
-              "cost": {
-                "type": "object",
-                "properties": {
-                  "amount": {
-                    "type": "number",
-                    "minimum": 0,
-                    "description": "Importo in unità maggiori, es. 23.5."
-                  },
-                  "currency": {
-                    "type": "string",
-                    "enum": [
-                      "EUR",
-                      "USD",
-                      "GBP",
-                      "CHF",
-                      "JPY",
-                      "CAD",
-                      "AUD",
-                      "NZD",
-                      "SEK",
-                      "NOK",
-                      "DKK",
-                      "PLN",
-                      "CZK",
-                      "HUF",
-                      "RON",
-                      "BGN",
-                      "ISK",
-                      "TRY",
-                      "MXN",
-                      "BRL",
-                      "CNY",
-                      "HKD",
-                      "SGD",
-                      "THB",
-                      "INR",
-                      "ILS",
-                      "ZAR",
-                      "KRW",
-                      "AED",
-                      "MAD",
-                      "EGP"
-                    ],
-                    "description": "Codice valuta ISO 4217."
-                  },
-                  "basis": {
-                    "default": "total",
-                    "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
-                    "type": "string",
-                    "enum": [
-                      "total",
-                      "per_person",
-                      "per_night",
-                      "per_vehicle",
-                      "per_day"
-                    ]
-                  },
-                  "approximate": {
-                    "default": false,
-                    "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
-                    "type": "boolean"
-                  },
-                  "note": {
-                    "description": "Es. \"14 £ online, 16 £ in loco\".",
-                    "type": "string",
-                    "maxLength": 200
-                  }
-                },
-                "required": [
-                  "amount",
-                  "currency"
-                ],
-                "description": "Importo con valuta."
-              },
-              "paid": {
-                "description": "true se è già pagato, false se si paga sul posto.",
-                "type": "boolean"
-              },
-              "notes": {
-                "type": "string",
-                "maxLength": 600
-              },
-              "links": {
-                "default": [],
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "title": {
-                      "type": "string",
-                      "minLength": 1,
-                      "maxLength": 120
-                    },
-                    "url": {
-                      "type": "string",
-                      "format": "uri"
-                    }
-                  },
-                  "required": [
-                    "title",
-                    "url"
-                  ],
-                  "description": "Link esterno utile: sito ufficiale, biglietti, guida."
-                }
-              }
-            },
-            "required": [
-              "id",
-              "type",
-              "title",
-              "status",
-              "start"
-            ],
-            "description": "Prenotazione: volo, alloggio, noleggio, parcheggio, biglietto…"
-          }
-        },
-        "days": {
-          "minItems": 1,
-          "type": "array",
-          "items": {
+            "description": "\"booked\" se già prenotato, \"to_book\" se va prenotato, \"optional\" se facoltativo."
+          },
+          "provider": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "confirmationCode": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "start": {
             "type": "object",
             "properties": {
               "date": {
@@ -641,341 +451,320 @@
                 "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
                 "description": "Data ISO 8601, es. \"2026-10-12\"."
               },
-              "title": {
+              "time": {
                 "type": "string",
-                "minLength": 1,
-                "maxLength": 160
+                "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                "description": "Orario locale HH:MM a 24 ore, es. \"08:15\"."
+              }
+            },
+            "required": [
+              "date"
+            ],
+            "description": "Inizio: partenza, check-in, ritiro."
+          },
+          "end": {
+            "description": "Fine: arrivo, check-out, riconsegna.",
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                "description": "Data ISO 8601, es. \"2026-10-12\"."
               },
-              "route": {
-                "default": [],
-                "description": "Tappe principali nell'ordine, es. [\"Fort William\", \"Glenfinnan\", \"Loch Ness\"].",
-                "type": "array",
-                "items": {
+              "time": {
+                "type": "string",
+                "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                "description": "Orario locale HH:MM a 24 ore, es. \"08:15\"."
+              }
+            },
+            "required": [
+              "date"
+            ]
+          },
+          "placeId": {
+            "description": "Luogo principale (alloggio, parcheggio, punto di ritiro).",
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+          },
+          "flight": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "string",
+                "maxLength": 12
+              },
+              "from": {
+                "type": "string",
+                "maxLength": 80,
+                "description": "Aeroporto di partenza, preferibilmente con codice IATA."
+              },
+              "to": {
+                "type": "string",
+                "maxLength": 80
+              }
+            },
+            "required": [
+              "number",
+              "from",
+              "to"
+            ]
+          },
+          "cost": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Importo in unità maggiori, es. 23.5."
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "EUR",
+                  "USD",
+                  "GBP",
+                  "CHF",
+                  "JPY",
+                  "CAD",
+                  "AUD",
+                  "NZD",
+                  "SEK",
+                  "NOK",
+                  "DKK",
+                  "PLN",
+                  "CZK",
+                  "HUF",
+                  "RON",
+                  "BGN",
+                  "ISK",
+                  "TRY",
+                  "MXN",
+                  "BRL",
+                  "CNY",
+                  "HKD",
+                  "SGD",
+                  "THB",
+                  "INR",
+                  "ILS",
+                  "ZAR",
+                  "KRW",
+                  "AED",
+                  "MAD",
+                  "EGP"
+                ],
+                "description": "Codice valuta ISO 4217."
+              },
+              "basis": {
+                "default": "total",
+                "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
+                "type": "string",
+                "enum": [
+                  "total",
+                  "per_person",
+                  "per_night",
+                  "per_vehicle",
+                  "per_day"
+                ]
+              },
+              "approximate": {
+                "default": false,
+                "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
+                "type": "boolean"
+              },
+              "note": {
+                "description": "Es. \"14 £ online, 16 £ in loco\".",
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "amount",
+              "currency"
+            ],
+            "description": "Importo con valuta."
+          },
+          "paid": {
+            "description": "true se è già pagato, false se si paga sul posto.",
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 600
+          },
+          "links": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
                   "type": "string",
-                  "maxLength": 80
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri"
                 }
               },
-              "stayBookingId": {
-                "description": "Prenotazione dell'alloggio per la notte.",
-                "type": "string",
-                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
-              },
-              "summary": {
-                "type": "string",
-                "maxLength": 600
-              },
-              "activities": {
-                "default": [],
-                "description": "In ordine cronologico.",
-                "type": "array",
-                "items": {
+              "required": [
+                "title",
+                "url"
+              ],
+              "description": "Link esterno utile: sito ufficiale, biglietti, guida."
+            }
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "title",
+          "status",
+          "start"
+        ],
+        "description": "Prenotazione: volo, alloggio, noleggio, parcheggio, biglietto…"
+      }
+    },
+    "days": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+            "description": "Data ISO 8601, es. \"2026-10-12\"."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "route": {
+            "default": [],
+            "description": "Tappe principali nell'ordine, es. [\"Fort William\", \"Glenfinnan\", \"Loch Ness\"].",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 80
+            }
+          },
+          "stayBookingId": {
+            "description": "Prenotazione dell'alloggio per la notte.",
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 600
+          },
+          "activities": {
+            "default": [],
+            "description": "In ordine cronologico.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                  "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
+                },
+                "time": {
+                  "description": "Orario di inizio. Omettere solo se davvero libero.",
+                  "type": "string",
+                  "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                },
+                "endTime": {
+                  "type": "string",
+                  "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                  "description": "Orario locale HH:MM a 24 ore, es. \"08:15\"."
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "travel",
+                    "flight",
+                    "visit",
+                    "meal",
+                    "checkin",
+                    "checkout",
+                    "pickup",
+                    "dropoff",
+                    "activity",
+                    "shopping",
+                    "free_time",
+                    "other"
+                  ]
+                },
+                "emoji": {
+                  "description": "Una sola emoji rappresentativa.",
+                  "type": "string",
+                  "maxLength": 16
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 1500
+                },
+                "placeIds": {
+                  "default": [],
+                  "description": "Luoghi coinvolti, riferiti a places[].id.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                    "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
+                  }
+                },
+                "bookingId": {
+                  "description": "Prenotazione collegata, riferita a bookings[].id.",
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                },
+                "transport": {
                   "type": "object",
                   "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
-                      "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
-                    },
-                    "time": {
-                      "description": "Orario di inizio. Omettere solo se davvero libero.",
-                      "type": "string",
-                      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
-                    },
-                    "endTime": {
-                      "type": "string",
-                      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
-                      "description": "Orario locale HH:MM a 24 ore, es. \"08:15\"."
-                    },
-                    "type": {
+                    "mode": {
                       "type": "string",
                       "enum": [
-                        "travel",
+                        "car",
+                        "walk",
+                        "bike",
+                        "taxi",
+                        "rideshare",
+                        "bus",
+                        "tram",
+                        "metro",
+                        "train",
+                        "ferry",
                         "flight",
-                        "visit",
-                        "meal",
-                        "checkin",
-                        "checkout",
-                        "pickup",
-                        "dropoff",
-                        "activity",
-                        "shopping",
-                        "free_time",
+                        "shuttle",
                         "other"
                       ]
                     },
-                    "emoji": {
-                      "description": "Una sola emoji rappresentativa.",
+                    "durationMinutes": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "distanceKm": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "route": {
+                      "description": "Strade o linee, es. \"A82\" o \"Tram linea 1\".",
                       "type": "string",
-                      "maxLength": 16
-                    },
-                    "title": {
-                      "type": "string",
-                      "minLength": 1,
-                      "maxLength": 160
-                    },
-                    "description": {
-                      "type": "string",
-                      "maxLength": 1500
-                    },
-                    "placeIds": {
-                      "default": [],
-                      "description": "Luoghi coinvolti, riferiti a places[].id.",
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
-                        "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
-                      }
-                    },
-                    "bookingId": {
-                      "description": "Prenotazione collegata, riferita a bookings[].id.",
-                      "type": "string",
-                      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
-                    },
-                    "transport": {
-                      "type": "object",
-                      "properties": {
-                        "mode": {
-                          "type": "string",
-                          "enum": [
-                            "car",
-                            "walk",
-                            "bike",
-                            "taxi",
-                            "rideshare",
-                            "bus",
-                            "tram",
-                            "metro",
-                            "train",
-                            "ferry",
-                            "flight",
-                            "shuttle",
-                            "other"
-                          ]
-                        },
-                        "durationMinutes": {
-                          "type": "integer",
-                          "exclusiveMinimum": 0,
-                          "maximum": 9007199254740991
-                        },
-                        "distanceKm": {
-                          "type": "number",
-                          "exclusiveMinimum": 0
-                        },
-                        "route": {
-                          "description": "Strade o linee, es. \"A82\" o \"Tram linea 1\".",
-                          "type": "string",
-                          "maxLength": 120
-                        },
-                        "cost": {
-                          "type": "object",
-                          "properties": {
-                            "amount": {
-                              "type": "number",
-                              "minimum": 0,
-                              "description": "Importo in unità maggiori, es. 23.5."
-                            },
-                            "currency": {
-                              "type": "string",
-                              "enum": [
-                                "EUR",
-                                "USD",
-                                "GBP",
-                                "CHF",
-                                "JPY",
-                                "CAD",
-                                "AUD",
-                                "NZD",
-                                "SEK",
-                                "NOK",
-                                "DKK",
-                                "PLN",
-                                "CZK",
-                                "HUF",
-                                "RON",
-                                "BGN",
-                                "ISK",
-                                "TRY",
-                                "MXN",
-                                "BRL",
-                                "CNY",
-                                "HKD",
-                                "SGD",
-                                "THB",
-                                "INR",
-                                "ILS",
-                                "ZAR",
-                                "KRW",
-                                "AED",
-                                "MAD",
-                                "EGP"
-                              ],
-                              "description": "Codice valuta ISO 4217."
-                            },
-                            "basis": {
-                              "default": "total",
-                              "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
-                              "type": "string",
-                              "enum": [
-                                "total",
-                                "per_person",
-                                "per_night",
-                                "per_vehicle",
-                                "per_day"
-                              ]
-                            },
-                            "approximate": {
-                              "default": false,
-                              "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
-                              "type": "boolean"
-                            },
-                            "note": {
-                              "description": "Es. \"14 £ online, 16 £ in loco\".",
-                              "type": "string",
-                              "maxLength": 200
-                            }
-                          },
-                          "required": [
-                            "amount",
-                            "currency"
-                          ],
-                          "description": "Importo con valuta."
-                        },
-                        "notes": {
-                          "type": "string",
-                          "maxLength": 300
-                        },
-                        "alternatives": {
-                          "default": [],
-                          "description": "Altri mezzi possibili per lo stesso spostamento, es. Uber al posto del tram.",
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "mode": {
-                                "type": "string",
-                                "enum": [
-                                  "car",
-                                  "walk",
-                                  "bike",
-                                  "taxi",
-                                  "rideshare",
-                                  "bus",
-                                  "tram",
-                                  "metro",
-                                  "train",
-                                  "ferry",
-                                  "flight",
-                                  "shuttle",
-                                  "other"
-                                ]
-                              },
-                              "durationMinutes": {
-                                "type": "integer",
-                                "exclusiveMinimum": 0,
-                                "maximum": 9007199254740991
-                              },
-                              "distanceKm": {
-                                "type": "number",
-                                "exclusiveMinimum": 0
-                              },
-                              "route": {
-                                "description": "Strade o linee, es. \"A82\" o \"Tram linea 1\".",
-                                "type": "string",
-                                "maxLength": 120
-                              },
-                              "cost": {
-                                "type": "object",
-                                "properties": {
-                                  "amount": {
-                                    "type": "number",
-                                    "minimum": 0,
-                                    "description": "Importo in unità maggiori, es. 23.5."
-                                  },
-                                  "currency": {
-                                    "type": "string",
-                                    "enum": [
-                                      "EUR",
-                                      "USD",
-                                      "GBP",
-                                      "CHF",
-                                      "JPY",
-                                      "CAD",
-                                      "AUD",
-                                      "NZD",
-                                      "SEK",
-                                      "NOK",
-                                      "DKK",
-                                      "PLN",
-                                      "CZK",
-                                      "HUF",
-                                      "RON",
-                                      "BGN",
-                                      "ISK",
-                                      "TRY",
-                                      "MXN",
-                                      "BRL",
-                                      "CNY",
-                                      "HKD",
-                                      "SGD",
-                                      "THB",
-                                      "INR",
-                                      "ILS",
-                                      "ZAR",
-                                      "KRW",
-                                      "AED",
-                                      "MAD",
-                                      "EGP"
-                                    ],
-                                    "description": "Codice valuta ISO 4217."
-                                  },
-                                  "basis": {
-                                    "default": "total",
-                                    "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
-                                    "type": "string",
-                                    "enum": [
-                                      "total",
-                                      "per_person",
-                                      "per_night",
-                                      "per_vehicle",
-                                      "per_day"
-                                    ]
-                                  },
-                                  "approximate": {
-                                    "default": false,
-                                    "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
-                                    "type": "boolean"
-                                  },
-                                  "note": {
-                                    "description": "Es. \"14 £ online, 16 £ in loco\".",
-                                    "type": "string",
-                                    "maxLength": 200
-                                  }
-                                },
-                                "required": [
-                                  "amount",
-                                  "currency"
-                                ],
-                                "description": "Importo con valuta."
-                              },
-                              "notes": {
-                                "type": "string",
-                                "maxLength": 300
-                              }
-                            },
-                            "required": [
-                              "mode"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "mode"
-                      ],
-                      "description": "Spostamento associato all'attività."
+                      "maxLength": 120
                     },
                     "cost": {
-                      "description": "Costo previsto dell'attività.",
                       "type": "object",
                       "properties": {
                         "amount": {
@@ -1046,399 +835,53 @@
                       "required": [
                         "amount",
                         "currency"
-                      ]
+                      ],
+                      "description": "Importo con valuta."
                     },
-                    "warnings": {
-                      "default": [],
-                      "description": "Avvisi importanti: chiusure, tramonto, prenotazione obbligatoria.",
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "maxLength": 300
-                      }
+                    "notes": {
+                      "type": "string",
+                      "maxLength": 300
                     },
-                    "tips": {
+                    "alternatives": {
                       "default": [],
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "maxLength": 300
-                      }
-                    },
-                    "links": {
-                      "default": [],
+                      "description": "Altri mezzi possibili per lo stesso spostamento, es. Uber al posto del tram.",
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "title": {
-                            "type": "string",
-                            "minLength": 1,
-                            "maxLength": 120
-                          },
-                          "url": {
-                            "type": "string",
-                            "format": "uri"
-                          }
-                        },
-                        "required": [
-                          "title",
-                          "url"
-                        ],
-                        "description": "Link esterno utile: sito ufficiale, biglietti, guida."
-                      }
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "type",
-                    "title"
-                  ],
-                  "description": "Voce del programma di un giorno."
-                }
-              },
-              "alternatives": {
-                "default": [],
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
-                      "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
-                    },
-                    "title": {
-                      "type": "string",
-                      "minLength": 1,
-                      "maxLength": 160,
-                      "description": "Es. \"Steall Falls al posto di Loch Ness\"."
-                    },
-                    "when": {
-                      "description": "Quando conviene, es. \"se piove forte\".",
-                      "type": "string",
-                      "maxLength": 200
-                    },
-                    "replacesActivityIds": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
-                        "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
-                      },
-                      "description": "Attività del giorno che questa alternativa sostituisce."
-                    },
-                    "activities": {
-                      "minItems": 1,
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
-                            "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
-                          },
-                          "time": {
-                            "description": "Orario di inizio. Omettere solo se davvero libero.",
-                            "type": "string",
-                            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
-                          },
-                          "endTime": {
-                            "type": "string",
-                            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
-                            "description": "Orario locale HH:MM a 24 ore, es. \"08:15\"."
-                          },
-                          "type": {
+                          "mode": {
                             "type": "string",
                             "enum": [
-                              "travel",
+                              "car",
+                              "walk",
+                              "bike",
+                              "taxi",
+                              "rideshare",
+                              "bus",
+                              "tram",
+                              "metro",
+                              "train",
+                              "ferry",
                               "flight",
-                              "visit",
-                              "meal",
-                              "checkin",
-                              "checkout",
-                              "pickup",
-                              "dropoff",
-                              "activity",
-                              "shopping",
-                              "free_time",
+                              "shuttle",
                               "other"
                             ]
                           },
-                          "emoji": {
-                            "description": "Una sola emoji rappresentativa.",
+                          "durationMinutes": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "distanceKm": {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          "route": {
+                            "description": "Strade o linee, es. \"A82\" o \"Tram linea 1\".",
                             "type": "string",
-                            "maxLength": 16
-                          },
-                          "title": {
-                            "type": "string",
-                            "minLength": 1,
-                            "maxLength": 160
-                          },
-                          "description": {
-                            "type": "string",
-                            "maxLength": 1500
-                          },
-                          "placeIds": {
-                            "default": [],
-                            "description": "Luoghi coinvolti, riferiti a places[].id.",
-                            "type": "array",
-                            "items": {
-                              "type": "string",
-                              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
-                              "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
-                            }
-                          },
-                          "bookingId": {
-                            "description": "Prenotazione collegata, riferita a bookings[].id.",
-                            "type": "string",
-                            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
-                          },
-                          "transport": {
-                            "type": "object",
-                            "properties": {
-                              "mode": {
-                                "type": "string",
-                                "enum": [
-                                  "car",
-                                  "walk",
-                                  "bike",
-                                  "taxi",
-                                  "rideshare",
-                                  "bus",
-                                  "tram",
-                                  "metro",
-                                  "train",
-                                  "ferry",
-                                  "flight",
-                                  "shuttle",
-                                  "other"
-                                ]
-                              },
-                              "durationMinutes": {
-                                "type": "integer",
-                                "exclusiveMinimum": 0,
-                                "maximum": 9007199254740991
-                              },
-                              "distanceKm": {
-                                "type": "number",
-                                "exclusiveMinimum": 0
-                              },
-                              "route": {
-                                "description": "Strade o linee, es. \"A82\" o \"Tram linea 1\".",
-                                "type": "string",
-                                "maxLength": 120
-                              },
-                              "cost": {
-                                "type": "object",
-                                "properties": {
-                                  "amount": {
-                                    "type": "number",
-                                    "minimum": 0,
-                                    "description": "Importo in unità maggiori, es. 23.5."
-                                  },
-                                  "currency": {
-                                    "type": "string",
-                                    "enum": [
-                                      "EUR",
-                                      "USD",
-                                      "GBP",
-                                      "CHF",
-                                      "JPY",
-                                      "CAD",
-                                      "AUD",
-                                      "NZD",
-                                      "SEK",
-                                      "NOK",
-                                      "DKK",
-                                      "PLN",
-                                      "CZK",
-                                      "HUF",
-                                      "RON",
-                                      "BGN",
-                                      "ISK",
-                                      "TRY",
-                                      "MXN",
-                                      "BRL",
-                                      "CNY",
-                                      "HKD",
-                                      "SGD",
-                                      "THB",
-                                      "INR",
-                                      "ILS",
-                                      "ZAR",
-                                      "KRW",
-                                      "AED",
-                                      "MAD",
-                                      "EGP"
-                                    ],
-                                    "description": "Codice valuta ISO 4217."
-                                  },
-                                  "basis": {
-                                    "default": "total",
-                                    "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
-                                    "type": "string",
-                                    "enum": [
-                                      "total",
-                                      "per_person",
-                                      "per_night",
-                                      "per_vehicle",
-                                      "per_day"
-                                    ]
-                                  },
-                                  "approximate": {
-                                    "default": false,
-                                    "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
-                                    "type": "boolean"
-                                  },
-                                  "note": {
-                                    "description": "Es. \"14 £ online, 16 £ in loco\".",
-                                    "type": "string",
-                                    "maxLength": 200
-                                  }
-                                },
-                                "required": [
-                                  "amount",
-                                  "currency"
-                                ],
-                                "description": "Importo con valuta."
-                              },
-                              "notes": {
-                                "type": "string",
-                                "maxLength": 300
-                              },
-                              "alternatives": {
-                                "default": [],
-                                "description": "Altri mezzi possibili per lo stesso spostamento, es. Uber al posto del tram.",
-                                "type": "array",
-                                "items": {
-                                  "type": "object",
-                                  "properties": {
-                                    "mode": {
-                                      "type": "string",
-                                      "enum": [
-                                        "car",
-                                        "walk",
-                                        "bike",
-                                        "taxi",
-                                        "rideshare",
-                                        "bus",
-                                        "tram",
-                                        "metro",
-                                        "train",
-                                        "ferry",
-                                        "flight",
-                                        "shuttle",
-                                        "other"
-                                      ]
-                                    },
-                                    "durationMinutes": {
-                                      "type": "integer",
-                                      "exclusiveMinimum": 0,
-                                      "maximum": 9007199254740991
-                                    },
-                                    "distanceKm": {
-                                      "type": "number",
-                                      "exclusiveMinimum": 0
-                                    },
-                                    "route": {
-                                      "description": "Strade o linee, es. \"A82\" o \"Tram linea 1\".",
-                                      "type": "string",
-                                      "maxLength": 120
-                                    },
-                                    "cost": {
-                                      "type": "object",
-                                      "properties": {
-                                        "amount": {
-                                          "type": "number",
-                                          "minimum": 0,
-                                          "description": "Importo in unità maggiori, es. 23.5."
-                                        },
-                                        "currency": {
-                                          "type": "string",
-                                          "enum": [
-                                            "EUR",
-                                            "USD",
-                                            "GBP",
-                                            "CHF",
-                                            "JPY",
-                                            "CAD",
-                                            "AUD",
-                                            "NZD",
-                                            "SEK",
-                                            "NOK",
-                                            "DKK",
-                                            "PLN",
-                                            "CZK",
-                                            "HUF",
-                                            "RON",
-                                            "BGN",
-                                            "ISK",
-                                            "TRY",
-                                            "MXN",
-                                            "BRL",
-                                            "CNY",
-                                            "HKD",
-                                            "SGD",
-                                            "THB",
-                                            "INR",
-                                            "ILS",
-                                            "ZAR",
-                                            "KRW",
-                                            "AED",
-                                            "MAD",
-                                            "EGP"
-                                          ],
-                                          "description": "Codice valuta ISO 4217."
-                                        },
-                                        "basis": {
-                                          "default": "total",
-                                          "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
-                                          "type": "string",
-                                          "enum": [
-                                            "total",
-                                            "per_person",
-                                            "per_night",
-                                            "per_vehicle",
-                                            "per_day"
-                                          ]
-                                        },
-                                        "approximate": {
-                                          "default": false,
-                                          "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
-                                          "type": "boolean"
-                                        },
-                                        "note": {
-                                          "description": "Es. \"14 £ online, 16 £ in loco\".",
-                                          "type": "string",
-                                          "maxLength": 200
-                                        }
-                                      },
-                                      "required": [
-                                        "amount",
-                                        "currency"
-                                      ],
-                                      "description": "Importo con valuta."
-                                    },
-                                    "notes": {
-                                      "type": "string",
-                                      "maxLength": 300
-                                    }
-                                  },
-                                  "required": [
-                                    "mode"
-                                  ]
-                                }
-                              }
-                            },
-                            "required": [
-                              "mode"
-                            ],
-                            "description": "Spostamento associato all'attività."
+                            "maxLength": 120
                           },
                           "cost": {
-                            "description": "Costo previsto dell'attività.",
                             "type": "object",
                             "properties": {
                               "amount": {
@@ -1509,370 +952,922 @@
                             "required": [
                               "amount",
                               "currency"
+                            ],
+                            "description": "Importo con valuta."
+                          },
+                          "notes": {
+                            "type": "string",
+                            "maxLength": 300
+                          }
+                        },
+                        "required": [
+                          "mode"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "mode"
+                  ],
+                  "description": "Spostamento associato all'attività."
+                },
+                "cost": {
+                  "description": "Costo previsto dell'attività.",
+                  "type": "object",
+                  "properties": {
+                    "amount": {
+                      "type": "number",
+                      "minimum": 0,
+                      "description": "Importo in unità maggiori, es. 23.5."
+                    },
+                    "currency": {
+                      "type": "string",
+                      "enum": [
+                        "EUR",
+                        "USD",
+                        "GBP",
+                        "CHF",
+                        "JPY",
+                        "CAD",
+                        "AUD",
+                        "NZD",
+                        "SEK",
+                        "NOK",
+                        "DKK",
+                        "PLN",
+                        "CZK",
+                        "HUF",
+                        "RON",
+                        "BGN",
+                        "ISK",
+                        "TRY",
+                        "MXN",
+                        "BRL",
+                        "CNY",
+                        "HKD",
+                        "SGD",
+                        "THB",
+                        "INR",
+                        "ILS",
+                        "ZAR",
+                        "KRW",
+                        "AED",
+                        "MAD",
+                        "EGP"
+                      ],
+                      "description": "Codice valuta ISO 4217."
+                    },
+                    "basis": {
+                      "default": "total",
+                      "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
+                      "type": "string",
+                      "enum": [
+                        "total",
+                        "per_person",
+                        "per_night",
+                        "per_vehicle",
+                        "per_day"
+                      ]
+                    },
+                    "approximate": {
+                      "default": false,
+                      "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
+                      "type": "boolean"
+                    },
+                    "note": {
+                      "description": "Es. \"14 £ online, 16 £ in loco\".",
+                      "type": "string",
+                      "maxLength": 200
+                    }
+                  },
+                  "required": [
+                    "amount",
+                    "currency"
+                  ]
+                },
+                "warnings": {
+                  "default": [],
+                  "description": "Avvisi importanti: chiusure, tramonto, prenotazione obbligatoria.",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                },
+                "tips": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                },
+                "links": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      "url": {
+                        "type": "string",
+                        "format": "uri"
+                      }
+                    },
+                    "required": [
+                      "title",
+                      "url"
+                    ],
+                    "description": "Link esterno utile: sito ufficiale, biglietti, guida."
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "title"
+              ],
+              "description": "Voce del programma di un giorno."
+            }
+          },
+          "alternatives": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                  "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160,
+                  "description": "Es. \"Steall Falls al posto di Loch Ness\"."
+                },
+                "when": {
+                  "description": "Quando conviene, es. \"se piove forte\".",
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "replacesActivityIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                    "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
+                  },
+                  "description": "Attività del giorno che questa alternativa sostituisce."
+                },
+                "activities": {
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                        "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
+                      },
+                      "time": {
+                        "description": "Orario di inizio. Omettere solo se davvero libero.",
+                        "type": "string",
+                        "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                      },
+                      "endTime": {
+                        "type": "string",
+                        "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                        "description": "Orario locale HH:MM a 24 ore, es. \"08:15\"."
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "travel",
+                          "flight",
+                          "visit",
+                          "meal",
+                          "checkin",
+                          "checkout",
+                          "pickup",
+                          "dropoff",
+                          "activity",
+                          "shopping",
+                          "free_time",
+                          "other"
+                        ]
+                      },
+                      "emoji": {
+                        "description": "Una sola emoji rappresentativa.",
+                        "type": "string",
+                        "maxLength": 16
+                      },
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 160
+                      },
+                      "description": {
+                        "type": "string",
+                        "maxLength": 1500
+                      },
+                      "placeIds": {
+                        "default": [],
+                        "description": "Luoghi coinvolti, riferiti a places[].id.",
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                          "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
+                        }
+                      },
+                      "bookingId": {
+                        "description": "Prenotazione collegata, riferita a bookings[].id.",
+                        "type": "string",
+                        "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                      },
+                      "transport": {
+                        "type": "object",
+                        "properties": {
+                          "mode": {
+                            "type": "string",
+                            "enum": [
+                              "car",
+                              "walk",
+                              "bike",
+                              "taxi",
+                              "rideshare",
+                              "bus",
+                              "tram",
+                              "metro",
+                              "train",
+                              "ferry",
+                              "flight",
+                              "shuttle",
+                              "other"
                             ]
                           },
-                          "warnings": {
-                            "default": [],
-                            "description": "Avvisi importanti: chiusure, tramonto, prenotazione obbligatoria.",
-                            "type": "array",
-                            "items": {
-                              "type": "string",
-                              "maxLength": 300
-                            }
+                          "durationMinutes": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
                           },
-                          "tips": {
-                            "default": [],
-                            "type": "array",
-                            "items": {
-                              "type": "string",
-                              "maxLength": 300
-                            }
+                          "distanceKm": {
+                            "type": "number",
+                            "exclusiveMinimum": 0
                           },
-                          "links": {
+                          "route": {
+                            "description": "Strade o linee, es. \"A82\" o \"Tram linea 1\".",
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          "cost": {
+                            "type": "object",
+                            "properties": {
+                              "amount": {
+                                "type": "number",
+                                "minimum": 0,
+                                "description": "Importo in unità maggiori, es. 23.5."
+                              },
+                              "currency": {
+                                "type": "string",
+                                "enum": [
+                                  "EUR",
+                                  "USD",
+                                  "GBP",
+                                  "CHF",
+                                  "JPY",
+                                  "CAD",
+                                  "AUD",
+                                  "NZD",
+                                  "SEK",
+                                  "NOK",
+                                  "DKK",
+                                  "PLN",
+                                  "CZK",
+                                  "HUF",
+                                  "RON",
+                                  "BGN",
+                                  "ISK",
+                                  "TRY",
+                                  "MXN",
+                                  "BRL",
+                                  "CNY",
+                                  "HKD",
+                                  "SGD",
+                                  "THB",
+                                  "INR",
+                                  "ILS",
+                                  "ZAR",
+                                  "KRW",
+                                  "AED",
+                                  "MAD",
+                                  "EGP"
+                                ],
+                                "description": "Codice valuta ISO 4217."
+                              },
+                              "basis": {
+                                "default": "total",
+                                "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
+                                "type": "string",
+                                "enum": [
+                                  "total",
+                                  "per_person",
+                                  "per_night",
+                                  "per_vehicle",
+                                  "per_day"
+                                ]
+                              },
+                              "approximate": {
+                                "default": false,
+                                "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
+                                "type": "boolean"
+                              },
+                              "note": {
+                                "description": "Es. \"14 £ online, 16 £ in loco\".",
+                                "type": "string",
+                                "maxLength": 200
+                              }
+                            },
+                            "required": [
+                              "amount",
+                              "currency"
+                            ],
+                            "description": "Importo con valuta."
+                          },
+                          "notes": {
+                            "type": "string",
+                            "maxLength": 300
+                          },
+                          "alternatives": {
                             "default": [],
+                            "description": "Altri mezzi possibili per lo stesso spostamento, es. Uber al posto del tram.",
                             "type": "array",
                             "items": {
                               "type": "object",
                               "properties": {
-                                "title": {
+                                "mode": {
                                   "type": "string",
-                                  "minLength": 1,
+                                  "enum": [
+                                    "car",
+                                    "walk",
+                                    "bike",
+                                    "taxi",
+                                    "rideshare",
+                                    "bus",
+                                    "tram",
+                                    "metro",
+                                    "train",
+                                    "ferry",
+                                    "flight",
+                                    "shuttle",
+                                    "other"
+                                  ]
+                                },
+                                "durationMinutes": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "distanceKm": {
+                                  "type": "number",
+                                  "exclusiveMinimum": 0
+                                },
+                                "route": {
+                                  "description": "Strade o linee, es. \"A82\" o \"Tram linea 1\".",
+                                  "type": "string",
                                   "maxLength": 120
                                 },
-                                "url": {
+                                "cost": {
+                                  "type": "object",
+                                  "properties": {
+                                    "amount": {
+                                      "type": "number",
+                                      "minimum": 0,
+                                      "description": "Importo in unità maggiori, es. 23.5."
+                                    },
+                                    "currency": {
+                                      "type": "string",
+                                      "enum": [
+                                        "EUR",
+                                        "USD",
+                                        "GBP",
+                                        "CHF",
+                                        "JPY",
+                                        "CAD",
+                                        "AUD",
+                                        "NZD",
+                                        "SEK",
+                                        "NOK",
+                                        "DKK",
+                                        "PLN",
+                                        "CZK",
+                                        "HUF",
+                                        "RON",
+                                        "BGN",
+                                        "ISK",
+                                        "TRY",
+                                        "MXN",
+                                        "BRL",
+                                        "CNY",
+                                        "HKD",
+                                        "SGD",
+                                        "THB",
+                                        "INR",
+                                        "ILS",
+                                        "ZAR",
+                                        "KRW",
+                                        "AED",
+                                        "MAD",
+                                        "EGP"
+                                      ],
+                                      "description": "Codice valuta ISO 4217."
+                                    },
+                                    "basis": {
+                                      "default": "total",
+                                      "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
+                                      "type": "string",
+                                      "enum": [
+                                        "total",
+                                        "per_person",
+                                        "per_night",
+                                        "per_vehicle",
+                                        "per_day"
+                                      ]
+                                    },
+                                    "approximate": {
+                                      "default": false,
+                                      "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
+                                      "type": "boolean"
+                                    },
+                                    "note": {
+                                      "description": "Es. \"14 £ online, 16 £ in loco\".",
+                                      "type": "string",
+                                      "maxLength": 200
+                                    }
+                                  },
+                                  "required": [
+                                    "amount",
+                                    "currency"
+                                  ],
+                                  "description": "Importo con valuta."
+                                },
+                                "notes": {
                                   "type": "string",
-                                  "format": "uri"
+                                  "maxLength": 300
                                 }
                               },
                               "required": [
-                                "title",
-                                "url"
-                              ],
-                              "description": "Link esterno utile: sito ufficiale, biglietti, guida."
+                                "mode"
+                              ]
                             }
                           }
                         },
                         "required": [
-                          "id",
-                          "type",
-                          "title"
+                          "mode"
                         ],
-                        "description": "Voce del programma di un giorno."
+                        "description": "Spostamento associato all'attività."
+                      },
+                      "cost": {
+                        "description": "Costo previsto dell'attività.",
+                        "type": "object",
+                        "properties": {
+                          "amount": {
+                            "type": "number",
+                            "minimum": 0,
+                            "description": "Importo in unità maggiori, es. 23.5."
+                          },
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "EUR",
+                              "USD",
+                              "GBP",
+                              "CHF",
+                              "JPY",
+                              "CAD",
+                              "AUD",
+                              "NZD",
+                              "SEK",
+                              "NOK",
+                              "DKK",
+                              "PLN",
+                              "CZK",
+                              "HUF",
+                              "RON",
+                              "BGN",
+                              "ISK",
+                              "TRY",
+                              "MXN",
+                              "BRL",
+                              "CNY",
+                              "HKD",
+                              "SGD",
+                              "THB",
+                              "INR",
+                              "ILS",
+                              "ZAR",
+                              "KRW",
+                              "AED",
+                              "MAD",
+                              "EGP"
+                            ],
+                            "description": "Codice valuta ISO 4217."
+                          },
+                          "basis": {
+                            "default": "total",
+                            "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
+                            "type": "string",
+                            "enum": [
+                              "total",
+                              "per_person",
+                              "per_night",
+                              "per_vehicle",
+                              "per_day"
+                            ]
+                          },
+                          "approximate": {
+                            "default": false,
+                            "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
+                            "type": "boolean"
+                          },
+                          "note": {
+                            "description": "Es. \"14 £ online, 16 £ in loco\".",
+                            "type": "string",
+                            "maxLength": 200
+                          }
+                        },
+                        "required": [
+                          "amount",
+                          "currency"
+                        ]
+                      },
+                      "warnings": {
+                        "default": [],
+                        "description": "Avvisi importanti: chiusure, tramonto, prenotazione obbligatoria.",
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "maxLength": 300
+                        }
+                      },
+                      "tips": {
+                        "default": [],
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "maxLength": 300
+                        }
+                      },
+                      "links": {
+                        "default": [],
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "title": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 120
+                            },
+                            "url": {
+                              "type": "string",
+                              "format": "uri"
+                            }
+                          },
+                          "required": [
+                            "title",
+                            "url"
+                          ],
+                          "description": "Link esterno utile: sito ufficiale, biglietti, guida."
+                        }
                       }
                     },
-                    "tradeoffs": {
-                      "description": "Cosa si perde e cosa si guadagna.",
-                      "type": "string",
-                      "maxLength": 400
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "title",
-                    "replacesActivityIds",
-                    "activities"
-                  ],
-                  "description": "Piano alternativo per una parte del giorno."
-                }
-              }
-            },
-            "required": [
-              "date",
-              "title"
-            ],
-            "description": "Giorno del viaggio."
-          },
-          "description": "Un elemento per ogni giorno, in ordine di data."
-        },
-        "budget": {
-          "default": [],
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
-                "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
-              },
-              "title": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 160
-              },
-              "category": {
-                "type": "string",
-                "enum": [
-                  "lodging",
-                  "flights",
-                  "transport",
-                  "car",
-                  "fuel",
-                  "parking",
-                  "food",
-                  "groceries",
-                  "drinks",
-                  "coffee",
-                  "tickets",
-                  "activities",
-                  "shopping",
-                  "fees",
-                  "insurance",
-                  "health",
-                  "communication",
-                  "tips",
-                  "other"
-                ]
-              },
-              "emoji": {
-                "type": "string",
-                "maxLength": 16
-              },
-              "status": {
-                "type": "string",
-                "enum": [
-                  "booked",
-                  "pending",
-                  "estimate"
-                ],
-                "description": "\"booked\" prenotato con importo noto, \"pending\" prenotato ma importo da inserire, \"estimate\" stima."
-              },
-              "amount": {
-                "description": "Omettere solo per le voci \"pending\".",
-                "type": "object",
-                "properties": {
-                  "amount": {
-                    "type": "number",
-                    "minimum": 0,
-                    "description": "Importo in unità maggiori, es. 23.5."
-                  },
-                  "currency": {
-                    "type": "string",
-                    "enum": [
-                      "EUR",
-                      "USD",
-                      "GBP",
-                      "CHF",
-                      "JPY",
-                      "CAD",
-                      "AUD",
-                      "NZD",
-                      "SEK",
-                      "NOK",
-                      "DKK",
-                      "PLN",
-                      "CZK",
-                      "HUF",
-                      "RON",
-                      "BGN",
-                      "ISK",
-                      "TRY",
-                      "MXN",
-                      "BRL",
-                      "CNY",
-                      "HKD",
-                      "SGD",
-                      "THB",
-                      "INR",
-                      "ILS",
-                      "ZAR",
-                      "KRW",
-                      "AED",
-                      "MAD",
-                      "EGP"
+                    "required": [
+                      "id",
+                      "type",
+                      "title"
                     ],
-                    "description": "Codice valuta ISO 4217."
-                  },
-                  "basis": {
-                    "default": "total",
-                    "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
-                    "type": "string",
-                    "enum": [
-                      "total",
-                      "per_person",
-                      "per_night",
-                      "per_vehicle",
-                      "per_day"
-                    ]
-                  },
-                  "approximate": {
-                    "default": false,
-                    "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
-                    "type": "boolean"
-                  },
-                  "note": {
-                    "description": "Es. \"14 £ online, 16 £ in loco\".",
-                    "type": "string",
-                    "maxLength": 200
+                    "description": "Voce del programma di un giorno."
                   }
                 },
-                "required": [
-                  "amount",
-                  "currency"
-                ]
+                "tradeoffs": {
+                  "description": "Cosa si perde e cosa si guadagna.",
+                  "type": "string",
+                  "maxLength": 400
+                }
               },
-              "included": {
-                "default": true,
-                "description": "false per le voci facoltative escluse dal totale.",
-                "type": "boolean"
-              },
-              "bookingId": {
-                "type": "string",
-                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
-                "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
-              },
-              "notes": {
-                "type": "string",
-                "maxLength": 400
-              }
-            },
-            "required": [
-              "id",
-              "title",
-              "category",
-              "status"
-            ],
-            "description": "Voce di budget prevista per il viaggio."
-          }
-        },
-        "packing": {
-          "default": [],
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "item": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 160
-              },
-              "group": {
-                "type": "string",
-                "enum": [
-                  "documents",
-                  "clothing",
-                  "electronics",
-                  "health",
-                  "gear",
-                  "food",
-                  "other"
-                ],
-                "description": "\"documents\" include anche prenotazioni e check-in da fare prima di partire."
-              },
-              "perPerson": {
-                "default": false,
-                "description": "true se ogni viaggiatore ne deve avere uno.",
-                "type": "boolean"
-              },
-              "reason": {
-                "type": "string",
-                "maxLength": 300
-              }
-            },
-            "required": [
-              "item",
-              "group"
-            ],
-            "description": "Cosa portare o preparare."
-          }
-        },
-        "tips": {
-          "default": [],
-          "description": "Consigli generali: guida, fuso orario, pagamenti, connessione.",
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "title": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 120
-              },
-              "text": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 600
-              }
-            },
-            "required": [
-              "title",
-              "text"
-            ]
-          }
-        },
-        "exchangeRates": {
-          "description": "Tassi usati per le stime: quante unità della valuta del viaggio vale 1 unità della chiave.",
-          "type": "object",
-          "propertyNames": {
-            "type": "string",
-            "enum": [
-              "EUR",
-              "USD",
-              "GBP",
-              "CHF",
-              "JPY",
-              "CAD",
-              "AUD",
-              "NZD",
-              "SEK",
-              "NOK",
-              "DKK",
-              "PLN",
-              "CZK",
-              "HUF",
-              "RON",
-              "BGN",
-              "ISK",
-              "TRY",
-              "MXN",
-              "BRL",
-              "CNY",
-              "HKD",
-              "SGD",
-              "THB",
-              "INR",
-              "ILS",
-              "ZAR",
-              "KRW",
-              "AED",
-              "MAD",
-              "EGP"
-            ],
-            "description": "Codice valuta ISO 4217."
-          },
-          "additionalProperties": {
-            "type": "number",
-            "exclusiveMinimum": 0
-          }
-        },
-        "disclaimer": {
-          "type": "string",
-          "maxLength": 400
-        },
-        "generatedBy": {
-          "type": "object",
-          "properties": {
-            "model": {
-              "type": "string",
-              "maxLength": 120
-            },
-            "at": {
-              "type": "string",
-              "format": "date-time",
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              "required": [
+                "id",
+                "title",
+                "replacesActivityIds",
+                "activities"
+              ],
+              "description": "Piano alternativo per una parte del giorno."
             }
           }
-        }
+        },
+        "required": [
+          "date",
+          "title"
+        ],
+        "description": "Giorno del viaggio."
       },
-      "required": [
-        "formatVersion",
-        "language",
-        "trip",
-        "days"
-      ],
-      "title": "TripShare Trip Format v1",
-      "description": "Documento standard di un viaggio TripShare: programma, luoghi, prenotazioni, budget e lista."
+      "description": "Un elemento per ogni giorno, in ordine di data."
+    },
+    "budget": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "lodging",
+              "flights",
+              "transport",
+              "car",
+              "fuel",
+              "parking",
+              "food",
+              "groceries",
+              "drinks",
+              "coffee",
+              "tickets",
+              "activities",
+              "shopping",
+              "fees",
+              "insurance",
+              "health",
+              "communication",
+              "tips",
+              "other"
+            ]
+          },
+          "emoji": {
+            "type": "string",
+            "maxLength": 16
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "booked",
+              "pending",
+              "estimate"
+            ],
+            "description": "\"booked\" prenotato con importo noto, \"pending\" prenotato ma importo da inserire, \"estimate\" stima."
+          },
+          "amount": {
+            "description": "Omettere solo per le voci \"pending\".",
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Importo in unità maggiori, es. 23.5."
+              },
+              "currency": {
+                "type": "string",
+                "enum": [
+                  "EUR",
+                  "USD",
+                  "GBP",
+                  "CHF",
+                  "JPY",
+                  "CAD",
+                  "AUD",
+                  "NZD",
+                  "SEK",
+                  "NOK",
+                  "DKK",
+                  "PLN",
+                  "CZK",
+                  "HUF",
+                  "RON",
+                  "BGN",
+                  "ISK",
+                  "TRY",
+                  "MXN",
+                  "BRL",
+                  "CNY",
+                  "HKD",
+                  "SGD",
+                  "THB",
+                  "INR",
+                  "ILS",
+                  "ZAR",
+                  "KRW",
+                  "AED",
+                  "MAD",
+                  "EGP"
+                ],
+                "description": "Codice valuta ISO 4217."
+              },
+              "basis": {
+                "default": "total",
+                "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
+                "type": "string",
+                "enum": [
+                  "total",
+                  "per_person",
+                  "per_night",
+                  "per_vehicle",
+                  "per_day"
+                ]
+              },
+              "approximate": {
+                "default": false,
+                "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
+                "type": "boolean"
+              },
+              "note": {
+                "description": "Es. \"14 £ online, 16 £ in loco\".",
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "amount",
+              "currency"
+            ]
+          },
+          "included": {
+            "default": true,
+            "description": "false per le voci facoltative escluse dal totale.",
+            "type": "boolean"
+          },
+          "bookingId": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "description": "Identificativo locale in kebab-case, unico nel documento, es. \"urquhart-castle\"."
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 400
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "category",
+          "status"
+        ],
+        "description": "Voce di budget prevista per il viaggio."
+      }
+    },
+    "packing": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "group": {
+            "type": "string",
+            "enum": [
+              "documents",
+              "clothing",
+              "electronics",
+              "health",
+              "gear",
+              "food",
+              "other"
+            ],
+            "description": "\"documents\" include anche prenotazioni e check-in da fare prima di partire."
+          },
+          "perPerson": {
+            "default": false,
+            "description": "true se ogni viaggiatore ne deve avere uno.",
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "item",
+          "group"
+        ],
+        "description": "Cosa portare o preparare."
+      }
+    },
+    "tips": {
+      "default": [],
+      "description": "Consigli generali: guida, fuso orario, pagamenti, connessione.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 600
+          }
+        },
+        "required": [
+          "title",
+          "text"
+        ]
+      }
+    },
+    "exchangeRates": {
+      "description": "Tassi usati per le stime: quante unità della valuta del viaggio vale 1 unità della chiave.",
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "enum": [
+          "EUR",
+          "USD",
+          "GBP",
+          "CHF",
+          "JPY",
+          "CAD",
+          "AUD",
+          "NZD",
+          "SEK",
+          "NOK",
+          "DKK",
+          "PLN",
+          "CZK",
+          "HUF",
+          "RON",
+          "BGN",
+          "ISK",
+          "TRY",
+          "MXN",
+          "BRL",
+          "CNY",
+          "HKD",
+          "SGD",
+          "THB",
+          "INR",
+          "ILS",
+          "ZAR",
+          "KRW",
+          "AED",
+          "MAD",
+          "EGP"
+        ],
+        "description": "Codice valuta ISO 4217."
+      },
+      "additionalProperties": {
+        "type": "number",
+        "exclusiveMinimum": 0
+      }
+    },
+    "disclaimer": {
+      "type": "string",
+      "maxLength": 400
+    },
+    "generatedBy": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+        }
+      }
     }
   },
+  "required": [
+    "formatVersion",
+    "language",
+    "trip",
+    "days"
+  ],
+  "title": "TripShare Trip Format v1",
+  "description": "Documento standard di un viaggio TripShare: programma, luoghi, prenotazioni, budget e lista.",
   "$id": "https://tripshare.app/schema/trip.v1.schema.json"
 }
