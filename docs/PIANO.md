@@ -113,7 +113,19 @@ Visualizzazioni:
 - **Statistiche**: grafici per categoria, persona e giorno; costo a testa.
 - **Esportazione** in CSV e PDF del resoconto.
 
-### 2.3 AI (OpenRouter)
+### 2.3 Formato standard del viaggio (TripShare Trip Format v1)
+Ogni viaggio generato dall'AI, importato o esportato usa lo stesso documento
+JSON. È definito con Zod in `packages/shared/src/trip-format/schema.ts` e ha:
+- un **JSON Schema** generato (`packages/shared/schema/trip.v1.schema.json`),
+  che si passa a OpenRouter come `response_format` e si include nel prompt;
+- un **esempio completo**, `packages/shared/examples/scozia.trip.json`;
+- un **validatore** (`parseTripDocument`) che controlla anche i riferimenti
+  tra oggetti, gli id duplicati e le date. Gli errori si rimandano al modello
+  con `buildRepairMessage`, per chiedergli di correggere il documento.
+
+Documentazione del formato: `docs/TRIP_FORMAT.md`.
+
+### 2.4 AI (OpenRouter)
 Tutte le chiamate passano **dal backend**: la chiave non arriva mai al client.
 I modelli si configurano per funzione, con un elenco di riserva (`models[]` di
 OpenRouter) se il primo non risponde.
@@ -151,7 +163,7 @@ OpenRouter) per utente, per viaggio e per funzione. Le chiavi sono salvate
 **cifrate** nel database (AES-256-GCM con una chiave master presa da una
 variabile d'ambiente) e non vengono mai mostrate per intero.
 
-### 2.4 Sito pubblico, account e inviti
+### 2.5 Sito pubblico, account e inviti
 - **Sito pubblico**, semplice, in italiano e in inglese:
   - home con le funzioni principali e alcune schermate;
   - pagine di registrazione e accesso;
@@ -183,7 +195,7 @@ variabile d'ambiente) e non vengono mai mostrate per intero.
   si collega al suo account e conserva tutte le spese.
 - Ruoli nel viaggio: `owner`, `editor`, `viewer`.
 
-### 2.5 Pannello super admin
+### 2.6 Pannello super admin
 Accessibile solo agli utenti con ruolo `superadmin`. Il primo superadmin si
 crea al primo avvio, da variabile d'ambiente o con un comando CLI.
 - **OpenRouter**:
@@ -220,13 +232,13 @@ Le impostazioni si salvano nel database (`AppSetting`). Le variabili
 d'ambiente servono solo come valori iniziali e possono essere modificate dal
 pannello.
 
-### 2.6 Collaborazione
+### 2.7 Collaborazione
 - Aggiornamenti in tempo reale via WebSocket: spese, spunte, modifiche.
 - Commenti e reazioni sulle attività; registro delle attività del viaggio.
 - **Notifiche Web Push**: “Marco ha aggiunto 34 € parcheggio”, “domani si parte
   alle 07:15”.
 
-### 2.7 PWA e offline
+### 2.8 PWA e offline
 - Installabile (manifest, icone, splash), schermo intero, safe area.
 - Service worker (Workbox): l'interfaccia si carica dalla cache. Programma,
   luoghi e lista restano disponibili offline (dati in IndexedDB con Dexie).
@@ -334,12 +346,15 @@ TripMember può essere un segnaposto (userId nullo) collegato all'account in seg
   SMTP_SECURE
   SMTP_USER
   SMTP_PASSWORD
-  SMTP_FROM="TripShare <noreply@dominio>"
+  SMTP_FROM            # facoltativo
 
   OPENROUTER_API_KEY
   ```
 
-  Le variabili `SMTP_*` sono obbligatorie: all'avvio `api` verifica la
+  `SMTP_HOST` è obbligatoria. `SMTP_USER` e `SMTP_PASSWORD` servono solo se il
+  server richiede l'autenticazione. `SMTP_FROM` è facoltativa: se manca, il
+  mittente è `"TripShare" <SMTP_USER>` quando `SMTP_USER` è un indirizzo email,
+  altrimenti `"TripShare" <noreply@DOMAIN>`. All'avvio `api` verifica la
   connessione e scrive nel log l'eventuale errore. `OPENROUTER_API_KEY` è
   facoltativa: serve solo come valore iniziale e si può cambiare dal
   pannello.

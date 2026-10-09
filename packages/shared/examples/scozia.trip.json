@@ -1,0 +1,732 @@
+{
+  "$schema": "https://tripshare.app/schema/trip.v1.schema.json",
+  "formatVersion": 1,
+  "language": "it",
+  "trip": {
+    "title": "Scozia 12-16 ottobre",
+    "emoji": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+    "summary": "Scozia in auto: Edimburgo, il viadotto di Glenfinnan, Loch Ness e Glencoe.",
+    "destination": { "name": "Scozia", "countryCodes": ["GB"] },
+    "startDate": "2026-10-12",
+    "endDate": "2026-10-16",
+    "timezone": "Europe/London",
+    "currency": "EUR",
+    "travelers": 4,
+    "style": ["in auto", "natura", "Harry Potter", "castelli"],
+    "coverQuery": "Glenfinnan viaduct autumn"
+  },
+  "places": [
+    {
+      "id": "best-parking-ciampino",
+      "name": "Best Parking Ciampino",
+      "kind": "parking",
+      "address": "Via Enzo Ferrari 93, Ciampino",
+      "mapsQuery": "Best Parking Ciampino, Via Enzo Ferrari 93, Ciampino",
+      "openingHours": "Tutti i giorni 4:00–24:00. Supplemento di 10 € per uscite dopo le 00:00.",
+      "verification": { "status": "verified", "checkedAt": "2026-10-08", "sources": [] },
+      "links": [
+        {
+          "title": "Pagina del parcheggio",
+          "url": "https://www.bestparking.it/aeroporto/parcheggio-aeroporto-roma-ciampino"
+        }
+      ]
+    },
+    {
+      "id": "edinburgh-airport",
+      "name": "Aeroporto di Edimburgo",
+      "kind": "airport",
+      "mapsQuery": "Edinburgh Airport",
+      "tips": ["Il tram arriva in centro in circa 35 minuti."],
+      "links": [{ "title": "Edinburgh Trams", "url": "https://edinburghtrams.com/" }]
+    },
+    {
+      "id": "the-spires",
+      "name": "The Spires Serviced Apartments",
+      "kind": "lodging",
+      "mapsQuery": "The Spires Serviced Apartments Edinburgh"
+    },
+    {
+      "id": "royal-mile",
+      "name": "Royal Mile",
+      "kind": "neighborhood",
+      "mapsQuery": "Royal Mile, Edinburgh",
+      "openingHours": "Strada pubblica, sempre accessibile.",
+      "description": "Collega il castello a Holyrood."
+    },
+    {
+      "id": "calton-hill",
+      "name": "Calton Hill",
+      "kind": "viewpoint",
+      "mapsQuery": "Calton Hill, Edinburgh",
+      "openingHours": "Collina pubblica, sempre accessibile."
+    },
+    {
+      "id": "greenside-place",
+      "name": "Noleggio auto, Greenside Place",
+      "kind": "car_rental",
+      "address": "Greenside Place, Edinburgh EH1 3AU",
+      "mapsQuery": "Greenside Place, Edinburgh EH1 3AU"
+    },
+    {
+      "id": "real-food-cafe-tyndrum",
+      "name": "The Real Food Café",
+      "kind": "restaurant",
+      "mapsQuery": "The Real Food Cafe, Tyndrum",
+      "priceLevel": 1,
+      "meals": ["lunch"],
+      "verification": { "status": "unverified", "sources": [] }
+    },
+    {
+      "id": "glencoe",
+      "name": "Glencoe e centro visitatori",
+      "kind": "nature",
+      "mapsQuery": "Glencoe Visitor Centre",
+      "openingHours": "Centro visitatori dal 5 al 25 ottobre 9:30–17:00. Caffè 9:30–16:00.",
+      "price": { "amount": 4, "currency": "GBP", "basis": "per_vehicle", "note": "Parcheggio, incluso l'ingresso al centro" },
+      "verification": {
+        "status": "verified",
+        "checkedAt": "2026-10-08",
+        "sources": [
+          {
+            "title": "National Trust for Scotland",
+            "url": "https://www.nts.org.uk/visit/places/glencoe/planning-your-visit"
+          }
+        ]
+      }
+    },
+    {
+      "id": "waterfront-lodge",
+      "name": "Waterfront Lodge",
+      "kind": "lodging",
+      "mapsQuery": "Waterfront Lodge Fort William"
+    },
+    {
+      "id": "glenfinnan-viaduct",
+      "name": "Glenfinnan Viaduct",
+      "kind": "sight",
+      "mapsQuery": "Glenfinnan Viaduct",
+      "openingHours": "Sempre accessibile. Il Jacobite parte da Fort William alle 10:15 e passa sul viadotto poco prima delle 11:00, fino al 23 ottobre.",
+      "price": { "amount": 0, "currency": "GBP" },
+      "verification": {
+        "status": "verified",
+        "checkedAt": "2026-10-08",
+        "sources": [{ "title": "Orari del Jacobite", "url": "https://jacobitetrail.co.uk/jacobite-train" }]
+      }
+    },
+    {
+      "id": "glenfinnan-monument",
+      "name": "Glenfinnan Monument e centro visitatori",
+      "kind": "sight",
+      "mapsQuery": "Glenfinnan Monument",
+      "openingHours": "Dal 5 al 25 ottobre 9:30–17:00. Caffè 9:30–16:30.",
+      "price": { "amount": 5, "currency": "GBP", "basis": "per_vehicle", "note": "Parcheggio" },
+      "verification": {
+        "status": "verified",
+        "checkedAt": "2026-10-08",
+        "sources": [
+          {
+            "title": "National Trust for Scotland",
+            "url": "https://www.nts.org.uk/visit/places/glenfinnan-monument/planning-your-visit"
+          }
+        ]
+      }
+    },
+    {
+      "id": "fort-augustus",
+      "name": "Fort Augustus e le chiuse del Caledonian Canal",
+      "kind": "city",
+      "mapsQuery": "Fort Augustus Locks, Caledonian Canal",
+      "description": "Punta sud di Loch Ness."
+    },
+    {
+      "id": "urquhart-castle",
+      "name": "Urquhart Castle",
+      "kind": "sight",
+      "mapsQuery": "Urquhart Castle, Drumnadrochit",
+      "openingHours": "Tutti i giorni 9:30–17:00, ultimo ingresso alle 16:00.",
+      "price": { "amount": 14, "currency": "GBP", "basis": "per_person", "note": "14 £ online, 16 £ in loco" },
+      "verification": {
+        "status": "verified",
+        "checkedAt": "2026-10-08",
+        "sources": [
+          {
+            "title": "Historic Environment Scotland",
+            "url": "https://www.historicenvironment.scot/visit-a-place/places/urquhart-castle/prices-times/"
+          }
+        ]
+      }
+    },
+    {
+      "id": "steall-falls",
+      "name": "Steall Falls, Glen Nevis",
+      "kind": "nature",
+      "mapsQuery": "Steall Falls, Glen Nevis",
+      "tips": ["Il sentiero ha un tratto roccioso e bagnato: servono scarpe da trekking."],
+      "verification": { "status": "unverified", "sources": [] }
+    },
+    {
+      "id": "viewcraig",
+      "name": "Viewcraig apartment",
+      "kind": "lodging",
+      "mapsQuery": "Viewcraig Gardens, Edinburgh"
+    },
+    {
+      "id": "edinburgh-castle",
+      "name": "Edinburgh Castle",
+      "kind": "sight",
+      "mapsQuery": "Edinburgh Castle",
+      "openingHours": "Dal 1 ottobre 9:30–17:00, ultimo ingresso alle 16:00.",
+      "price": { "amount": 23.5, "currency": "GBP", "basis": "per_person", "note": "23,50 £ online, 26 £ in loco" },
+      "verification": {
+        "status": "verified",
+        "checkedAt": "2026-10-08",
+        "sources": [
+          {
+            "title": "Orari ufficiali",
+            "url": "https://www.edinburghcastle.scot/plan-your-visit/opening-times"
+          }
+        ]
+      }
+    },
+    {
+      "id": "st-giles",
+      "name": "St Giles' Cathedral",
+      "kind": "sight",
+      "mapsQuery": "St Giles' Cathedral, Edinburgh",
+      "openingHours": "Lunedì–venerdì 9:00–19:00. Ingresso gratuito, permesso foto 2 £.",
+      "price": { "amount": 0, "currency": "GBP" },
+      "verification": {
+        "status": "verified",
+        "checkedAt": "2026-10-08",
+        "sources": [{ "title": "Sito ufficiale", "url": "https://www.stgilescathedral.org.uk/visit/" }]
+      }
+    },
+    {
+      "id": "dean-village",
+      "name": "Dean Village",
+      "kind": "neighborhood",
+      "mapsQuery": "Dean Village, Edinburgh"
+    },
+    {
+      "id": "national-museum",
+      "name": "National Museum of Scotland",
+      "kind": "museum",
+      "mapsQuery": "National Museum of Scotland, Chambers Street, Edinburgh",
+      "openingHours": "Tutti i giorni 10:00–17:00.",
+      "price": { "amount": 0, "currency": "GBP" },
+      "verification": {
+        "status": "verified",
+        "checkedAt": "2026-10-08",
+        "sources": [{ "title": "Sito ufficiale", "url": "https://www.nms.ac.uk/national-museum-of-scotland/" }]
+      }
+    }
+  ],
+  "bookings": [
+    {
+      "id": "parking-ciampino",
+      "type": "parking",
+      "title": "Best Parking Ciampino",
+      "status": "booked",
+      "provider": "MyParking",
+      "start": { "date": "2026-10-12", "time": "10:30" },
+      "end": { "date": "2026-10-16", "time": "23:30" },
+      "placeId": "best-parking-ciampino",
+      "cost": { "amount": 34, "currency": "EUR" },
+      "paid": false,
+      "notes": "Da pagare in loco. Mostrare il voucher all'ingresso."
+    },
+    {
+      "id": "flight-out",
+      "type": "flight",
+      "title": "Volo Ryanair FR5590 Ciampino → Edimburgo",
+      "status": "booked",
+      "provider": "Ryanair",
+      "start": { "date": "2026-10-12", "time": "12:50" },
+      "end": { "date": "2026-10-12", "time": "15:00" },
+      "flight": { "number": "FR5590", "from": "CIA Roma Ciampino", "to": "EDI Edimburgo" }
+    },
+    {
+      "id": "stay-spires",
+      "type": "lodging",
+      "title": "The Spires Serviced Apartments",
+      "status": "booked",
+      "start": { "date": "2026-10-12" },
+      "end": { "date": "2026-10-13" },
+      "placeId": "the-spires",
+      "cost": { "amount": 203, "currency": "EUR" }
+    },
+    {
+      "id": "car-rental",
+      "type": "car_rental",
+      "title": "Noleggio auto Edimburgo Waverley",
+      "status": "booked",
+      "start": { "date": "2026-10-13", "time": "12:00" },
+      "end": { "date": "2026-10-15", "time": "12:00" },
+      "placeId": "greenside-place",
+      "notes": "Fare il check-in online per scegliere l'auto."
+    },
+    {
+      "id": "stay-waterfront",
+      "type": "lodging",
+      "title": "Waterfront Lodge",
+      "status": "booked",
+      "start": { "date": "2026-10-13" },
+      "end": { "date": "2026-10-15" },
+      "placeId": "waterfront-lodge",
+      "cost": { "amount": 510, "currency": "EUR" },
+      "notes": "Solo pernottamento."
+    },
+    {
+      "id": "stay-viewcraig",
+      "type": "lodging",
+      "title": "Viewcraig apartment",
+      "status": "booked",
+      "start": { "date": "2026-10-15" },
+      "end": { "date": "2026-10-16" },
+      "placeId": "viewcraig",
+      "cost": { "amount": 260, "currency": "EUR" }
+    },
+    {
+      "id": "flight-back",
+      "type": "flight",
+      "title": "Volo Ryanair FR5589 Edimburgo → Ciampino",
+      "status": "booked",
+      "provider": "Ryanair",
+      "start": { "date": "2026-10-16", "time": "17:45" },
+      "end": { "date": "2026-10-16", "time": "21:45" },
+      "flight": { "number": "FR5589", "from": "EDI Edimburgo", "to": "CIA Roma Ciampino" }
+    },
+    {
+      "id": "ticket-urquhart",
+      "type": "ticket",
+      "title": "Biglietti Urquhart Castle",
+      "status": "to_book",
+      "start": { "date": "2026-10-14", "time": "15:00" },
+      "placeId": "urquhart-castle",
+      "cost": { "amount": 14, "currency": "GBP", "basis": "per_person" }
+    },
+    {
+      "id": "ticket-edinburgh-castle",
+      "type": "ticket",
+      "title": "Biglietti Edinburgh Castle",
+      "status": "optional",
+      "start": { "date": "2026-10-15", "time": "14:00" },
+      "placeId": "edinburgh-castle",
+      "cost": { "amount": 23.5, "currency": "GBP", "basis": "per_person" }
+    }
+  ],
+  "days": [
+    {
+      "date": "2026-10-12",
+      "title": "Volo per Edimburgo",
+      "route": ["Pontecorvo", "Ciampino", "Edimburgo"],
+      "stayBookingId": "stay-spires",
+      "activities": [
+        {
+          "id": "d1-departure",
+          "time": "08:00",
+          "type": "travel",
+          "emoji": "🚗",
+          "title": "Partenza da Pontecorvo verso Ciampino",
+          "description": "Arrivate con margine rispetto all'ingresso al parcheggio.",
+          "transport": {
+            "mode": "car",
+            "durationMinutes": 120,
+            "distanceKm": 130,
+            "route": "A1 e GRA",
+            "cost": { "amount": 25, "currency": "EUR", "approximate": true, "note": "Pedaggi e benzina" }
+          }
+        },
+        {
+          "id": "d1-parking",
+          "time": "10:30",
+          "type": "checkin",
+          "emoji": "🅿️",
+          "title": "Ingresso al parcheggio",
+          "description": "La navetta porta al terminal.",
+          "placeIds": ["best-parking-ciampino"],
+          "bookingId": "parking-ciampino"
+        },
+        {
+          "id": "d1-flight",
+          "time": "12:50",
+          "endTime": "15:00",
+          "type": "flight",
+          "emoji": "✈️",
+          "title": "Volo Ryanair FR5590 Ciampino → Edimburgo",
+          "bookingId": "flight-out",
+          "warnings": ["In Scozia è un'ora indietro rispetto all'Italia."]
+        },
+        {
+          "id": "d1-airport-transfer",
+          "time": "15:45",
+          "type": "travel",
+          "title": "Dall'aeroporto all'appartamento",
+          "placeIds": ["edinburgh-airport", "the-spires"],
+          "transport": {
+            "mode": "tram",
+            "durationMinutes": 35,
+            "cost": { "amount": 8, "currency": "GBP", "basis": "per_person", "approximate": true },
+            "alternatives": [
+              {
+                "mode": "rideshare",
+                "durationMinutes": 30,
+                "cost": { "amount": 30, "currency": "GBP", "approximate": true },
+                "notes": "Uber in 4, porta alla porta."
+              }
+            ]
+          }
+        },
+        {
+          "id": "d1-royal-mile",
+          "time": "17:30",
+          "type": "visit",
+          "emoji": "🏰",
+          "title": "Check-in e passeggiata sulla Royal Mile",
+          "description": "Cena in zona Old Town o Victoria Street.",
+          "placeIds": ["the-spires", "royal-mile"],
+          "warnings": ["Il sole tramonta verso le 18:05."]
+        }
+      ]
+    },
+    {
+      "date": "2026-10-13",
+      "title": "Verso Fort William",
+      "route": ["Edimburgo", "Stirling", "Crianlarich", "Glencoe", "Fort William"],
+      "stayBookingId": "stay-waterfront",
+      "activities": [
+        {
+          "id": "d2-morning",
+          "time": "09:30",
+          "type": "free_time",
+          "title": "Mattina libera in centro",
+          "description": "Calton Hill per il panorama, poi Victoria Street e Grassmarket per colazione e acquisti.",
+          "placeIds": ["calton-hill"]
+        },
+        {
+          "id": "d2-car-pickup",
+          "time": "12:00",
+          "type": "pickup",
+          "emoji": "🚙",
+          "title": "Ritiro auto a Edimburgo Waverley",
+          "placeIds": ["greenside-place"],
+          "bookingId": "car-rental",
+          "warnings": ["Si guida a sinistra."]
+        },
+        {
+          "id": "d2-drive",
+          "time": "12:30",
+          "type": "travel",
+          "title": "Partenza per Fort William",
+          "description": "Pranzo a Tyndrum verso le 14:30.",
+          "placeIds": ["real-food-cafe-tyndrum"],
+          "transport": {
+            "mode": "car",
+            "durationMinutes": 225,
+            "distanceKm": 215,
+            "route": "A84 / A82",
+            "cost": { "amount": 25, "currency": "EUR", "approximate": true, "note": "Carburante" }
+          }
+        },
+        {
+          "id": "d2-glencoe",
+          "time": "16:00",
+          "type": "visit",
+          "emoji": "⛰️",
+          "title": "Sosta a Rannoch Moor e Glencoe",
+          "description": "Le Three Sisters si vedono dai parcheggi panoramici lungo la A82.",
+          "placeIds": ["glencoe"],
+          "warnings": [
+            "Il centro visitatori chiude alle 17:00.",
+            "Il sole tramonta verso le 18:00: se la visita si allunga, si arriva al buio."
+          ]
+        },
+        {
+          "id": "d2-checkin",
+          "time": "17:30",
+          "type": "checkin",
+          "title": "Check-in al Waterfront Lodge e cena",
+          "description": "Cena in centro a Fort William, sulla High Street.",
+          "placeIds": ["waterfront-lodge"],
+          "bookingId": "stay-waterfront"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-14",
+      "title": "Ponte di Harry Potter e Loch Ness",
+      "route": ["Fort William", "Glenfinnan", "Fort Augustus", "Urquhart Castle", "Fort William"],
+      "stayBookingId": "stay-waterfront",
+      "activities": [
+        {
+          "id": "d3-to-glenfinnan",
+          "time": "09:15",
+          "type": "travel",
+          "title": "Verso Glenfinnan",
+          "transport": { "mode": "car", "durationMinutes": 30, "distanceKm": 24, "route": "A830" },
+          "cost": { "amount": 5, "currency": "GBP", "note": "Parcheggio del centro visitatori" }
+        },
+        {
+          "id": "d3-viaduct",
+          "time": "10:00",
+          "type": "visit",
+          "emoji": "🚂",
+          "title": "Glenfinnan Viaduct",
+          "description": "Salite al belvedere con il sentiero e piazzatevi per le 10:30.",
+          "placeIds": ["glenfinnan-viaduct"],
+          "warnings": ["L'orario esatto del passaggio del Jacobite varia di qualche minuto."]
+        },
+        {
+          "id": "d3-monument",
+          "time": "11:30",
+          "type": "visit",
+          "title": "Glenfinnan Monument, Loch Shiel e Station Museum",
+          "placeIds": ["glenfinnan-monument"]
+        },
+        {
+          "id": "d3-to-fort-augustus",
+          "time": "12:15",
+          "type": "travel",
+          "title": "Da Glenfinnan a Fort Augustus",
+          "transport": { "mode": "car", "durationMinutes": 80, "distanceKm": 85, "route": "A830 / A82" }
+        },
+        {
+          "id": "d3-lunch",
+          "time": "13:45",
+          "type": "meal",
+          "emoji": "🍽️",
+          "title": "Pranzo a Fort Augustus",
+          "placeIds": ["fort-augustus"]
+        },
+        {
+          "id": "d3-urquhart",
+          "time": "15:00",
+          "type": "visit",
+          "emoji": "🏰",
+          "title": "Urquhart Castle sul Loch Ness",
+          "placeIds": ["urquhart-castle"],
+          "bookingId": "ticket-urquhart",
+          "cost": { "amount": 14, "currency": "GBP", "basis": "per_person" },
+          "warnings": ["Ultimo ingresso alle 16:00.", "Prenotate online: costa meno e i posti si esauriscono."]
+        },
+        {
+          "id": "d3-back",
+          "time": "16:30",
+          "type": "travel",
+          "title": "Rientro a Fort William",
+          "transport": {
+            "mode": "car",
+            "durationMinutes": 90,
+            "distanceKm": 90,
+            "route": "A82",
+            "cost": { "amount": 30, "currency": "EUR", "approximate": true, "note": "Carburante della giornata" }
+          },
+          "warnings": ["Il sole tramonta verso le 17:55: si guida al crepuscolo."]
+        }
+      ],
+      "alternatives": [
+        {
+          "id": "d3-alt-steall",
+          "title": "Steall Falls al posto di Loch Ness",
+          "when": "Se piove forte o siete stanchi",
+          "replacesActivityIds": ["d3-to-fort-augustus", "d3-lunch", "d3-urquhart", "d3-back"],
+          "tradeoffs": "Non vedete il lago e il castello, ma risparmiate gli ingressi di Urquhart.",
+          "activities": [
+            {
+              "id": "d3-alt-back",
+              "time": "12:15",
+              "type": "travel",
+              "title": "Rientro a Fort William e pranzo in centro",
+              "transport": { "mode": "car", "durationMinutes": 30 }
+            },
+            {
+              "id": "d3-alt-hike",
+              "time": "14:00",
+              "type": "activity",
+              "emoji": "🥾",
+              "title": "Sentiero fino a Steall Falls",
+              "description": "Circa 2 ore tra andata e ritorno, con il Ben Nevis sullo sfondo.",
+              "placeIds": ["steall-falls"],
+              "warnings": ["Servono scarpe da trekking e giacca impermeabile."]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-10-15",
+      "title": "Rientro a Edimburgo",
+      "route": ["Fort William", "Glencoe", "Edimburgo"],
+      "stayBookingId": "stay-viewcraig",
+      "activities": [
+        {
+          "id": "d4-departure",
+          "time": "07:15",
+          "type": "travel",
+          "title": "Partenza da Fort William",
+          "transport": {
+            "mode": "car",
+            "durationMinutes": 225,
+            "distanceKm": 215,
+            "route": "A82 / A84",
+            "cost": { "amount": 25, "currency": "EUR", "approximate": true, "note": "Carburante" }
+          },
+          "warnings": ["L'auto va riconsegnata alle 12:00."]
+        },
+        {
+          "id": "d4-glencoe",
+          "time": "08:15",
+          "type": "visit",
+          "title": "Glencoe all'alba",
+          "placeIds": ["glencoe"]
+        },
+        {
+          "id": "d4-car-return",
+          "time": "11:15",
+          "type": "dropoff",
+          "title": "Rifornimento e riconsegna dell'auto",
+          "placeIds": ["greenside-place"],
+          "bookingId": "car-rental",
+          "warnings": ["Se il rientro slitta, saltate le soste e puntate direttamente a Waverley."]
+        },
+        {
+          "id": "d4-to-viewcraig",
+          "time": "12:30",
+          "type": "travel",
+          "title": "Dal punto di riconsegna al Viewcraig",
+          "placeIds": ["viewcraig"],
+          "transport": {
+            "mode": "rideshare",
+            "durationMinutes": 10,
+            "cost": { "amount": 10, "currency": "GBP", "approximate": true }
+          }
+        },
+        {
+          "id": "d4-castle",
+          "time": "14:00",
+          "type": "visit",
+          "emoji": "🏰",
+          "title": "Edinburgh Castle",
+          "placeIds": ["edinburgh-castle"],
+          "bookingId": "ticket-edinburgh-castle",
+          "warnings": ["Può chiudere con maltempo: controllate il sito la mattina."]
+        },
+        {
+          "id": "d4-st-giles",
+          "time": "16:30",
+          "type": "visit",
+          "title": "St Giles' Cathedral",
+          "placeIds": ["st-giles"]
+        },
+        {
+          "id": "d4-sunset",
+          "time": "17:15",
+          "type": "visit",
+          "emoji": "🌅",
+          "title": "Tramonto da Calton Hill",
+          "placeIds": ["calton-hill"]
+        }
+      ]
+    },
+    {
+      "date": "2026-10-16",
+      "title": "Ultima mattina e rientro",
+      "route": ["Edimburgo", "Ciampino", "Pontecorvo"],
+      "activities": [
+        {
+          "id": "d5-dean-village",
+          "time": "09:30",
+          "type": "visit",
+          "title": "Dean Village e Victoria Street",
+          "placeIds": ["dean-village"]
+        },
+        {
+          "id": "d5-museum",
+          "time": "11:30",
+          "type": "visit",
+          "emoji": "🏛️",
+          "title": "National Museum of Scotland",
+          "placeIds": ["national-museum"]
+        },
+        {
+          "id": "d5-to-airport",
+          "time": "15:00",
+          "type": "travel",
+          "title": "Dal centro all'aeroporto",
+          "placeIds": ["edinburgh-airport"],
+          "transport": {
+            "mode": "tram",
+            "durationMinutes": 35,
+            "cost": { "amount": 8, "currency": "GBP", "basis": "per_person", "approximate": true },
+            "alternatives": [
+              { "mode": "rideshare", "durationMinutes": 30, "cost": { "amount": 30, "currency": "GBP", "approximate": true } }
+            ]
+          }
+        },
+        {
+          "id": "d5-flight",
+          "time": "17:45",
+          "endTime": "21:45",
+          "type": "flight",
+          "emoji": "✈️",
+          "title": "Volo Ryanair FR5589 Edimburgo → Ciampino",
+          "bookingId": "flight-back"
+        },
+        {
+          "id": "d5-home",
+          "time": "22:15",
+          "type": "travel",
+          "title": "Navetta al parcheggio e rientro a Pontecorvo",
+          "placeIds": ["best-parking-ciampino"],
+          "transport": {
+            "mode": "car",
+            "durationMinutes": 120,
+            "cost": { "amount": 25, "currency": "EUR", "approximate": true, "note": "Pedaggi e benzina" }
+          },
+          "warnings": ["Uscita dal parcheggio dopo le 00:00: supplemento di 10 €."]
+        }
+      ]
+    }
+  ],
+  "budget": [
+    { "id": "b-spires", "title": "The Spires Serviced Apartments", "category": "lodging", "status": "booked", "amount": { "amount": 203, "currency": "EUR" }, "bookingId": "stay-spires" },
+    { "id": "b-waterfront", "title": "Waterfront Lodge", "category": "lodging", "status": "booked", "amount": { "amount": 510, "currency": "EUR" }, "bookingId": "stay-waterfront" },
+    { "id": "b-viewcraig", "title": "Viewcraig apartment", "category": "lodging", "status": "booked", "amount": { "amount": 260, "currency": "EUR" }, "bookingId": "stay-viewcraig" },
+    { "id": "b-parking", "title": "Best Parking Ciampino", "category": "parking", "status": "booked", "amount": { "amount": 34, "currency": "EUR" }, "bookingId": "parking-ciampino" },
+    { "id": "b-flights", "title": "Voli Ryanair andata e ritorno", "category": "flights", "status": "pending", "bookingId": "flight-out" },
+    { "id": "b-car", "title": "Noleggio auto Waverley", "category": "car", "status": "pending", "bookingId": "car-rental" },
+    { "id": "b-eta", "title": "ETA Regno Unito", "category": "fees", "status": "estimate", "amount": { "amount": 20, "currency": "GBP", "basis": "per_person" } },
+    { "id": "b-meals", "title": "Pasti in Scozia", "category": "food", "status": "estimate", "amount": { "amount": 156, "currency": "GBP", "basis": "per_person", "approximate": true, "note": "8 £ colazione, 12 £ pranzo, 18–20 £ cena a testa" } },
+    { "id": "b-car-italy", "title": "Auto Pontecorvo–Ciampino A/R", "category": "fuel", "status": "estimate", "amount": { "amount": 50, "currency": "EUR", "approximate": true } },
+    { "id": "b-airport", "title": "Aeroporto ↔ centro, due tratte", "category": "transport", "status": "estimate", "amount": { "amount": 60, "currency": "GBP", "approximate": true } },
+    { "id": "b-fuel", "title": "Carburante in Scozia", "category": "fuel", "status": "estimate", "amount": { "amount": 80, "currency": "EUR", "approximate": true, "note": "Circa 680 km" } },
+    { "id": "b-urquhart", "title": "Urquhart Castle", "category": "tickets", "status": "estimate", "amount": { "amount": 14, "currency": "GBP", "basis": "per_person" }, "bookingId": "ticket-urquhart" },
+    { "id": "b-castle", "title": "Edinburgh Castle", "category": "tickets", "status": "estimate", "amount": { "amount": 23.5, "currency": "GBP", "basis": "per_person" }, "included": false, "bookingId": "ticket-edinburgh-castle" }
+  ],
+  "packing": [
+    { "item": "Passaporto valido", "group": "documents", "perPerson": true, "reason": "Per il Regno Unito la carta d'identità non basta." },
+    { "item": "ETA Regno Unito", "group": "documents", "perPerson": true, "reason": "Si chiede online, arriva di solito entro un giorno." },
+    { "item": "Check-in online Ryanair andata e ritorno", "group": "documents" },
+    { "item": "Patente e carta di credito del conducente", "group": "documents", "reason": "La carta serve per il deposito del noleggio." },
+    { "item": "Assicurazione sanitaria di viaggio", "group": "documents", "perPerson": true },
+    { "item": "Giacca impermeabile con cappuccio", "group": "clothing", "perPerson": true, "reason": "Nelle Highlands piove spesso, 5–12 °C." },
+    { "item": "Scarpe impermeabili con buona suola", "group": "clothing", "perPerson": true },
+    { "item": "Vestiti a strati, cappello e guanti", "group": "clothing", "perPerson": true },
+    { "item": "Adattatore per prese britanniche (tipo G)", "group": "electronics" },
+    { "item": "Power bank e cavo per l'auto", "group": "electronics" },
+    { "item": "Supporto telefono per l'auto", "group": "gear" },
+    { "item": "Zaino piccolo impermeabile", "group": "gear" },
+    { "item": "Borraccia e snack per i tratti lunghi", "group": "food" },
+    { "item": "Medicine personali e kit di pronto soccorso", "group": "health" }
+  ],
+  "tips": [
+    { "title": "Un'ora indietro", "text": "In Scozia l'orologio è un'ora prima dell'Italia." },
+    { "title": "Guida a sinistra", "text": "Le rotatorie si fanno in senso orario, dando la precedenza a chi arriva da destra. Limiti in miglia orarie." },
+    { "title": "Strade strette", "text": "Lungo la A830 ci sono corsie singole con piazzole: fermatevi nelle piazzole per far passare." },
+    { "title": "Carburante", "text": "I distributori si diradano dopo Fort William e Fort Augustus: fate il pieno prima delle tratte lunghe." },
+    { "title": "Mappe offline", "text": "Il segnale è debole in Glencoe e sulla Rannoch Moor: scaricate le mappe prima di partire." },
+    { "title": "Pagamenti", "text": "Quasi ovunque si paga con carta contactless. Qualche sterlina serve per i parcheggi." }
+  ],
+  "exchangeRates": { "GBP": 1.16 },
+  "disclaimer": "Orari, prezzi e durate di guida sono indicativi e vanno riconfermati poco prima della partenza."
+}

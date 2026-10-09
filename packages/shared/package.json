@@ -1,0 +1,26 @@
+{
+  "name": "@tripshare/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./trip-format": "./src/trip-format/index.ts",
+    "./schema/trip.v1.schema.json": "./schema/trip.v1.schema.json"
+  },
+  "scripts": {
+    "schema:trip": "tsx scripts/generate-trip-schema.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "fast-check": "^4.10.2",
+    "tsx": "^4.23.15",
+    "@types/node": "^22.19.0",
+    "typescript": "~5.9.3",
+    "vitest": "^5.0.3"
+  }
+}
