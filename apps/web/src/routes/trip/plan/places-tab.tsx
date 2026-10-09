@@ -264,7 +264,9 @@ function PlaceDialog({
     sources: formatLinks(place?.verification?.sources ?? []),
   });
   const [d, setD] = useState(init);
-  useEffect(() => setD(init()), [place?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setD(init());
+  }, [place?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const set = <K extends keyof ReturnType<typeof init>>(k: K, v: ReturnType<typeof init>[K]) =>
     setD((p) => ({ ...p, [k]: v }));
 

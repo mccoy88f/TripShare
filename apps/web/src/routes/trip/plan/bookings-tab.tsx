@@ -141,85 +141,93 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
             key={b.id}
             onClick={() => canEdit && setEditing(b)}
             className={cn(
-              'flex flex-wrap items-start gap-3 p-4',
+              'grid grid-cols-1 gap-3 p-4',
               canEdit && 'cursor-pointer transition hover:bg-muted/40',
             )}
           >
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-xl">
-              {BOOKING_EMOJI[b.type]}
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="font-semibold">{b.title}</p>
-                <Badge
-                  variant={
-                    b.status === 'booked'
-                      ? 'success'
-                      : b.status === 'to_book'
-                        ? 'warning'
-                        : 'outline'
-                  }
-                >
-                  {t(`plan.bookingStatus.${b.status}`)}
-                </Badge>
-              </div>
-              <p className="tabular text-sm text-muted-foreground">
-                {shortDate(b.start.date)}
-                {b.start.time && ` ${b.start.time}`}
-                {b.end && ` → ${shortDate(b.end.date)}${b.end.time ? ` ${b.end.time}` : ''}`}
-                {b.provider && ` · ${b.provider}`}
-                {b.confirmationCode && ` · #${b.confirmationCode}`}
-              </p>
-              {b.flight && (
-                <p className="text-sm">
-                  ✈️ {b.flight.number} · {b.flight.from} → {b.flight.to}
+            <div className="flex items-start gap-3">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-xl">
+                {BOOKING_EMOJI[b.type]}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold">{b.title}</p>
+                  <Badge
+                    variant={
+                      b.status === 'booked'
+                        ? 'success'
+                        : b.status === 'to_book'
+                          ? 'warning'
+                          : 'outline'
+                    }
+                  >
+                    {t(`plan.bookingStatus.${b.status}`)}
+                  </Badge>
+                </div>
+                <p className="tabular text-sm text-muted-foreground">
+                  {shortDate(b.start.date)}
+                  {b.start.time && ` ${b.start.time}`}
+                  {b.end && ` → ${shortDate(b.end.date)}${b.end.time ? ` ${b.end.time}` : ''}`}
+                  {b.provider && ` · ${b.provider}`}
+                  {b.confirmationCode && ` · #${b.confirmationCode}`}
                 </p>
-              )}
-              {b.notes && <p className="mt-1 text-sm text-muted-foreground">{b.notes}</p>}
-            </div>
-            <div className="flex flex-col items-end gap-1.5">
-              {b.cost && (
-                <span className="tabular font-semibold">{moneyLabel(b.cost, t, money)}</span>
-              )}
-              {b.cost && b.paid === false && (
-                <span className="text-xs text-muted-foreground">{t('plan.booking.payOnSite')}</span>
-              )}
-              <div
-                className="flex flex-wrap justify-end gap-1"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {(canEdit || (tickets ?? []).some((x) => x.bookingId === b.id)) && (
-                  <Button size="sm" variant="outline" onClick={() => setTicketsOf(b)}>
-                    <TicketIcon />
-                    {t('tickets.button', {
-                      count: (tickets ?? []).filter((x) => x.bookingId === b.id).length,
-                    })}
-                  </Button>
+                {b.flight && (
+                  <p className="text-sm">
+                    ✈️ {b.flight.number} · {b.flight.from} → {b.flight.to}
+                  </p>
                 )}
-                {linked(b) ? (
+                {b.notes && <p className="mt-1 text-sm text-muted-foreground">{b.notes}</p>}
+              </div>
+              {(b.cost || b.paid === false) && (
+                <div className="flex shrink-0 flex-col items-end text-right">
+                  {b.cost && (
+                    <span className="tabular font-semibold whitespace-nowrap">
+                      {moneyLabel(b.cost, t, money)}
+                    </span>
+                  )}
+                  {b.cost && b.paid === false && (
+                    <span className="text-xs text-muted-foreground">
+                      {t('plan.booking.payOnSite')}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+            <div
+              className="flex flex-wrap justify-end gap-1.5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {(canEdit || (tickets ?? []).some((x) => x.bookingId === b.id)) && (
+                <Button size="sm" variant="outline" onClick={() => setTicketsOf(b)}>
+                  <TicketIcon />
+                  {t('tickets.button', {
+                    count: (tickets ?? []).filter((x) => x.bookingId === b.id).length,
+                  })}
+                </Button>
+              )}
+              {linked(b) ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!canEdit}
+                  onClick={() => setEditingExpense(linked(b))}
+                >
+                  {linked(b)!.status === 'planned'
+                    ? `⏳ ${t('expense.planned')}`
+                    : `✅ ${t('expense.paidStatus')}`}
+                </Button>
+              ) : (
+                canEdit && (
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={!canEdit}
-                    onClick={() => setEditingExpense(linked(b))}
+                    onClick={() => setExpense(expenseFromBooking(b, plan.trip.travelers))}
                   >
-                    {linked(b)!.status === 'planned'
-                      ? `⏳ ${t('expense.planned')}`
-                      : `✅ ${t('expense.paidStatus')}`}
+                    <Receipt />
+                    {t('plan.booking.toExpense')}
                   </Button>
-                ) : (
-                  canEdit && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setExpense(expenseFromBooking(b, plan.trip.travelers))}
-                    >
-                      <Receipt />
-                      {t('plan.booking.toExpense')}
-                    </Button>
-                  )
-                )}
-              </div>
+                )
+              )}
             </div>
           </Card>
         ))}
@@ -303,7 +311,9 @@ function BookingDialog({
     links: formatLinks(booking?.links ?? []),
   });
   const [d, setD] = useState(init);
-  useEffect(() => setD(init()), [booking?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setD(init());
+  }, [booking?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const set = <K extends keyof ReturnType<typeof init>>(k: K, v: ReturnType<typeof init>[K]) =>
     setD((p) => ({ ...p, [k]: v }));
 

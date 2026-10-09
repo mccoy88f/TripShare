@@ -156,7 +156,9 @@ function NoteDialog({
   const trpc = useTRPC();
   const refresh = useRefreshNotes(trip.id);
   const [draft, setDraft] = useState(initial);
-  useEffect(() => setDraft(initial), [initial]);
+  useEffect(() => {
+    setDraft(initial);
+  }, [initial]);
   const onError = () => toast.error(t('common.error'));
   const create = useMutation(trpc.notes.create.mutationOptions({ onSuccess: refresh, onError }));
   const update = useMutation(trpc.notes.update.mutationOptions({ onSuccess: refresh, onError }));

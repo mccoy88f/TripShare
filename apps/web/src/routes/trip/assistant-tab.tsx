@@ -133,8 +133,14 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
   useOnAdd('assistant', () => input.current?.focus());
   const canEdit = trip.role !== 'viewer';
 
-  const scrollToEnd = () => bottom.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  useEffect(scrollToEnd, [history?.length, sent, conversationId]);
+  // Corpo tra graffe: in Chrome recente scrollIntoView restituisce una Promise, che React
+  // scambierebbe per la funzione di pulizia dell'effetto.
+  const scrollToEnd = () => {
+    bottom.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  };
+  useEffect(() => {
+    scrollToEnd();
+  }, [history?.length, sent, conversationId]); // eslint-disable-line react-hooks/exhaustive-deps
   // Con la tastiera aperta l'ultimo messaggio resta visibile sopra la casella di testo.
   useEffect(() => {
     if (keyboard.open) scrollToEnd();
@@ -147,7 +153,9 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
     el.style.height = 'auto';
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   };
-  useEffect(autosize, [message]);
+  useEffect(() => {
+    autosize();
+  }, [message]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const send = async (text: string) => {
     const msg = text.trim();
