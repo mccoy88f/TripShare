@@ -3,6 +3,7 @@ import {
   Camera,
   ChevronLeft,
   ChevronRight,
+  FolderOpen,
   GalleryVerticalEnd,
   Loader2,
   LocateFixed,
@@ -101,6 +102,7 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
   const [editing, setEditing] = useState<Memory | null>(null);
   const [staged, setStaged] = useState<File[] | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   const pick = () => input.current?.click();
   useOnAdd('memories', pick);
 
@@ -136,18 +138,27 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
   return (
     <div className="grid grid-cols-1 gap-5 pb-8">
       {!tripId && <GlobalFab onAdd={pick} />}
-      <input
-        ref={input}
-        type="file"
-        accept="image/*,video/*"
-        multiple
-        className="sr-only"
-        onChange={(e) => {
-          const files = [...(e.target.files ?? [])];
-          e.target.value = '';
-          if (files.length > 0) setStaged(files);
-        }}
-      />
+      {/* Dalla galleria; e dai File con l'elenco di estensioni, che apre il selettore di sistema e
+          non quello delle foto: lì il file arriva com'è, con data e posizione. */}
+      {(['gallery', 'files'] as const).map((kind) => (
+        <input
+          key={kind}
+          ref={kind === 'gallery' ? input : fileInput}
+          type="file"
+          accept={
+            kind === 'gallery'
+              ? 'image/*,video/*'
+              : '.jpg,.jpeg,.png,.webp,.heic,.heif,.avif,.gif,.mp4,.mov,.m4v,.webm,.3gp'
+          }
+          multiple
+          className="sr-only"
+          onChange={(e) => {
+            const files = [...(e.target.files ?? [])];
+            e.target.value = '';
+            if (files.length > 0) setStaged(files);
+          }}
+        />
+      ))}
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="inline-flex rounded-full border bg-muted/50 p-1">
@@ -175,6 +186,15 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
           ))}
         </div>
         <div className="flex-1" />
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => fileInput.current?.click()}
+          title={t('memories.fromFiles')}
+          aria-label={t('memories.fromFiles')}
+        >
+          <FolderOpen />
+        </Button>
         <Button onClick={pick}>
           <Upload />
           {t('memories.upload')}
@@ -372,6 +392,24 @@ function UploadDialog({
   // Dalla pagina Ricordi: collegamento automatico (dal giorno dello scatto), nessuno o un viaggio.
   const [target, setTarget] = useState('auto');
   const [progress, setProgress] = useState<{ index: number; fraction: number } | null>(null);
+  // Posizione attuale, per le foto senza GPS (utile se si carica subito dopo lo scatto).
+  const [here, setHere] = useState<Point | null>(null);
+  const [locating, setLocating] = useState(false);
+  const useHere = (on: boolean) => {
+    if (!on) return setHere(null);
+    setLocating(true);
+    navigator.geolocation?.getCurrentPosition(
+      (p) => {
+        setHere({ lat: p.coords.latitude, lon: p.coords.longitude });
+        setLocating(false);
+      },
+      () => {
+        setLocating(false);
+        toast.error(t('memories.locationDenied'));
+      },
+      { enableHighAccuracy: true, timeout: 15_000 },
+    );
+  };
   const uploading = progress !== null;
   const noTrip = !tripId && target === 'none';
 
@@ -388,6 +426,8 @@ function UploadDialog({
             ...((tripId ?? (target === 'auto' ? '' : target)) ? { tripId: tripId ?? target } : {}),
             shared: String(shared && !noTrip),
             takenAt: new Date(item.file.lastModified).toISOString(),
+            // Vale solo se il file non ha già una posizione: il server dà la precedenza al file.
+            ...(here ? { lat: String(here.lat), lon: String(here.lon) } : {}),
           },
           (fraction) => setProgress({ index, fraction }),
         );
@@ -470,6 +510,23 @@ function UploadDialog({
               </Select>
             </Field>
           )}
+          <label className="flex items-start justify-between gap-4 rounded-xl border p-3">
+            <span>
+              <span className="block text-sm font-semibold">{t('memories.useHere')}</span>
+              <span className="block text-xs text-muted-foreground">
+                {t('memories.useHereHint')}
+              </span>
+            </span>
+            <span className="flex items-center gap-2">
+              {locating && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
+              <Switch
+                checked={!!here}
+                disabled={uploading || locating}
+                onCheckedChange={useHere}
+                aria-label={t('memories.useHere')}
+              />
+            </span>
+          </label>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {option(
               true,
