@@ -132,3 +132,9 @@ va bufferizzato (nel Caddyfile incluso è già così).
 **Schermata di avvio.** È definita in `apps/web/index.html` (blocco `boot-css` e `.boot`) e colori e
 sfondo del manifest sono in `apps/web/vite.config.ts`. Le immagini di avvio per iOS in
 `apps/web/public/splash` si rigenerano con `node scripts/generate-splash.mjs` (serve Playwright).
+
+**Link nell'app.** Il manifest dichiara `handle_links: preferred` e `launch_handler` (navigate-existing):
+su Android (WebAPK) e su Chrome/Edge per computer i link a TripShare (inviti, verifica email,
+reimpostazione password, notifiche) si aprono nell'app installata, portando in primo piano la
+finestra già aperta. Su iPhone e iPad non è possibile: iOS non lascia alle app installate dal Web
+registrare i link, che si aprono sempre in Safari.

@@ -52,8 +52,16 @@ export default defineConfig({
         short_name: 'TripShare',
         description: 'Viaggi di gruppo e spese condivise',
         lang: 'it',
+        // Identità esplicita (uguale al valore predefinito, cioè all'indirizzo di avvio): le
+        // installazioni già fatte restano la stessa app.
+        id: '/app',
         start_url: '/app',
         scope: '/',
+        // I link a TripShare (email di invito, verifica, reimpostazione, notifiche) si aprono
+        // nell'app installata invece che nel browser, e portano in primo piano la finestra già
+        // aperta (Chrome e Edge; Android la apre dall'app tramite il WebAPK).
+        handle_links: 'preferred',
+        launch_handler: { client_mode: ['navigate-existing', 'auto'] },
         display: 'standalone',
         orientation: 'portrait',
         // Colori della schermata di avvio (Android): lo stesso blu notte della schermata iniziale.
