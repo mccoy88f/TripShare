@@ -23,6 +23,7 @@ import { CaptureSheet } from './capture';
 import { ExpenseDialog } from './expense-dialog';
 import { ExpensesTab } from './expenses-tab';
 import { MembersTab } from './members-tab';
+import { rememberTrip } from '@/lib/memories';
 import { MemoriesView } from '@/routes/memories/memories-view';
 import { NotesTab } from './notes-tab';
 import { SettingsTab } from './settings-tab';
@@ -96,6 +97,9 @@ export function TripPage() {
       replace: true,
     });
   }, [trip?.id, search.focus, search.date]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (tripId) rememberTrip(tripId);
+  }, [tripId]);
   const [adding, setAdding] = useState(false);
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState('');

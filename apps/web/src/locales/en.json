@@ -1228,6 +1228,7 @@
     "searchFailed": "Search failed, try again shortly.",
     "fromFiles": "Pick from Files (keeps date and location)",
     "useHere": "Use my location for photos without GPS",
-    "useHereHint": "Handy right after taking them. The browser will ask for permission."
+    "useHereHint": "Handy right after taking them. The browser will ask for permission.",
+    "captionAll": "Caption (same for all files)"
   }
 }

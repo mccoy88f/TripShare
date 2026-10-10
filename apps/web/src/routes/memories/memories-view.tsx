@@ -45,6 +45,7 @@ import { useFabAction, useOnAdd } from '@/lib/fab';
 import {
   formatDuration,
   hasPoint,
+  lastTrip,
   memoryDate,
   memoryUrl,
   uploadMemory,
@@ -386,11 +387,17 @@ function UploadDialog({
 }) {
   const { t } = useTranslation();
   const trpc = useTRPC();
-  const { data: trips } = useQuery({ ...trpc.trips.list.queryOptions(), enabled: !tripId });
+  const { data: trips } = useQuery(trpc.trips.list.queryOptions());
   const [items, setItems] = useState(() => files.map((file, id) => ({ id, file })));
   const [shared, setShared] = useState(() => readPref(SHARE_KEY, 'true') !== 'false');
   // Dalla pagina Ricordi: collegamento automatico (dal giorno dello scatto), nessuno o un viaggio.
-  const [target, setTarget] = useState('auto');
+  const [chosen, setChosen] = useState(() => tripId ?? lastTrip() ?? 'auto');
+  const [caption, setCaption] = useState('');
+  // Un viaggio che non c'è più (o non è tuo) torna al collegamento automatico.
+  const target =
+    chosen !== 'auto' && chosen !== 'none' && trips && !trips.some((tr) => tr.id === chosen)
+      ? 'auto'
+      : chosen;
   const [progress, setProgress] = useState<{ index: number; fraction: number } | null>(null);
   // Posizione attuale, per le foto senza GPS (utile se si carica subito dopo lo scatto).
   const [here, setHere] = useState<Point | null>(null);
@@ -411,7 +418,7 @@ function UploadDialog({
     );
   };
   const uploading = progress !== null;
-  const noTrip = !tripId && target === 'none';
+  const noTrip = target === 'none';
 
   const upload = async () => {
     writePref(SHARE_KEY, String(shared));
@@ -423,7 +430,8 @@ function UploadDialog({
         await uploadMemory(
           item.file,
           {
-            ...((tripId ?? (target === 'auto' ? '' : target)) ? { tripId: tripId ?? target } : {}),
+            ...(target === 'auto' ? {} : { tripId: target }),
+            ...(caption.trim() ? { caption: caption.trim() } : {}),
             shared: String(shared && !noTrip),
             takenAt: new Date(item.file.lastModified).toISOString(),
             // Vale solo se il file non ha già una posizione: il server dà la precedenza al file.
@@ -472,6 +480,22 @@ function UploadDialog({
     <Dialog open onOpenChange={(o) => !o && !uploading && onClose()}>
       <DialogContent title={t('memories.newTitle', { count: items.length })}>
         <div className="grid grid-cols-1 gap-4 pt-2">
+          <Field label={t('memories.trip')} htmlFor="up-trip">
+            <Select
+              id="up-trip"
+              value={target}
+              disabled={uploading}
+              onChange={(e) => setChosen(e.target.value)}
+            >
+              <option value="auto">{t('memories.tripAuto')}</option>
+              <option value="none">{t('memories.noTrip')}</option>
+              {(trips ?? []).map((tr) => (
+                <option key={tr.id} value={tr.id}>
+                  {tr.title}
+                </option>
+              ))}
+            </Select>
+          </Field>
           <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
             {items.map((item) => (
               <div
@@ -492,24 +516,6 @@ function UploadDialog({
               </div>
             ))}
           </div>
-          {!tripId && (
-            <Field label={t('memories.trip')} htmlFor="up-trip">
-              <Select
-                id="up-trip"
-                value={target}
-                disabled={uploading}
-                onChange={(e) => setTarget(e.target.value)}
-              >
-                <option value="auto">{t('memories.tripAuto')}</option>
-                <option value="none">{t('memories.noTrip')}</option>
-                {(trips ?? []).map((tr) => (
-                  <option key={tr.id} value={tr.id}>
-                    {tr.title}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          )}
           <label className="flex items-start justify-between gap-4 rounded-xl border p-3">
             <span>
               <span className="block text-sm font-semibold">{t('memories.useHere')}</span>
@@ -554,6 +560,20 @@ function UploadDialog({
               </div>
             </div>
           )}
+          <Field
+            label={t(items.length > 1 ? 'memories.captionAll' : 'memories.caption')}
+            htmlFor="up-caption"
+          >
+            <textarea
+              id="up-caption"
+              rows={2}
+              maxLength={1000}
+              className={textareaClass}
+              value={caption}
+              disabled={uploading}
+              onChange={(e) => setCaption(e.target.value)}
+            />
+          </Field>
           <div className={DIALOG_FOOTER}>
             <div className="flex-1" />
             <Button type="button" variant="ghost" disabled={uploading} onClick={onClose}>

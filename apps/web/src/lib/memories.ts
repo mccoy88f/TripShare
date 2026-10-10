@@ -67,3 +67,22 @@ export const formatDuration = (sec: number | null) => {
   const s = Math.round(sec);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
+
+const LAST_TRIP_KEY = 'tripshare.lastTrip';
+
+/** Ricorda l'ultimo viaggio aperto: è quello proposto quando si caricano dei ricordi. */
+export function rememberTrip(id: string) {
+  try {
+    localStorage.setItem(LAST_TRIP_KEY, id);
+  } catch {
+    // non salvato: pazienza
+  }
+}
+
+export function lastTrip(): string | null {
+  try {
+    return localStorage.getItem(LAST_TRIP_KEY);
+  } catch {
+    return null;
+  }
+}
