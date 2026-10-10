@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import sharp from 'sharp';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -40,6 +41,43 @@ function fakeAi(calls: Call[], replies: Record<string, unknown[]>) {
         headers: { 'content-type': 'image/jpeg' },
       });
     }
+    // Ricerca luoghi (OpenStreetMap) e foto (Wikimedia Commons) della generazione.
+    if (url.startsWith('https://nominatim.openstreetmap.org/search')) {
+      const q = decodeURIComponent(new URL(url).searchParams.get('q') ?? '');
+      if (/fantasma/i.test(q)) return Response.json([]);
+      const roma = /roma/i.test(q);
+      return Response.json([
+        {
+          name: q.split(',')[0],
+          display_name: q,
+          lat: roma ? '41.9' : '38.12',
+          lon: roma ? '12.5' : '13.36',
+          address: { city: roma ? 'Roma' : 'Palermo', country: 'Italia' },
+        },
+      ]);
+    }
+    if (url.startsWith('https://commons.wikimedia.org/w/api.php'))
+      return Response.json({
+        query: {
+          pages: {
+            '1': {
+              index: 1,
+              title: 'File:Foto.jpg',
+              imageinfo: [
+                {
+                  thumburl: 'https://93.184.216.34/commons-1.jpg',
+                  mime: 'image/jpeg',
+                  width: 960,
+                  extmetadata: {
+                    Artist: { value: 'Ada' },
+                    LicenseShortName: { value: 'CC BY 4.0' },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      });
     if (url.endsWith('/models?pageSize=1000'))
       return Response.json({
         models: [
@@ -317,6 +355,280 @@ run('AI jobs (integration)', () => {
       messageId: before[0]!.id,
     });
     expect(denied.error).toBeDefined();
+  });
+
+  describe('phased trip generation', () => {
+    const STRATEGY = {
+      title: 'Sicilia e Roma',
+      emoji: '🌋',
+      summary: 'Da Messina a Palermo e Roma.',
+      countryCodes: ['IT'],
+      arrival: { mode: 'car', description: 'In auto fino a Palermo' },
+      local: { modes: ['walk', 'metro'], notes: 'A piedi e metro' },
+      legs: [
+        { from: 'Messina', to: 'Palermo', mode: 'car', durationMinutes: 150 },
+        { from: 'Palermo', to: 'Roma', mode: 'flight', durationMinutes: 80 },
+        { from: 'Roma', to: 'Messina', mode: 'flight', durationMinutes: 85 },
+      ],
+      bases: [
+        { stop: 'Palermo', nights: 1, lodging: 'apartment', rooms: 'Appartamento con 2 camere' },
+        { stop: 'Roma', nights: 1, lodging: 'hotel', rooms: '2 camere doppie' },
+      ],
+      rental: { needed: false },
+      pace: 'Tranquillo',
+      guidelines: [],
+    };
+    const place = (id: string, name: string, extra = '') => ({
+      stop: extra === 'roma' ? 'Roma' : 'Palermo',
+      place: {
+        id,
+        name,
+        kind: 'sight',
+        mapsQuery: `${name}, ${extra === 'roma' ? 'Roma' : 'Palermo'}`,
+        description: 'Bello',
+      },
+    });
+    const PLACES = {
+      places: [
+        place('cattedrale', 'Cattedrale'),
+        place('quattro-canti', 'Quattro Canti'),
+        place('fantasma', 'Luogo Fantasma'),
+        place('colosseo', 'Colosseo', 'roma'),
+        place('foro', 'Foro Romano', 'roma'),
+        place('pantheon', 'Pantheon', 'roma'),
+      ],
+    };
+    const act = (id: string, time: string, title: string, placeIds: string[]) => ({
+      id,
+      time,
+      type: 'visit',
+      title,
+      placeIds,
+    });
+    const DAYS = {
+      days: [
+        {
+          date: '2026-10-12',
+          title: 'Palermo',
+          activities: [
+            act('a1', '10:00', 'Cattedrale', ['cattedrale']),
+            act('a2', '15:00', 'Quattro Canti', ['quattro-canti']),
+          ],
+        },
+        {
+          date: '2026-10-13',
+          title: 'Roma',
+          activities: [act('a3', '11:00', 'Colosseo', ['colosseo'])],
+        },
+        {
+          date: '2026-10-14',
+          title: 'Rientro',
+          activities: [act('a4', '10:00', 'Foro', ['foro'])],
+        },
+      ],
+    };
+    const stay = (id: string, date: string, end: string) => ({
+      id,
+      type: 'lodging',
+      title: `Alloggio ${id}`,
+      status: 'to_book',
+      start: { date },
+      end: { date: end },
+      cost: { amount: 80, currency: 'EUR', basis: 'per_night', approximate: true },
+    });
+    const BOOKINGS = {
+      bookings: [
+        stay('stay-palermo', '2026-10-12', '2026-10-13'),
+        stay('stay-roma', '2026-10-13', '2026-10-14'),
+      ],
+      stays: [
+        { date: '2026-10-12', bookingId: 'stay-palermo' },
+        { date: '2026-10-13', bookingId: 'stay-roma' },
+      ],
+      activityLinks: [],
+    };
+    const BUDGET = {
+      budget: [
+        {
+          id: 'meals',
+          title: 'Pasti',
+          category: 'food',
+          status: 'estimate',
+          amount: { amount: 30, currency: 'EUR', basis: 'per_person', approximate: true },
+        },
+      ],
+    };
+    const PACKING = {
+      packing: [{ item: 'Passaporto', group: 'documents', perPerson: true }],
+      tips: [{ title: 'Estate', text: 'Porta il cappello.' }],
+    };
+    const BRIEF = {
+      main: { label: 'Sicilia', lat: 37.6, lon: 14 },
+      origin: { label: 'Messina', lat: 38.19, lon: 15.55 },
+      stops: [
+        { label: 'Palermo', lat: 38.12, lon: 13.36, nights: 1 },
+        { label: 'Roma', lat: 41.9, lon: 12.5, nights: 1 },
+      ],
+      travelers: { adults: 2, children: [] },
+      ai: { intensity: 'normal', budget: 'mid' },
+    };
+
+    async function setupGeneration() {
+      await t.settings.set('openrouter.apiKey', 'sk-or-central-key-123');
+      const marco = (await t.signUp('marco@example.com', 'Marco')).cookie;
+      const { data } = await t.trpc<{ id: string }>('trips.create', marco, {
+        title: 'Viaggio',
+        currency: 'EUR',
+        destination: 'Sicilia',
+        startDate: '2026-10-12',
+        endDate: '2026-10-14',
+        brief: BRIEF,
+      });
+      return { marco, tripId: data.id };
+    }
+    const load = (replyKey: Record<string, unknown>) => {
+      for (const [k, v] of Object.entries(replyKey)) replies[k] = [v];
+    };
+    const state = async (cookie: string, tripId: string) =>
+      (
+        await t.trpc<{
+          status: string;
+          steps: { key: string; status: string; count?: number; error?: string }[];
+          warnings: { k: string; p?: Record<string, unknown> }[];
+        }>('ai.generation.state', cookie, { tripId }, 'query')
+      ).data;
+
+    it('builds the trip step by step, verifies it and attaches photos', async () => {
+      const { marco, tripId } = await setupGeneration();
+      load({
+        tripshare_gen_strategy: STRATEGY,
+        tripshare_gen_places: PLACES,
+        tripshare_gen_days: DAYS,
+        tripshare_gen_bookings: BOOKINGS,
+        tripshare_gen_budget: BUDGET,
+        tripshare_gen_packing: PACKING,
+      });
+      const started = await t.trpc('ai.start', marco, {
+        tripId,
+        input: { kind: 'generateTrip' },
+      });
+      expect(started.status).toBe(200);
+
+      const gen = await state(marco, tripId);
+      expect(gen.status).toBe('done');
+      expect(gen.steps.map((s) => [s.key, s.status])).toEqual([
+        ['strategy', 'done'],
+        ['places', 'done'],
+        ['days', 'done'],
+        ['bookings', 'done'],
+        ['budget', 'done'],
+        ['packing', 'done'],
+        ['photos', 'done'],
+      ]);
+      // Un luogo che non esiste su OpenStreetMap resta segnalato.
+      expect(gen.warnings).toContainEqual({ k: 'placeNotFound', p: { name: 'Luogo Fantasma' } });
+
+      const { data: planRes } = await t.trpc<{
+        plan: {
+          trip: { title: string };
+          places: { id: string; photo?: string; location?: { lat: number } }[];
+          days: { stayBookingId?: string; activities: unknown[] }[];
+          bookings: { id: string }[];
+          budget: { id: string; bookingId?: string }[];
+          packing: unknown[];
+          tips: unknown[];
+        };
+      }>('plan.get', marco, { tripId }, 'query');
+      const plan = planRes.plan;
+      expect(plan.trip.title).toBe('Sicilia e Roma');
+      expect(plan.places).toHaveLength(6);
+      expect(plan.places.filter((p) => p.location)).toHaveLength(5);
+      expect(plan.places.some((p) => p.photo?.startsWith('/api/files/place-'))).toBe(true);
+      expect(plan.days.map((d) => d.stayBookingId)).toEqual([
+        'stay-palermo',
+        'stay-roma',
+        undefined,
+      ]);
+      expect(plan.bookings.map((b) => b.id)).toEqual(['stay-palermo', 'stay-roma']);
+      // Le prenotazioni con costo entrano da sole nel budget, insieme alle voci dell'AI.
+      expect(plan.budget.map((b) => b.id)).toEqual([
+        'budget-stay-palermo',
+        'budget-stay-roma',
+        'meals',
+      ]);
+      expect(plan.budget[0]!.bookingId).toBe('stay-palermo');
+      expect(plan.packing).toHaveLength(1);
+      expect(plan.tips).toHaveLength(1);
+
+      // Le tappe arrivano all'AI nell'ordine del percorso, con le notti.
+      const first = calls.find((c) => JSON.stringify(c.body).includes('Fase 1 di 7'))!;
+      const prompt = JSON.stringify(first.body);
+      expect(prompt.indexOf('Palermo')).toBeLessThan(prompt.indexOf('Roma'));
+      expect(prompt).toContain('notti\\":1');
+      // Una sola richiesta contata nella quota, anche se le fasi sono sei.
+      const jobs = await t.db.execute(sql`select count(*)::int as n from ai_job`);
+      expect((jobs as unknown as { n: number }[])[0]!.n).toBe(1);
+    });
+
+    it('repairs invalid answers, stops at a failing step and resumes from it', async () => {
+      const { marco, tripId } = await setupGeneration();
+      const tooBusy = {
+        days: DAYS.days.map((d) => ({
+          ...d,
+          activities: Array.from({ length: 7 }, (_, i) =>
+            act(`${d.date}-${i}`, `${String(8 + i).padStart(2, '0')}:00`, `Visita ${i}`, [
+              'cattedrale',
+            ]),
+          ),
+        })),
+      };
+      const noLodging = { ...BOOKINGS, bookings: [], stays: [] };
+      replies.tripshare_gen_strategy = [STRATEGY];
+      replies.tripshare_gen_places = [PLACES];
+      replies.tripshare_gen_days = [tooBusy, DAYS];
+      replies.tripshare_gen_bookings = [noLodging];
+      replies.tripshare_gen_budget = [BUDGET];
+      replies.tripshare_gen_packing = [PACKING];
+      await t.trpc('ai.start', marco, { tripId, input: { kind: 'generateTrip' } });
+
+      // Le giornate sbagliate (troppe visite) sono state corrette con una seconda richiesta.
+      expect(calls.filter((c) => JSON.stringify(c.body).includes('Fase 3 di 7'))).toHaveLength(2);
+      // Senza alloggi per tutte le notti le prenotazioni falliscono e si ferma lì.
+      const failed = await state(marco, tripId);
+      expect(failed.status).toBe('failed');
+      expect(failed.steps.map((s) => s.status)).toEqual([
+        'done',
+        'done',
+        'done',
+        'failed',
+        'pending',
+        'pending',
+        'pending',
+      ]);
+      expect(failed.steps[3]!.error).toBe('AI_INVALID_RESPONSE');
+
+      // Si riparte dalle prenotazioni: le fasi già fatte non si rifanno.
+      const before = calls.length;
+      replies.tripshare_gen_bookings = [BOOKINGS];
+      await t.trpc('ai.start', marco, {
+        tripId,
+        input: { kind: 'generateTrip', from: 'bookings' },
+      });
+      const done = await state(marco, tripId);
+      expect(done.status).toBe('done');
+      expect(done.steps.every((s) => s.status === 'done')).toBe(true);
+      const again = calls.slice(before).map((c) => JSON.stringify(c.body));
+      expect(again.some((b) => b.includes('Fase 1 di 7') || b.includes('Fase 2 di 7'))).toBe(false);
+      expect(again.some((b) => b.includes('Fase 4 di 7'))).toBe(true);
+
+      // Non si può ripartire da una fase senza la strategia, né avviare due volte insieme.
+      const stranger = (await t.signUp('sara@example.com', 'Sara')).cookie;
+      const denied = await t.trpc('ai.start', stranger, {
+        tripId,
+        input: { kind: 'generateTrip' },
+      });
+      expect(denied.error).toBeDefined();
+    });
   });
 
   it('prefers the personal Gemini key in mixed mode', async () => {

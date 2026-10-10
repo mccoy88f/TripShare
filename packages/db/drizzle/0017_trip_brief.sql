@@ -1,0 +1,1 @@
+ALTER TABLE "trip" ADD COLUMN "brief" jsonb;

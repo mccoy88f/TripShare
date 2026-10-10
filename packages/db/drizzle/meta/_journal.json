@@ -120,6 +120,20 @@
       "when": 1791648927956,
       "tag": "0016_memory_place_name",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791658906555,
+      "tag": "0017_trip_brief",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791659133883,
+      "tag": "0018_trip_generation",
+      "breakpoints": true
     }
   ]
 }

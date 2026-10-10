@@ -32,6 +32,10 @@ export const trip = pgTable('trip', {
   /** Autore della foto di copertina scelta da Unsplash: { name, url }. */
   coverCredit: jsonb(),
   coverColor: text(),
+  /** Scheda compilata nella creazione guidata (tappe, partenza, viaggiatori, preferenze AI). */
+  brief: jsonb(),
+  /** Avanzamento della generazione AI a fasi (vedi apps/api/src/ai/generation.ts). */
+  generation: jsonb(),
   /** Programma nel formato standard TripShare (TripDocument v1). */
   plan: jsonb(),
   planVersion: integer().notNull().default(0),

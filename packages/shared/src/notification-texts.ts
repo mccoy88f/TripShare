@@ -376,7 +376,6 @@ export function notificationTarget(
   return { tab: 'plan', key: '' };
 }
 
-
 /** Indirizzo relativo da aprire per una notifica (tab, vista, elemento da evidenziare, giorno). */
 export function notificationUrl(
   tripId: string,

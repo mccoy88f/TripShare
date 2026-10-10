@@ -185,6 +185,52 @@ run('trips, invitations, expenses and balances (integration)', () => {
     expect(trip.data).toMatchObject({ myMemberId: lucaPlaceholder, role: 'editor' });
   });
 
+  it('creates a trip from the wizard with its brief and the other participants', async () => {
+    const marco = (await t.signUp('marco@example.com', 'Marco')).cookie;
+    const brief = {
+      main: { label: 'Sicilia', lat: 37.6, lon: 14.0 },
+      origin: { label: 'Messina', lat: 38.19, lon: 15.55 },
+      stops: [
+        { label: 'Palermo', lat: 38.12, lon: 13.36, nights: 3 },
+        { label: 'Roma', lat: 41.9, lon: 12.5, nights: 2 },
+      ],
+      travelers: { adults: 2, children: [6, 9] },
+    };
+    const created = await t.trpc<{
+      id: string;
+      participants: { id: string; name: string }[];
+    }>('trips.create', marco, {
+      title: 'Sicilia e Roma',
+      currency: 'EUR',
+      destination: 'Sicilia',
+      startDate: '2026-10-12',
+      endDate: '2026-10-17',
+      brief,
+      participants: [{ name: 'Giulia' }, { name: 'Bambino 1' }, { name: 'Bambino 2' }],
+    });
+    expect(created.status).toBe(200);
+    expect(created.data.participants.map((p) => p.name)).toEqual([
+      'Giulia',
+      'Bambino 1',
+      'Bambino 2',
+    ]);
+    const detail = await t.trpc<{
+      brief: typeof brief;
+      members: { name: string; placeholder: boolean }[];
+    }>('trips.get', marco, { id: created.data.id }, 'query');
+    expect(detail.data.brief.stops.map((s) => s.label)).toEqual(['Palermo', 'Roma']);
+    expect(detail.data.members).toHaveLength(4);
+    expect(detail.data.members.filter((m) => m.placeholder)).toHaveLength(3);
+
+    // Più di 8 tappe o coordinate impossibili sono rifiutate.
+    const bad = await t.trpc('trips.create', marco, {
+      title: 'X',
+      currency: 'EUR',
+      brief: { ...brief, stops: Array.from({ length: 9 }, () => brief.stops[0]) },
+    });
+    expect(bad.error).toBeDefined();
+  });
+
   it('sends email invitations and restricts them to that address', async () => {
     const { marco, tripId } = await setupTrip();
     const invite = await t.trpc<{ token: string; memberId: string }>('invitations.create', marco, {

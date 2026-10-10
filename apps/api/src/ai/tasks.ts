@@ -28,8 +28,8 @@ import type { ChatMessage, ContentPart } from './client.js';
  * con l'elenco degli errori (al massimo una o due volte).
  */
 
-const lang = (l: Locale) => (l === 'en' ? 'English' : 'italiano');
-const today = () => new Date().toISOString().slice(0, 10);
+export const lang = (l: Locale) => (l === 'en' ? 'English' : 'italiano');
+export const today = () => new Date().toISOString().slice(0, 10);
 
 // ─── Scontrini e ricevute ───────────────────────────────────────────────────
 
@@ -274,6 +274,13 @@ export const AiInputSchema = z.discriminatedUnion('kind', [
     /** Conversazione a cui appartiene il messaggio (la crea l'API se manca). */
     conversationId: z.uuid().optional(),
   }),
+  z.object({
+    kind: z.literal('generateTrip'),
+    /** Fase da cui (ri)partire; di default dall'inizio. */
+    from: z
+      .enum(['strategy', 'places', 'days', 'bookings', 'budget', 'packing', 'photos'])
+      .optional(),
+  }),
   z.object({ kind: z.literal('verify'), placeId: z.string().max(64) }),
   z.object({
     kind: z.literal('placePhoto'),
@@ -297,6 +304,7 @@ export const PURPOSE: Record<AiInput['kind'], AiPurpose> = {
   receipt: 'vision',
   booking: 'vision',
   generate: 'planner',
+  generateTrip: 'planner',
   chat: 'chat',
   verify: 'web',
   placePhoto: 'web',
@@ -305,7 +313,7 @@ export const PURPOSE: Record<AiInput['kind'], AiPurpose> = {
   document: 'vision',
 };
 
-function schemaOf(s: z.ZodType) {
+export function schemaOf(s: z.ZodType) {
   return z.toJSONSchema(s, {
     target: 'draft-2020-12',
     io: 'input',
@@ -518,6 +526,9 @@ JSON Schema: ${JSON.stringify(schemaOf(BookingResultSchema))}`,
         },
       };
     }
+    case 'generateTrip':
+      // Si esegue per fasi in generation.ts, non con una singola richiesta.
+      throw new Error('generateTrip has no single task');
     case 'chat': {
       return {
         schemaName: 'tripshare_assistant',

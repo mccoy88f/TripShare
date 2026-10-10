@@ -12,6 +12,7 @@ import { AiAccessError, resolveAiAccess } from './access.js';
 import { downloadImageFromAnyUrl } from '../image-download.js';
 import { searchCommons } from '../photo-search.js';
 import { AiError, complete, type ChatMessage } from './client.js';
+import { runGeneration } from './generation.js';
 import {
   AiInputSchema,
   buildRepairMessage,
@@ -117,6 +118,61 @@ async function loadTripContext(db: Database, tripId: string, locale: Locale, use
   };
 }
 
+/** Risultato di una chiamata al modello già validata, con i consumi. */
+export interface SpecRun {
+  value: unknown;
+  citations: { url: string; title?: string }[];
+  model: string | null;
+  promptTokens: number;
+  completionTokens: number;
+  cost: number | null;
+}
+
+/** Chiama il modello per un compito e ripete con le correzioni finché la risposta è valida. */
+export async function runSpec(
+  deps: AiDeps,
+  access: Awaited<ReturnType<typeof resolveAiAccess>>,
+  spec: ReturnType<typeof buildTask>,
+  locale: Locale,
+): Promise<SpecRun> {
+  const messages: ChatMessage[] = [...spec.messages];
+  let value: unknown = null;
+  let citations: { url: string; title?: string }[] = [];
+  let model: string | null = access.model;
+  let promptTokens = 0;
+  let completionTokens = 0;
+  let cost: number | null = null;
+  for (let attempt = 0; ; attempt++) {
+    const res = await complete({
+      provider: access.provider,
+      apiKey: access.apiKey,
+      model: access.model,
+      fallbacks: access.fallbacks,
+      messages,
+      jsonSchema: { name: spec.schemaName, schema: spec.jsonSchema },
+      web: spec.web,
+      denyDataCollection: access.denyDataCollection,
+      appUrl: deps.appUrl,
+      appName: deps.appName,
+      fetchImpl: deps.httpFetch,
+    });
+    model = res.model;
+    promptTokens += res.promptTokens ?? 0;
+    completionTokens += res.completionTokens ?? 0;
+    if (res.cost !== null) cost = (cost ?? 0) + res.cost;
+    if (res.citations) citations = res.citations;
+    const checked = checkResult(spec, res.content);
+    if ('value' in checked) {
+      value = checked.value;
+      break;
+    }
+    if (attempt >= spec.repairs) throw new AiJobError('AI_INVALID_RESPONSE');
+    messages.push({ role: 'assistant', content: res.content });
+    messages.push(buildRepairMessage(checked.issues, locale));
+  }
+  return { value, citations, model, promptTokens, completionTokens, cost };
+}
+
 /** Esegue un lavoro: chiama il modello, valida la risposta (con correzioni) e salva il risultato. */
 export async function processAiJob(deps: AiDeps, jobId: string) {
   const { db } = deps;
@@ -144,7 +200,7 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
 
     const ctx: TaskContext = { locale };
     let plan: TripDocument | undefined;
-    if (job.tripId && input.kind !== 'generate') {
+    if (job.tripId && input.kind !== 'generate' && input.kind !== 'generateTrip') {
       const t = await loadTripContext(db, job.tripId, locale, job.userId);
       plan = t.plan;
       ctx.plan = plan;
@@ -180,6 +236,36 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
       });
     }
 
+    if (input.kind === 'generateTrip') {
+      if (!job.tripId) throw new AiJobError('TRIP_NOT_FOUND');
+      const out = await runGeneration(deps, {
+        userId: job.userId,
+        tripId: job.tripId,
+        locale,
+        access,
+        from: input.from,
+      });
+      model = out.model;
+      promptTokens = out.promptTokens;
+      completionTokens = out.completionTokens;
+      cost = out.cost;
+      await db
+        .update(aiJob)
+        .set({
+          status: 'done',
+          result: { failedStep: out.failedStep ?? null },
+          model,
+          provider,
+          keySource,
+          promptTokens,
+          completionTokens,
+          cost,
+          finishedAt: new Date(),
+        })
+        .where(eq(aiJob.id, jobId));
+      return;
+    }
+
     const spec = buildTask(input, ctx);
     if (input.kind === 'chat' && plan) {
       // Le modifiche proposte devono potersi applicare davvero al programma attuale.
@@ -199,37 +285,13 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
       };
     }
 
-    const messages: ChatMessage[] = [...spec.messages];
-    let value: unknown = null;
-    let citations: { url: string; title?: string }[] = [];
-    for (let attempt = 0; ; attempt++) {
-      const res = await complete({
-        provider: access.provider,
-        apiKey: access.apiKey,
-        model: access.model,
-        fallbacks: access.fallbacks,
-        messages,
-        jsonSchema: { name: spec.schemaName, schema: spec.jsonSchema },
-        web: spec.web,
-        denyDataCollection: access.denyDataCollection,
-        appUrl: deps.appUrl,
-        appName: deps.appName,
-        fetchImpl: deps.httpFetch,
-      });
-      model = res.model;
-      promptTokens += res.promptTokens ?? 0;
-      completionTokens += res.completionTokens ?? 0;
-      if (res.cost !== null) cost = (cost ?? 0) + res.cost;
-      if (res.citations) citations = res.citations;
-      const checked = checkResult(spec, res.content);
-      if ('value' in checked) {
-        value = checked.value;
-        break;
-      }
-      if (attempt >= spec.repairs) throw new AiJobError('AI_INVALID_RESPONSE');
-      messages.push({ role: 'assistant', content: res.content });
-      messages.push(buildRepairMessage(checked.issues, locale));
-    }
+    const run = await runSpec(deps, access, spec, locale);
+    model = run.model;
+    promptTokens += run.promptTokens;
+    completionTokens += run.completionTokens;
+    if (run.cost !== null) cost = (cost ?? 0) + run.cost;
+    const value = run.value;
+    const citations = run.citations;
 
     if (input.kind === 'verify') {
       const v = value as VerifyResult;

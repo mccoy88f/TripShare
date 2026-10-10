@@ -14,6 +14,7 @@ import {
   user,
 } from '@tripshare/db';
 import { CURRENCY_CODES } from '@tripshare/shared';
+import { TripBriefSchema } from '@tripshare/shared/trip-format';
 import { notifyTrip } from '../services/events.js';
 import { readPlan, removeOrphanPhotos } from '../services/plan.js';
 import { computeLedgers, requireMember } from '../services/trips.js';
@@ -40,6 +41,17 @@ const TripInput = z
     message: 'END_BEFORE_START',
     path: ['endDate'],
   });
+
+/** Creazione guidata: il viaggio con la sua scheda e i partecipanti (oltre a chi lo crea). */
+const CreateInput = TripInput.and(
+  z.object({
+    brief: TripBriefSchema.optional(),
+    participants: z
+      .array(z.object({ name: z.string().trim().min(1).max(80) }))
+      .max(49)
+      .default([]),
+  }),
+);
 
 export const tripsRouter = router({
   list: authedProcedure.query(async ({ ctx }) => {
@@ -85,20 +97,33 @@ export const tripsRouter = router({
     };
   }),
 
-  create: authedProcedure.input(TripInput).mutation(async ({ ctx, input }) => {
+  create: authedProcedure.input(CreateInput).mutation(async ({ ctx, input }) => {
+    const { brief, participants, ...data } = input;
     const [me] = await ctx.db.select().from(user).where(eq(user.id, ctx.user.id));
     return ctx.db.transaction(async (tx) => {
       const [created] = await tx
         .insert(trip)
-        .values({ ...input, createdBy: ctx.user.id })
+        .values({ ...data, brief: brief ?? null, createdBy: ctx.user.id })
         .returning();
-      await tx.insert(tripMember).values({
-        tripId: created!.id,
-        userId: ctx.user.id,
-        name: me?.name ?? ctx.user.name,
-        role: 'owner',
-      });
-      return { id: created!.id };
+      const [owner] = await tx
+        .insert(tripMember)
+        .values({
+          tripId: created!.id,
+          userId: ctx.user.id,
+          name: me?.name ?? ctx.user.name,
+          role: 'owner',
+        })
+        .returning({ id: tripMember.id });
+      // Gli altri partecipanti sono persone senza account finché non accettano un invito:
+      // gli si possono già assegnare spese e quote.
+      const others =
+        participants.length > 0
+          ? await tx
+              .insert(tripMember)
+              .values(participants.map((p) => ({ tripId: created!.id, name: p.name })))
+              .returning({ id: tripMember.id, name: tripMember.name })
+          : [];
+      return { id: created!.id, ownerMemberId: owner!.id, participants: others };
     });
   }),
 

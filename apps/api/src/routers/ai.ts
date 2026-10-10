@@ -1,9 +1,10 @@
 import { TRPCError } from '@trpc/server';
-import { and, desc, eq, gte, isNull, lte } from 'drizzle-orm';
+import { and, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { aiChatMessage, aiConversation, aiJob, userSecret } from '@tripshare/db';
+import { aiChatMessage, aiConversation, aiJob, trip, userSecret } from '@tripshare/db';
 import { AI_PROVIDERS, monthlyCentralUsage, userKeys } from '../ai/access.js';
 import { aiDeps } from '../ai/deps.js';
+import { initialState, type GenerationState } from '../ai/generation.js';
 import { AiJobError, chatHistory, startAiJob } from '../ai/jobs.js';
 import { AiInputSchema } from '../ai/tasks.js';
 import { encrypt, maskSecret } from '../crypto.js';
@@ -17,6 +18,7 @@ const MIN_ROLE = {
   receipt: 'editor',
   booking: 'editor',
   generate: 'editor',
+  generateTrip: 'owner',
   verify: 'editor',
   placePhoto: 'editor',
   packing: 'editor',
@@ -113,6 +115,20 @@ export const aiRouter = router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'TRIP_REQUIRED' });
       }
       let job = input.input;
+      if (job.kind === 'generateTrip' && input.tripId) {
+        const [row] = await ctx.db
+          .select({ generation: trip.generation, updatedAt: trip.updatedAt })
+          .from(trip)
+          .where(eq(trip.id, input.tripId));
+        const current = row?.generation as GenerationState | null;
+        // Una generazione in corso (non ferma da più di mezz'ora) non si avvia due volte.
+        if (current?.status === 'running' && Date.now() - row!.updatedAt.getTime() < 30 * 60_000)
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'GENERATION_RUNNING' });
+        await ctx.db
+          .update(trip)
+          .set({ generation: initialState(job.from ?? 'strategy', current ?? undefined) })
+          .where(eq(trip.id, input.tripId));
+      }
       if (job.kind === 'chat' && input.tripId) {
         // Ogni messaggio appartiene a una conversazione: se manca se ne apre una nuova.
         let conversationId = job.conversationId;
@@ -168,6 +184,32 @@ export const aiRouter = router({
       .where(and(eq(aiJob.id, input.id), eq(aiJob.userId, ctx.user.id)));
     if (!job) throw new TRPCError({ code: 'NOT_FOUND' });
     return job;
+  }),
+
+  /** Avanzamento della generazione a fasi di un viaggio. */
+  generation: router({
+    state: authedProcedure.input(z.object({ tripId: z.uuid() })).query(async ({ ctx, input }) => {
+      await requireMember(ctx.db, input.tripId, ctx.user.id);
+      const [row] = await ctx.db
+        .select({ generation: trip.generation })
+        .from(trip)
+        .where(eq(trip.id, input.tripId));
+      const state = (row?.generation ?? null) as GenerationState | null;
+      return state ? { ...state, strategy: undefined } : null;
+    }),
+    /** Chiude il riepilogo della generazione (non si mostra più). */
+    dismiss: authedProcedure
+      .input(z.object({ tripId: z.uuid() }))
+      .mutation(async ({ ctx, input }) => {
+        await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
+        await ctx.db
+          .update(trip)
+          .set({
+            generation: sql`case when ${trip.generation} is null then null else jsonb_set(${trip.generation}, '{dismissed}', 'true'::jsonb) end`,
+          })
+          .where(eq(trip.id, input.tripId));
+        return { ok: true };
+      }),
   }),
 
   chat: router({
