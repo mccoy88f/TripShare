@@ -478,8 +478,7 @@
       "packing": "Packing",
       "tickets": "Tickets",
       "notes": "Notes",
-      "assistant": "Assistant",
-      "memories": "Memories"
+      "assistant": "Assistant"
     },
     "new": {
       "title": "New trip",
@@ -526,8 +525,7 @@
       "packing": "Add to packing",
       "notes": "Add note",
       "members": "Invite someone",
-      "noDays": "Create the trip days first (or generate them with AI).",
-      "memories": "Add memory"
+      "noDays": "Create the trip days first (or generate them with AI)."
     },
     "resetTitle": "Reset trip",
     "reset": "Reset trip",
@@ -1172,7 +1170,6 @@
     "timeline": "Timeline",
     "map": "Map",
     "empty": "Your photos and videos live here, with date and place. Upload your first memory.",
-    "emptyTrip": "No memories for this trip yet. Upload photos and videos: date and place are read from the file.",
     "uploading": "Uploading {{current}} of {{total}}…",
     "uploaded_one": "1 memory uploaded",
     "uploaded_other": "{{count}} memories uploaded",

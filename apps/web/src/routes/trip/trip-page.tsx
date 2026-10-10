@@ -24,7 +24,6 @@ import { ExpenseDialog } from './expense-dialog';
 import { ExpensesTab } from './expenses-tab';
 import { MembersTab } from './members-tab';
 import { rememberTrip } from '@/lib/memories';
-import { MemoriesView } from '@/routes/memories/memories-view';
 import { NotesTab } from './notes-tab';
 import { SettingsTab } from './settings-tab';
 import { BookingsTab } from './plan/bookings-tab';
@@ -35,15 +34,7 @@ import { PlanTab } from './plan/plan-tab';
 import { cn } from '@/lib/utils';
 
 /** Tab visibili nella barra; membri e impostazioni sono icone sulla copertina. */
-const MAIN_TABS = [
-  'plan',
-  'expenses',
-  'bookings',
-  'places',
-  'packing',
-  'memories',
-  'notes',
-] as const;
+const MAIN_TABS = ['plan', 'expenses', 'bookings', 'places', 'packing', 'notes'] as const;
 /** L'assistente è un'icona a destra della riga dei tab; membri e impostazioni sulla copertina. */
 const TABS = [...MAIN_TABS, 'assistant', 'members', 'settings'] as const;
 type Tab = (typeof TABS)[number];
@@ -100,6 +91,10 @@ export function TripPage() {
   useEffect(() => {
     if (tripId) rememberTrip(tripId);
   }, [tripId]);
+  // I ricordi stanno nella pagina Ricordi: i vecchi link (e le notifiche) portano lì.
+  useEffect(() => {
+    if (search.tab === 'memories') void navigate({ to: '/app/memories', replace: true });
+  }, [search.tab]); // eslint-disable-line react-hooks/exhaustive-deps
   const [adding, setAdding] = useState(false);
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState('');
@@ -107,7 +102,7 @@ export function TripPage() {
   const [addRequest, setAddRequest] = useState({ target: '', n: 0 });
   // Il "+" in basso aggiunge qualcosa nel tab attivo.
   const target = tab === 'expenses' ? (view === 'budget' ? 'budget' : 'expenses') : tab;
-  const viewerCan = target === 'notes' || target === 'memories' || target === 'assistant';
+  const viewerCan = target === 'notes' || target === 'assistant';
   const fabTarget = target === 'settings' ? 'expenses' : target;
   const [capturing, setCapturing] = useState(false);
   const manualAdd = () =>
@@ -342,9 +337,6 @@ export function TripPage() {
                 </TabsContent>
                 <TabsContent value="packing">
                   <PackingTab trip={trip} />
-                </TabsContent>
-                <TabsContent value="memories">
-                  <MemoriesView tripId={trip.id} />
                 </TabsContent>
                 <TabsContent value="notes">
                   <NotesTab trip={trip} />

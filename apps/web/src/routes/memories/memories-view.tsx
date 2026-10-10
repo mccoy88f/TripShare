@@ -46,7 +46,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Select } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { useFabAction, useOnAdd } from '@/lib/fab';
+import { useFabAction } from '@/lib/fab';
 import {
   canShareFiles,
   downloadMemories,
@@ -98,16 +98,16 @@ const localDay = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 /**
- * Foto e video con data e posizione. Nella pagina Ricordi sono i propri; nella scheda di un
- * viaggio (`tripId`) quelli del viaggio, compresi i condivisi dagli altri partecipanti.
+ * Foto e video con data e posizione: i propri e quelli che gli altri partecipanti dei tuoi viaggi
+ * hanno condiviso con il gruppo.
  */
-export function MemoriesView({ tripId }: { tripId?: string }) {
+export function MemoriesView() {
   const { t, i18n } = useTranslation();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { data: memories } = useQuery(trpc.memories.list.queryOptions({ tripId }));
+  const { data: memories } = useQuery(trpc.memories.list.queryOptions({}));
   // Nella pagina Ricordi si parte divisi per viaggio; nella scheda di un viaggio non serve.
-  const modes: ViewMode[] = tripId ? ['timeline', 'map'] : ['trips', 'timeline', 'map'];
+  const modes: ViewMode[] = ['trips', 'timeline', 'map'];
   const [stored, setStored] = useState<string>(() => readPref(VIEW_KEY, 'trips'));
   const mode = (modes as string[]).includes(stored) ? (stored as ViewMode) : modes[0]!;
   const [openId, setOpenId] = useState<string | null>(null);
@@ -117,7 +117,6 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
   const [picked, setPicked] = useState<Set<string> | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const pick = () => input.current?.click();
-  useOnAdd('memories', pick);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: trpc.memories.list.queryKey() });
 
@@ -125,8 +124,8 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
     const list: Memory[] = [...(memories ?? [])];
     list.sort((a, b) => memoryDate(a).getTime() - memoryDate(b).getTime());
     // Nel viaggio si racconta in ordine, tra i propri ricordi prima i più recenti.
-    return tripId ? list : list.reverse();
-  }, [memories, tripId]);
+    return list.reverse();
+  }, [memories]);
 
   const days = useMemo(() => {
     const groups = new Map<string, Memory[]>();
@@ -184,7 +183,7 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
 
   return (
     <div className="grid grid-cols-1 gap-5 pb-8">
-      {!tripId && <GlobalFab onAdd={pick} />}
+      <GlobalFab onAdd={pick} />
       <input
         ref={input}
         type="file"
@@ -243,9 +242,7 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
       ) : memories.length === 0 ? (
         <div className="grid place-items-center rounded-xl border border-dashed px-6 py-14 text-center">
           <Camera className="size-12 text-muted-foreground" />
-          <p className="mt-3 max-w-sm text-sm text-muted-foreground">
-            {t(tripId ? 'memories.emptyTrip' : 'memories.empty')}
-          </p>
+          <p className="mt-3 max-w-sm text-sm text-muted-foreground">{t('memories.empty')}</p>
           <Button className="mt-4" onClick={pick}>
             <Upload />
             {t('memories.upload')}
@@ -274,7 +271,7 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
                 <span className="text-xs font-normal text-muted-foreground">{items.length}</span>
               </h3>
               <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 md:grid-cols-5">
-                {items.map((m) => tile(m, !!tripId))}
+                {items.map((m) => tile(m, true))}
               </div>
             </section>
           ))}
@@ -299,7 +296,7 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
                 {t('memories.noPlace', { count: unmapped.length })}
               </h3>
               <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6 md:grid-cols-8">
-                {unmapped.map((m) => tile(m, !!tripId))}
+                {unmapped.map((m) => tile(m, true))}
               </div>
             </section>
           )}
@@ -317,7 +314,6 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
       {staged && (
         <UploadDialog
           files={staged}
-          tripId={tripId}
           onClose={() => setStaged(null)}
           onDone={() => void refresh()}
         />
@@ -578,12 +574,10 @@ function Preview({ file }: { file: File }) {
  */
 function UploadDialog({
   files,
-  tripId,
   onClose,
   onDone,
 }: {
   files: File[];
-  tripId?: string;
   onClose: () => void;
   onDone: () => void;
 }) {
@@ -593,7 +587,7 @@ function UploadDialog({
   const [items, setItems] = useState(() => files.map((file, id) => ({ id, file })));
   const [shared, setShared] = useState(() => readPref(SHARE_KEY, 'true') !== 'false');
   // Dalla pagina Ricordi: collegamento automatico (dal giorno dello scatto), nessuno o un viaggio.
-  const [chosen, setChosen] = useState(() => tripId ?? lastTrip() ?? 'auto');
+  const [chosen, setChosen] = useState(() => lastTrip() ?? 'auto');
   const [caption, setCaption] = useState('');
   // Un viaggio che non c'è più (o non è tuo) torna al collegamento automatico.
   const target =

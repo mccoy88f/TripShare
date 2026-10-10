@@ -478,8 +478,7 @@
       "packing": "Bagagli",
       "tickets": "Biglietti",
       "notes": "Note",
-      "assistant": "Assistente",
-      "memories": "Ricordi"
+      "assistant": "Assistente"
     },
     "new": {
       "title": "Nuovo viaggio",
@@ -526,8 +525,7 @@
       "packing": "Aggiungi ai bagagli",
       "notes": "Aggiungi nota",
       "members": "Invita qualcuno",
-      "noDays": "Crea prima i giorni del viaggio (o generali con l'AI).",
-      "memories": "Aggiungi ricordo"
+      "noDays": "Crea prima i giorni del viaggio (o generali con l'AI)."
     },
     "resetTitle": "Azzera viaggio",
     "reset": "Azzera viaggio",
@@ -1172,7 +1170,6 @@
     "timeline": "Timeline",
     "map": "Mappa",
     "empty": "Qui trovi le tue foto e i tuoi video, con data e posizione. Carica il primo ricordo.",
-    "emptyTrip": "Nessun ricordo di questo viaggio. Carica foto e video: data e posizione si leggono dal file.",
     "uploading": "Caricamento {{current}} di {{total}}…",
     "uploaded_one": "1 ricordo caricato",
     "uploaded_other": "{{count}} ricordi caricati",

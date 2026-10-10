@@ -12,8 +12,8 @@ const userLanguage = (u: { locale?: unknown }) => (u.locale === 'en' ? 'en' : 'i
 const when = sql<Date>`coalesce(${memory.takenAt}, ${memory.createdAt})`;
 
 /**
- * Ricordi: foto e video personali con data e posizione. Ognuno vede i propri; nella scheda di
- * un viaggio si vedono anche quelli che gli altri partecipanti hanno condiviso. Il caricamento
+ * Ricordi: foto e video con data e posizione. Ognuno vede i propri e quelli che gli altri
+ * partecipanti dei suoi viaggi hanno condiviso con il gruppo. Il caricamento
  * dei file è in `/api/memories` (multipart), la lettura in `/api/memories/:id/file`.
  */
 export const memoriesRouter = router({
@@ -52,7 +52,7 @@ export const memoriesRouter = router({
         .where(
           input.tripId
             ? and(eq(memory.tripId, input.tripId), visibleTo(ctx.user.id))
-            : eq(memory.userId, ctx.user.id),
+            : visibleTo(ctx.user.id),
         )
         .orderBy(desc(when))
         .limit(2000);

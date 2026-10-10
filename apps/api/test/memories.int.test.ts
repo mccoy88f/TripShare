@@ -165,6 +165,14 @@ run('memories (integration)', () => {
     expect((await t.trpc('memories.list', stranger, { tripId: trip.id }, 'query')).status).toBe(
       404,
     );
+    // Anche nell'elenco generale l'amico vede il ricordo condiviso, ma non quelli privati.
+    const friendAll = await t.trpc<{ id: string; mine: boolean }[]>(
+      'memories.list',
+      friend,
+      {},
+      'query',
+    );
+    expect(friendAll.data).toEqual([expect.objectContaining({ id, mine: false })]);
     // La notifica del ricordo condiviso arriva all'amico.
     const unread = await t.trpc<{ total: number }>(
       'notifications.unread',
