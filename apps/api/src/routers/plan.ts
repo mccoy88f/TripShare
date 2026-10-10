@@ -11,7 +11,7 @@ import {
   removeOrphanPhotos,
 } from '../services/plan.js';
 import { downloadImage, ImageDownloadError } from '../image-download.js';
-import { diffPlan, notifyTrip } from '../services/events.js';
+import { broadcastChange, diffPlan, notifyTrip } from '../services/events.js';
 import { searchCommons } from '../photo-search.js';
 import { requireMember } from '../services/trips.js';
 import { authedProcedure, router } from '../trpc/init.js';
@@ -243,6 +243,7 @@ export const planRouter = router({
             ),
           );
       }
+      await broadcastChange(ctx.db, input.tripId, ctx.user.id, 'packing.toggled', input.itemId);
       return { ok: true };
     }),
 

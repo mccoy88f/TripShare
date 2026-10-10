@@ -9,6 +9,7 @@ import { bookingTicket, expense, trip, tripMember, user } from '@tripshare/db';
 import { TICKET_CODE_FORMATS } from './routers/tickets.js';
 import { tripDocumentJsonSchema } from '@tripshare/shared/trip-format';
 import { notifyTrip } from './services/events.js';
+import { createRealtime, subscribeUser } from './services/realtime.js';
 import { requireMember } from './services/trips.js';
 import { appRouter, type AppRouter } from './routers/index.js';
 import type { AppServices, Context } from './trpc/init.js';
@@ -43,6 +44,39 @@ export async function buildServer(
   await app.register(cors, { origin: env.trustedOrigins, credentials: true });
 
   app.get('/api/health', { logLevel: 'silent' }, async () => ({ status: 'ok' }));
+
+  const realtime = createRealtime(services.redis);
+  app.addHook('onClose', async () => realtime.close());
+
+  /** Flusso di aggiornamenti in tempo reale (SSE) per l'utente collegato. */
+  app.get('/api/events', { logLevel: 'silent' }, async (req, reply) => {
+    const session = await auth.api.getSession({ headers: toHeaders(req) });
+    if (!session) return reply.status(401).send({ error: 'UNAUTHORIZED' });
+    reply.hijack();
+    const res = reply.raw;
+    res.writeHead(200, {
+      'content-type': 'text/event-stream; charset=utf-8',
+      'cache-control': 'no-cache, no-transform',
+      connection: 'keep-alive',
+      // Senza questo alcuni proxy trattengono i dati invece di inoltrarli subito.
+      'x-accel-buffering': 'no',
+    });
+    res.write('retry: 4000\n\n');
+    const unsubscribe = subscribeUser(session.user.id, (message) => {
+      const { users: _users, notify, ...rest } = message;
+      void _users;
+      res.write(
+        `event: change\ndata: ${JSON.stringify({ ...rest, notify: notify.includes(session.user.id) })}\n\n`,
+      );
+    });
+    const heartbeat = setInterval(() => res.write(': ping\n\n'), 25_000);
+    const cleanup = () => {
+      clearInterval(heartbeat);
+      unsubscribe();
+    };
+    req.raw.on('close', cleanup);
+    res.on('error', cleanup);
+  });
 
   app.get('/api/trip-format/v1/schema.json', async (_req, reply) => {
     reply.header('cache-control', 'public, max-age=3600');

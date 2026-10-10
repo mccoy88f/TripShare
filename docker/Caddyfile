@@ -15,6 +15,13 @@
 		-Server
 	}
 
+	# Aggiornamenti in tempo reale (SSE): niente buffer, i messaggi arrivano subito.
+	handle /api/events {
+		reverse_proxy api:3000 {
+			flush_interval -1
+		}
+	}
+
 	handle /api/* {
 		reverse_proxy api:3000
 	}

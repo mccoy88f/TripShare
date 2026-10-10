@@ -1214,6 +1214,7 @@
         "reset_one": "{{actor}} reset the trip",
         "reset_other": "{{actor}} reset the trip"
       }
-    }
+    },
+    "open": "Open"
   }
 }

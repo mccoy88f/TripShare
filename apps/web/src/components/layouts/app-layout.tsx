@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { signOut } from '@/lib/auth-client';
 import { useCurrentFab } from '@/lib/fab';
+import { useRealtime } from '@/lib/realtime';
 import { useKeyboard } from '@/lib/keyboard';
 import { applyTheme, type Theme } from '@/lib/theme';
 import { useTRPC } from '@/lib/trpc';
@@ -29,6 +30,8 @@ export function AppLayout() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { data: me } = useMe();
+  // Aggiornamenti in tempo reale dei viaggi condivisi, finché si è collegati.
+  useRealtime(!!me);
 
   // Le preferenze salvate nel profilo valgono su ogni dispositivo.
   useEffect(() => {

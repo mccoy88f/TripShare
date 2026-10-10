@@ -156,4 +156,71 @@ run('notifications (integration)', () => {
     expect(await pruneEvents(t.db, 90)).toBeGreaterThan(0);
     expect(await list(marco)).toEqual([]);
   });
+
+  it('pushes changes to connected devices in real time', async () => {
+    const { marco, sara, tripId, me } = await setup();
+    await t.app.listen({ port: 0, host: '127.0.0.1' });
+    const address = t.app.server.address();
+    const base = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
+
+    const open = async (cookie: string) => {
+      const controller = new AbortController();
+      const res = await fetch(`${base}/api/events`, {
+        headers: { cookie },
+        signal: controller.signal,
+      });
+      expect(res.headers.get('content-type')).toContain('text/event-stream');
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      return {
+        /** Primo messaggio "change" ricevuto. */
+        async next() {
+          for (;;) {
+            const match = /event: change\ndata: (.*)\n\n/.exec(buffer);
+            if (match) {
+              buffer = buffer.slice(match.index + match[0].length);
+              return JSON.parse(match[1]!) as Record<string, unknown>;
+            }
+            const { value, done } = await reader.read();
+            if (done) throw new Error('stream closed');
+            buffer += decoder.decode(value);
+          }
+        },
+        close: () => controller.abort(),
+      };
+    };
+
+    const denied = await fetch(`${base}/api/events`);
+    expect(denied.status).toBe(401);
+
+    const forSara = await open(sara);
+    const forMarco = await open(marco);
+    await new Promise((r) => setTimeout(r, 100));
+    await t.trpc('expenses.create', marco, expense(tripId, me, 'Cena'));
+    // Sara riceve la modifica e la notifica; Marco la modifica ma non la notifica.
+    expect(await forSara.next()).toMatchObject({
+      tripId,
+      kind: 'expense.created',
+      actorName: 'Marco',
+      notify: true,
+      data: { title: 'Cena' },
+    });
+    expect(await forMarco.next()).toMatchObject({ kind: 'expense.created', notify: false });
+
+    // Una spunta del bagaglio aggiorna le schermate senza creare notifiche.
+    await t.trpc('plan.applyOps', marco, {
+      tripId,
+      ops: [
+        { type: 'upsertPackingItem', item: { id: 'giacca', item: 'Giacca', group: 'clothing' } },
+      ],
+    });
+    await forSara.next(); // plan.packing.added
+    await t.trpc('plan.togglePacking', marco, { tripId, itemId: 'giacca', checked: true });
+    expect(await forSara.next()).toMatchObject({ kind: 'packing.toggled', notify: false });
+    expect((await list(sara)).some((n) => n.event.type.includes('toggled'))).toBe(false);
+
+    forSara.close();
+    forMarco.close();
+  });
 });

@@ -7,8 +7,8 @@ import type { Locale } from '@tripshare/shared';
 import { UserAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { money, timeAgo } from '@/lib/format';
-import { notificationTarget } from '@/lib/notifications';
+import { timeAgo } from '@/lib/format';
+import { describeNotification, notificationTarget } from '@/lib/notifications';
 import { focusItem } from '@/lib/search-focus';
 import { trpcClient, useTRPC } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
@@ -75,24 +75,12 @@ function NotificationsPanel({ onClose }: { onClose: () => void }) {
   const items = list.data?.pages.flatMap((p) => p.items) ?? [];
   const unread = items.some((i) => !i.read);
 
-  const text = (item: (typeof items)[number]) => {
-    const d = item.event.data as Record<string, unknown>;
-    const amount =
-      typeof d.amount === 'number' && typeof d.currency === 'string'
-        ? money(d.amount, d.currency)
-        : '';
-    return t(`notifications.types.${item.event.type}`, {
-      count: item.event.count,
-      actor: item.actor?.name ?? t('notifications.someone'),
-      title: typeof d.title === 'string' ? d.title : '',
-      name: typeof d.name === 'string' ? d.name : '',
-      role:
-        typeof d.role === 'string' ? t(`members.roles.${d.role}`, { defaultValue: d.role }) : '',
-      days: typeof d.days === 'number' ? d.days : 0,
-      amount,
-      defaultValue: t('notifications.unknown'),
-    });
-  };
+  const text = (item: (typeof items)[number]) =>
+    describeNotification(
+      t,
+      { ...item.event, data: item.event.data as Record<string, unknown> },
+      item.actor?.name,
+    );
 
   const open = async (item: (typeof items)[number]) => {
     if (!item.read) markRead.mutate({ ids: [item.id] });

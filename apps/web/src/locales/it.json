@@ -1214,6 +1214,7 @@
         "reset_one": "{{actor}} ha azzerato il viaggio",
         "reset_other": "{{actor}} ha azzerato il viaggio"
       }
-    }
+    },
+    "open": "Apri"
   }
 }

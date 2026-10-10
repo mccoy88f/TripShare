@@ -1,3 +1,6 @@
+import type { TFunction } from 'i18next';
+import { money } from './format';
+
 /** Dove portare chi tocca una notifica: tab del viaggio, elemento da evidenziare, giorno. */
 export interface NotificationTarget {
   tab: string;
@@ -29,4 +32,27 @@ export function notificationTarget(
   if (type.startsWith('note.')) return { tab: 'notes', key: key('note') };
   if (type.startsWith('member.')) return { tab: 'members', key: '' };
   return { tab: 'plan', key: '' };
+}
+
+/** Testo di una notifica, composto nella lingua corrente dai parametri dell'evento. */
+export function describeNotification(
+  t: TFunction,
+  event: { type: string; count: number; data: Record<string, unknown> },
+  actorName: string | null | undefined,
+): string {
+  const d = event.data;
+  const amount =
+    typeof d.amount === 'number' && typeof d.currency === 'string'
+      ? money(d.amount, d.currency)
+      : '';
+  return t(`notifications.types.${event.type}`, {
+    count: event.count,
+    actor: actorName ?? t('notifications.someone'),
+    title: typeof d.title === 'string' ? d.title : '',
+    name: typeof d.name === 'string' ? d.name : '',
+    role: typeof d.role === 'string' ? t(`members.roles.${d.role}`, { defaultValue: d.role }) : '',
+    days: typeof d.days === 'number' ? d.days : 0,
+    amount,
+    defaultValue: t('notifications.unknown'),
+  });
 }

@@ -53,9 +53,17 @@ export const COALESCE_MS = 5 * 60 * 1000;
 export interface RecordedEvent {
   eventId: string;
   tripId: string;
-  type: EventType;
+  type: EventType | 'packing.toggled';
+  entityId: string | null;
+  data: EventData;
+  /** Quante modifiche simili sono state fuse nell'evento (1 se è nuovo). */
+  count: number;
+  actorUserId: string;
+  actorName: string | null;
   /** Utenti a cui è stata creata o riattivata la notifica. */
   recipients: string[];
+  /** Tutti i membri con un account, autore compreso: servono per aggiornare le schermate. */
+  members: string[];
   /** true se l'evento è nuovo, false se ne ha fuso uno recente. */
   created: boolean;
 }
@@ -79,7 +87,7 @@ export interface EventInput {
 
 export async function recordEvent(db: Database, input: EventInput): Promise<RecordedEvent | null> {
   const members = await db
-    .select({ id: tripMember.id, userId: tripMember.userId })
+    .select({ id: tripMember.id, userId: tripMember.userId, name: tripMember.name })
     .from(tripMember)
     .where(and(eq(tripMember.tripId, input.tripId), isNull(tripMember.removedAt)));
   const actor = members.find((m) => m.userId === input.actorUserId);
@@ -109,8 +117,10 @@ export async function recordEvent(db: Database, input: EventInput): Promise<Reco
 
   let eventId: string;
   let created = false;
+  let count = 1;
   if (recent) {
     eventId = recent.id;
+    count = recent.count + 1;
     await db
       .update(tripEvent)
       .set({
@@ -146,7 +156,13 @@ export async function recordEvent(db: Database, input: EventInput): Promise<Reco
     eventId,
     tripId: input.tripId,
     type: input.type,
+    entityId: input.entityId ?? null,
+    data: (input.data ?? {}) as EventData,
+    count,
+    actorUserId: input.actorUserId,
+    actorName: actor?.name ?? null,
     recipients,
+    members: members.filter((m) => m.userId).map((m) => m.userId!),
     created,
   };
   for (const fn of listeners) {
@@ -157,6 +173,41 @@ export async function recordEvent(db: Database, input: EventInput): Promise<Reco
     }
   }
   return recorded;
+}
+
+/**
+ * Avvisa i dispositivi aperti dei membri che qualcosa è cambiato (ad es. una spunta del
+ * bagaglio), senza creare un evento né una notifica.
+ */
+export async function broadcastChange(
+  db: Database,
+  tripId: string,
+  actorUserId: string,
+  type: 'packing.toggled',
+  entityId?: string,
+): Promise<void> {
+  try {
+    const members = await db
+      .select({ userId: tripMember.userId })
+      .from(tripMember)
+      .where(and(eq(tripMember.tripId, tripId), isNull(tripMember.removedAt)));
+    const event: RecordedEvent = {
+      eventId: '',
+      tripId,
+      type,
+      entityId: entityId ?? null,
+      data: {},
+      count: 1,
+      actorUserId,
+      actorName: null,
+      recipients: [],
+      members: members.filter((m) => m.userId).map((m) => m.userId!),
+      created: false,
+    };
+    for (const fn of listeners) fn(event);
+  } catch {
+    // il tempo reale è un di più: non deve far fallire la modifica
+  }
 }
 
 /** Registra un evento senza mai propagare errori. */
