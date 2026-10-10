@@ -376,3 +376,25 @@ export const notification = pgTable(
     index('notification_user_idx').on(t.userId, t.readAt, t.createdAt),
   ],
 );
+
+/** Dispositivo che riceve le notifiche push (un utente può averne più d'uno). */
+export const pushSubscription = pgTable(
+  'push_subscription',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    /** Indirizzo del servizio push del browser: identifica il dispositivo. */
+    endpoint: text().notNull(),
+    p256dh: text().notNull(),
+    auth: text().notNull(),
+    userAgent: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    lastSentAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex('push_subscription_endpoint_idx').on(t.endpoint),
+    index('push_subscription_user_idx').on(t.userId),
+  ],
+);

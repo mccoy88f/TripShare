@@ -17,6 +17,11 @@ export default tseslint.config(
     },
   },
   {
+    // Service worker delle notifiche push (file statico caricato dal service worker dell'app).
+    files: ['apps/web/public/push-sw.js'],
+    languageOptions: { globals: { ...globals.serviceworker } },
+  },
+  {
     files: ['apps/web/**/*.{ts,tsx}'],
     languageOptions: { globals: { ...globals.browser } },
     plugins: { 'react-hooks': reactHooks },

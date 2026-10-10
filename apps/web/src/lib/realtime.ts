@@ -53,7 +53,6 @@ export function useRealtime(enabled: boolean) {
       void queryClient.invalidateQueries({ queryKey: ['notifications', 'list'] });
       if (document.visibilityState !== 'visible') return;
       const text = describeNotification(
-        t,
         { type: msg.kind, count: msg.count ?? 1, data: msg.data ?? {} },
         msg.actorName,
       );

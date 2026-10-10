@@ -4,6 +4,7 @@ import { createDb } from '@tripshare/db';
 import { AI_QUEUE, processAiJob } from './ai/jobs.js';
 import { EMAIL_QUEUE, createDirectEmailSender, type EmailJob } from './email/index.js';
 import { envWarnings, loadEnv } from './env.js';
+import { createWebPushSender, NOTIFY_QUEUE, sendEventPush } from './services/push.js';
 import { SettingsService } from './settings.js';
 import { FileStorage } from './storage.js';
 
@@ -58,12 +59,30 @@ aiWorker.on('failed', (job, err) =>
   console.error(`[ai] lavoro ${job?.data.jobId} non riuscito: ${err.message}`),
 );
 
+// Notifiche push dei viaggi: il testo si compone qui, nella lingua di ogni destinatario.
+const notifyWorker = new Worker<{ eventId: string }>(
+  NOTIFY_QUEUE,
+  async (job) => {
+    const fresh = new SettingsService(db, env.ENCRYPTION_KEY);
+    const sender = createWebPushSender(
+      fresh,
+      `mailto:${env.SUPERADMIN_EMAIL ?? 'admin@localhost'}`,
+    );
+    return sendEventPush({ db, sender, log: (msg) => console.warn(msg) }, job.data.eventId);
+  },
+  { connection, concurrency: 4 },
+);
+notifyWorker.on('failed', (job, err) =>
+  console.error(`[push] evento ${job?.data.eventId} non inviato: ${err.message}`),
+);
+
 for (const warning of envWarnings(env)) console.warn(`[config] ${warning}`);
 console.log(`Worker avviato, SMTP ${env.smtp.host}:${env.smtp.port}`);
 
 const shutdown = async () => {
   await emailWorker.close();
   await aiWorker.close();
+  await notifyWorker.close();
   connection.disconnect();
   await close();
   process.exit(0);

@@ -24,6 +24,7 @@ import { applyTheme, type Theme } from '@/lib/theme';
 import { useTRPC } from '@/lib/trpc';
 import { uploadImage } from '@/lib/upload';
 import { cn } from '@/lib/utils';
+import { PushCard } from '@/components/push-card';
 
 const COLORS = [
   '#fde68a',
@@ -311,6 +312,7 @@ export function ProfilePage() {
           </Button>
         </div>
       </form>
+      <PushCard />
       <AiKeysCard />
       {me.role === 'superadmin' && (
         <Button asChild variant="outline" size="lg" className="w-full">

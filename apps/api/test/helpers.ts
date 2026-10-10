@@ -5,6 +5,7 @@ import type { EmailJob, EmailSender } from '../src/email/index.js';
 import { loadEnv } from '../src/env.js';
 import { buildServer } from '../src/server.js';
 import { SettingsService } from '../src/settings.js';
+import type { AppServices } from '../src/trpc/init.js';
 import { FileStorage } from '../src/storage.js';
 
 /** Server completo su un database di test, con email catturate in memoria. */
@@ -12,6 +13,7 @@ export async function createTestApp(
   databaseUrl: string,
   uploadsDir?: string,
   httpFetch?: typeof fetch,
+  extra: Partial<AppServices> = {},
 ) {
   const env = loadEnv({
     NODE_ENV: 'test',
@@ -39,6 +41,7 @@ export async function createTestApp(
     storage,
     httpFetch,
     aiWait: true,
+    ...extra,
     fxRate: async (from, to) => ({
       rate: from === 'GBP' && to === 'EUR' ? 1.16 : 1,
       date: '2026-10-12',

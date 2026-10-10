@@ -1118,103 +1118,23 @@
     "empty": "No notifications. Changes others make to your trips show up here.",
     "markAll": "Mark all as read",
     "more": "Show more",
-    "someone": "Someone",
-    "unknown": "The trip was updated",
     "unreadDot": "Unread",
-    "types": {
-      "expense": {
-        "created_one": "{{actor}} added the expense “{{title}}” ({{amount}})",
-        "created_other": "{{actor}} added {{count}} expenses",
-        "updated_one": "{{actor}} edited the expense “{{title}}”",
-        "updated_other": "{{actor}} edited the expense “{{title}}”",
-        "deleted_one": "{{actor}} deleted the expense “{{title}}”",
-        "deleted_other": "{{actor}} deleted {{count}} expenses",
-        "paid_one": "{{actor}} marked “{{title}}” as paid ({{amount}})",
-        "paid_other": "{{actor}} marked {{count}} expenses as paid"
-      },
-      "settlement": {
-        "created_one": "{{actor}} recorded a repayment of {{amount}}",
-        "created_other": "{{actor}} recorded {{count}} repayments"
-      },
-      "plan": {
-        "activity": {
-          "added_one": "{{actor}} added the activity “{{title}}”",
-          "added_other": "{{actor}} added {{count}} activities",
-          "updated_one": "{{actor}} edited the activity “{{title}}”",
-          "updated_other": "{{actor}} edited the activity “{{title}}”",
-          "deleted_one": "{{actor}} removed the activity “{{title}}”",
-          "deleted_other": "{{actor}} removed {{count}} activities"
-        },
-        "day": {
-          "added_one": "{{actor}} added the day “{{title}}”",
-          "added_other": "{{actor}} added {{count}} days",
-          "deleted_one": "{{actor}} removed the day “{{title}}”",
-          "deleted_other": "{{actor}} removed {{count}} days"
-        },
-        "place": {
-          "added_one": "{{actor}} added the place “{{title}}”",
-          "added_other": "{{actor}} added {{count}} places",
-          "updated_one": "{{actor}} edited the place “{{title}}”",
-          "updated_other": "{{actor}} edited the place “{{title}}”",
-          "photo_one": "{{actor}} changed the photo of “{{title}}”",
-          "photo_other": "{{actor}} changed the photo of “{{title}}”",
-          "deleted_one": "{{actor}} removed the place “{{title}}”",
-          "deleted_other": "{{actor}} removed {{count}} places"
-        },
-        "booking": {
-          "added_one": "{{actor}} added the booking “{{title}}”",
-          "added_other": "{{actor}} added {{count}} bookings",
-          "updated_one": "{{actor}} edited the booking “{{title}}”",
-          "updated_other": "{{actor}} edited the booking “{{title}}”",
-          "deleted_one": "{{actor}} removed the booking “{{title}}”",
-          "deleted_other": "{{actor}} removed {{count}} bookings"
-        },
-        "budget": {
-          "added_one": "{{actor}} added the budget item “{{title}}”",
-          "added_other": "{{actor}} added {{count}} budget items",
-          "updated_one": "{{actor}} edited the budget item “{{title}}”",
-          "updated_other": "{{actor}} edited the budget item “{{title}}”",
-          "deleted_one": "{{actor}} removed the budget item “{{title}}”",
-          "deleted_other": "{{actor}} removed {{count}} budget items"
-        },
-        "packing": {
-          "added_one": "{{actor}} added “{{title}}” to the packing list",
-          "added_other": "{{actor}} added {{count}} items to the packing list",
-          "deleted_one": "{{actor}} removed “{{title}}” from the packing list",
-          "deleted_other": "{{actor}} removed {{count}} items from the packing list"
-        },
-        "tips": {
-          "updated_one": "{{actor}} edited the plan tips",
-          "updated_other": "{{actor}} edited the plan tips"
-        },
-        "replaced_one": "{{actor}} replaced the plan ({{days}} days)",
-        "replaced_other": "{{actor}} replaced the plan ({{days}} days)"
-      },
-      "ticket": {
-        "added_one": "{{actor}} added a ticket",
-        "added_other": "{{actor}} added {{count}} tickets"
-      },
-      "note": {
-        "created_one": "{{actor}} added the note “{{title}}”",
-        "created_other": "{{actor}} added {{count}} notes",
-        "updated_one": "{{actor}} edited the note “{{title}}”",
-        "updated_other": "{{actor}} edited the note “{{title}}”"
-      },
-      "member": {
-        "joined_one": "{{name}} joined the trip",
-        "joined_other": "{{count}} people joined the trip",
-        "left_one": "{{name}} left the trip",
-        "left_other": "{{count}} people left the trip",
-        "role_one": "{{actor}} changed {{name}}'s role: {{role}}",
-        "role_other": "{{actor}} changed {{name}}'s role: {{role}}"
-      },
-      "trip": {
-        "updated_one": "{{actor}} edited the trip details",
-        "updated_other": "{{actor}} edited the trip details",
-        "reset_one": "{{actor}} reset the trip",
-        "reset_other": "{{actor}} reset the trip"
-      }
-    },
     "open": "Open"
+  },
+  "push": {
+    "title": "Push notifications",
+    "text": "Get an alert on your phone when someone changes one of your trips, even with the app closed.",
+    "thisDevice": "Notifications on this device",
+    "iosInstall": "On iPhone and iPad notifications only work with the installed app: add it to the Home Screen from Safari (Share › Add to Home Screen), open it from there and come back.",
+    "unsupported": "This browser does not support push notifications.",
+    "denied": "Notifications are blocked for this site: re-enable them in the browser settings.",
+    "error": "Notifications could not be enabled. Please try again.",
+    "test": "Send a test notification",
+    "testSent": "Notification sent",
+    "testFailed": "No notification sent: check the device settings.",
+    "devices_one": "{{count}} device with notifications on",
+    "devices_other": "{{count}} devices with notifications on",
+    "enablePrompt": "Turn on notifications on your phone",
+    "enable": "Turn on"
   }
 }

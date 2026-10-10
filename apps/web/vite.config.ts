@@ -76,6 +76,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,wasm}'],
         // Le immagini di avvio per iOS le scarica solo iOS, non servono nella cache.
         globIgnores: ['splash/**'],
+        // Gestione delle notifiche push (ricezione e tocco).
+        importScripts: ['/push-sw.js'],
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,

@@ -7,6 +7,7 @@ import { meRouter } from './me.js';
 import { notesRouter } from './notes.js';
 import { notificationsRouter } from './notifications.js';
 import { planRouter } from './plan.js';
+import { pushRouter } from './push.js';
 import { ticketsRouter } from './tickets.js';
 import { tripsRouter } from './trips.js';
 import { publicRouter } from './public.js';
@@ -18,6 +19,7 @@ export const appRouter = router({
   ai: aiRouter,
   trips: tripsRouter,
   plan: planRouter,
+  push: pushRouter,
   notes: notesRouter,
   notifications: notificationsRouter,
   tickets: ticketsRouter,

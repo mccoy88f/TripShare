@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { pruneEvents } from '../src/services/events.js';
+import type { PushPayload, PushTarget } from '../src/services/push.js';
 import { createTestApp } from './helpers.js';
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
@@ -16,10 +17,22 @@ type Item = {
 
 run('notifications (integration)', () => {
   let t: Awaited<ReturnType<typeof createTestApp>>;
+  const pushed: { endpoint: string; payload: PushPayload }[] = [];
+  /** Dispositivi che il servizio push dichiara scaduti (410). */
+  const gone = new Set<string>();
   beforeAll(async () => {
-    t = await createTestApp(DATABASE_URL!);
+    t = await createTestApp(DATABASE_URL!, undefined, undefined, {
+      pushSender: async (target: PushTarget, payload: PushPayload) => {
+        if (gone.has(target.endpoint)) throw Object.assign(new Error('gone'), { statusCode: 410 });
+        pushed.push({ endpoint: target.endpoint, payload });
+      },
+    });
   });
-  beforeEach(async () => t.reset());
+  beforeEach(async () => {
+    await t.reset();
+    pushed.length = 0;
+    gone.clear();
+  });
   afterAll(async () => t?.close());
 
   async function setup() {
@@ -222,5 +235,61 @@ run('notifications (integration)', () => {
 
     forSara.close();
     forMarco.close();
+  });
+
+  it('sends web push to the other members devices in their language', async () => {
+    const { marco, sara, tripId, me } = await setup();
+    const device = (n: number) => ({
+      endpoint: `https://push.example.com/send/${n}`,
+      keys: { p256dh: 'p'.repeat(20), auth: 'a'.repeat(16) },
+    });
+    const config = await t.trpc<{ publicKey: string; devices: number }>(
+      'push.config',
+      sara,
+      undefined,
+      'query',
+    );
+    expect(config.data.publicKey.length).toBeGreaterThan(40);
+    expect(config.data.devices).toBe(0);
+    await t.trpc('push.subscribe', sara, device(1));
+    await t.trpc('push.subscribe', sara, device(2));
+    await t.trpc('push.subscribe', marco, device(3));
+
+    await t.trpc('expenses.create', marco, expense(tripId, me, 'Cena'));
+    await vi.waitFor(() => expect(pushed).toHaveLength(2));
+    // Solo i dispositivi di Sara (non quelli di Marco, che ha fatto la modifica).
+    expect(pushed.map((p) => p.endpoint).sort()).toEqual([device(1).endpoint, device(2).endpoint]);
+    expect(pushed[0]!.payload).toMatchObject({
+      title: 'Scozia',
+      body: expect.stringMatching(/^Marco ha aggiunto la spesa «Cena» \(25,00\s€\)$/u),
+      url: expect.stringMatching(
+        new RegExp(`^/app/trips/${tripId}\\?tab=expenses&focus=expense%3A`),
+      ),
+    });
+
+    // Una seconda spesa si fonde nell'evento già notificato: nessun nuovo messaggio.
+    await t.trpc('expenses.create', marco, expense(tripId, me, 'Pranzo'));
+    await new Promise((r) => setTimeout(r, 150));
+    expect(pushed).toHaveLength(2);
+
+    // Un dispositivo scaduto viene tolto; il resto continua a ricevere.
+    gone.add(device(2).endpoint);
+    await t.trpc('plan.applyOps', marco, {
+      tripId,
+      ops: [{ type: 'upsertPlace', place: { id: 'castello', name: 'Castello', kind: 'sight' } }],
+    });
+    await vi.waitFor(() => expect(pushed).toHaveLength(3));
+    await vi.waitFor(async () =>
+      expect(
+        (await t.trpc<{ devices: number }>('push.config', sara, undefined, 'query')).data.devices,
+      ).toBe(1),
+    );
+
+    const test = await t.trpc<{ sent: number }>('push.test', sara);
+    expect(test.data.sent).toBe(1);
+    await t.trpc('push.unsubscribe', sara, { endpoint: device(1).endpoint });
+    expect(
+      (await t.trpc<{ devices: number }>('push.config', sara, undefined, 'query')).data.devices,
+    ).toBe(0);
   });
 });

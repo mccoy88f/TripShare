@@ -128,9 +128,14 @@ const newTripRoute = createRoute({
 const tripRoute = createRoute({
   getParentRoute: () => appLayout,
   path: '/trips/$tripId',
-  validateSearch: (s: Record<string, unknown>): { tab?: string; view?: string } => ({
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { tab?: string; view?: string; focus?: string; date?: string } => ({
     ...(typeof s.tab === 'string' ? { tab: s.tab } : {}),
     ...(typeof s.view === 'string' ? { view: s.view } : {}),
+    // Dalle notifiche push: elemento da evidenziare e giorno da aprire.
+    ...(typeof s.focus === 'string' ? { focus: s.focus } : {}),
+    ...(typeof s.date === 'string' ? { date: s.date } : {}),
   }),
   component: TripPage,
 });

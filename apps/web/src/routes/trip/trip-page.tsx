@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { ArrowLeft, CalendarDays, Loader2, Search, Settings, Sparkles, Users } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AvatarStack } from '@/components/avatar-stack';
 import { TripCover } from '@/components/trip-cover';
@@ -48,7 +48,12 @@ export function TripPage() {
   const trpc = useTRPC();
   const navigate = useNavigate();
   const { tripId } = useParams({ strict: false }) as { tripId: string };
-  const search = useSearch({ strict: false }) as { tab?: string; view?: string };
+  const search = useSearch({ strict: false }) as {
+    tab?: string;
+    view?: string;
+    focus?: string;
+    date?: string;
+  };
   // I vecchi link a "saldi" e "budget" aprono la sotto-vista del tab Spese.
   const legacyView = search.tab === 'balances' || search.tab === 'budget' ? search.tab : undefined;
   // I biglietti ora stanno nelle prenotazioni.
@@ -72,6 +77,16 @@ export function TripPage() {
       replace: true,
     });
   const { data: trip, error } = useQuery(trpc.trips.get.queryOptions({ id: tripId }));
+  // Aperto da una notifica: si evidenzia l'elemento e si toglie l'indicazione dall'indirizzo.
+  useEffect(() => {
+    if (!trip || (!search.focus && !search.date)) return;
+    focusItem(search.focus ?? '', search.date);
+    void navigate({
+      to: '.',
+      search: { tab: search.tab, view: search.view },
+      replace: true,
+    });
+  }, [trip?.id, search.focus, search.date]); // eslint-disable-line react-hooks/exhaustive-deps
   const [adding, setAdding] = useState(false);
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState('');

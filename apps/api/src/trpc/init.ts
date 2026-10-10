@@ -24,6 +24,13 @@ export interface AppServices {
   httpFetch?: typeof fetch;
   /** Coda dei lavori AI (eseguiti dal worker). Senza coda girano nel processo dell'API. */
   aiQueue?: Queue<{ jobId: string }>;
+  /** Coda dei messaggi push (inviati dal worker). Senza coda e senza mittente non si inviano. */
+  notifyQueue?: Queue<{ eventId: string }>;
+  /** Mittente delle notifiche push, sostituibile nei test. */
+  pushSender?: (
+    target: { endpoint: string; p256dh: string; auth: string },
+    payload: { title: string; body: string; url: string; tag: string },
+  ) => Promise<void>;
   /** Nei test: esegue i lavori AI in modo sincrono. */
   aiWait?: boolean;
   /** Tasso di cambio (iniettabile nei test). */

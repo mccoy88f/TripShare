@@ -2,6 +2,7 @@ import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
 import { createDb, runMigrations } from '@tripshare/db';
 import { AI_QUEUE } from './ai/jobs.js';
+import { ensureVapid, NOTIFY_QUEUE } from './services/push.js';
 import { createAuth } from './auth.js';
 import { bootstrap } from './bootstrap.js';
 import {
@@ -28,9 +29,12 @@ const redis = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null });
 const emailQueue = new Queue<EmailJob>(EMAIL_QUEUE, { connection: redis });
 const email = createQueuedEmailSender(emailQueue);
 const aiQueue = new Queue<{ jobId: string }>(AI_QUEUE, { connection: redis });
+const notifyQueue = new Queue<{ eventId: string }>(NOTIFY_QUEUE, { connection: redis });
 const direct = createDirectEmailSender(env);
 const settings = new SettingsService(db, env.ENCRYPTION_KEY);
 const auth = createAuth({ env, db, settings, email });
+// Le chiavi per le notifiche push si creano subito, una volta sola.
+await ensureVapid(settings);
 const storage = new FileStorage(env.UPLOADS_DIR);
 await storage.init();
 
@@ -44,6 +48,7 @@ const app = await buildServer(
     redis,
     emailQueue,
     aiQueue,
+    notifyQueue,
     sendDirect: direct.send,
     storage,
     verifySmtp: async () => {
@@ -66,6 +71,7 @@ const shutdown = async () => {
   await app.close();
   await emailQueue.close();
   await aiQueue.close();
+  await notifyQueue.close();
   redis.disconnect();
   await close();
   process.exit(0);

@@ -9,6 +9,7 @@ import { bookingTicket, expense, trip, tripMember, user } from '@tripshare/db';
 import { TICKET_CODE_FORMATS } from './routers/tickets.js';
 import { tripDocumentJsonSchema } from '@tripshare/shared/trip-format';
 import { notifyTrip } from './services/events.js';
+import { registerPushDelivery } from './services/push.js';
 import { createRealtime, subscribeUser } from './services/realtime.js';
 import { requireMember } from './services/trips.js';
 import { appRouter, type AppRouter } from './routers/index.js';
@@ -47,6 +48,13 @@ export async function buildServer(
 
   const realtime = createRealtime(services.redis);
   app.addHook('onClose', async () => realtime.close());
+  const stopPush = registerPushDelivery({
+    db: services.db,
+    sender: services.pushSender,
+    queue: services.notifyQueue,
+    log: (msg) => app.log.warn(msg),
+  });
+  app.addHook('onClose', async () => stopPush());
 
   /** Flusso di aggiornamenti in tempo reale (SSE) per l'utente collegato. */
   app.get('/api/events', { logLevel: 'silent' }, async (req, reply) => {

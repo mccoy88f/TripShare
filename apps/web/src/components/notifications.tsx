@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { Bell, Loader2 } from 'lucide-react';
+import { Bell, BellRing, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Locale } from '@tripshare/shared';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { timeAgo } from '@/lib/format';
 import { describeNotification, notificationTarget } from '@/lib/notifications';
+import { usePush } from '@/lib/push';
 import { focusItem } from '@/lib/search-focus';
 import { trpcClient, useTRPC } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
@@ -72,12 +73,12 @@ function NotificationsPanel({ onClose }: { onClose: () => void }) {
   const markAll = useMutation(
     trpc.notifications.markAllRead.mutationOptions({ onSuccess: refresh }),
   );
+  const push = usePush();
   const items = list.data?.pages.flatMap((p) => p.items) ?? [];
   const unread = items.some((i) => !i.read);
 
   const text = (item: (typeof items)[number]) =>
     describeNotification(
-      t,
       { ...item.event, data: item.event.data as Record<string, unknown> },
       item.actor?.name,
     );
@@ -104,6 +105,16 @@ function NotificationsPanel({ onClose }: { onClose: () => void }) {
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent title={t('notifications.title')} className="sm:max-w-lg">
+        {push.status === 'off' && (
+          <div className="mb-3 flex items-center gap-3 rounded-xl bg-muted/60 p-3">
+            <BellRing className="size-5 shrink-0 text-primary" />
+            <p className="min-w-0 flex-1 text-sm">{t('push.enablePrompt')}</p>
+            <Button size="sm" disabled={push.busy} onClick={() => void push.enable()}>
+              {push.busy && <Loader2 className="animate-spin" />}
+              {t('push.enable')}
+            </Button>
+          </div>
+        )}
         <div className="flex items-center justify-end pb-2">
           <Button
             variant="ghost"

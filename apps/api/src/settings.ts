@@ -100,6 +100,12 @@ export const SETTINGS = {
     default: null,
     secret: true,
   },
+  /** Chiavi VAPID per le notifiche push: si generano al primo avvio e non si cambiano. */
+  'push.vapid': {
+    schema: z.object({ publicKey: z.string().min(20), privateKey: z.string().min(20) }).nullable(),
+    default: null,
+    secret: true,
+  },
 } as const;
 
 export type SettingKey = keyof typeof SETTINGS;

@@ -1118,103 +1118,23 @@
     "empty": "Nessuna notifica. Qui compaiono le modifiche fatte dagli altri ai tuoi viaggi.",
     "markAll": "Segna tutte come lette",
     "more": "Mostra altre",
-    "someone": "Qualcuno",
-    "unknown": "Il viaggio è stato modificato",
     "unreadDot": "Da leggere",
-    "types": {
-      "expense": {
-        "created_one": "{{actor}} ha aggiunto la spesa «{{title}}» ({{amount}})",
-        "created_other": "{{actor}} ha aggiunto {{count}} spese",
-        "updated_one": "{{actor}} ha modificato la spesa «{{title}}»",
-        "updated_other": "{{actor}} ha modificato la spesa «{{title}}»",
-        "deleted_one": "{{actor}} ha eliminato la spesa «{{title}}»",
-        "deleted_other": "{{actor}} ha eliminato {{count}} spese",
-        "paid_one": "{{actor}} ha segnato come pagata «{{title}}» ({{amount}})",
-        "paid_other": "{{actor}} ha segnato come pagate {{count}} spese"
-      },
-      "settlement": {
-        "created_one": "{{actor}} ha registrato un rimborso di {{amount}}",
-        "created_other": "{{actor}} ha registrato {{count}} rimborsi"
-      },
-      "plan": {
-        "activity": {
-          "added_one": "{{actor}} ha aggiunto l'attività «{{title}}»",
-          "added_other": "{{actor}} ha aggiunto {{count}} attività",
-          "updated_one": "{{actor}} ha modificato l'attività «{{title}}»",
-          "updated_other": "{{actor}} ha modificato l'attività «{{title}}»",
-          "deleted_one": "{{actor}} ha tolto l'attività «{{title}}»",
-          "deleted_other": "{{actor}} ha tolto {{count}} attività"
-        },
-        "day": {
-          "added_one": "{{actor}} ha aggiunto il giorno «{{title}}»",
-          "added_other": "{{actor}} ha aggiunto {{count}} giorni",
-          "deleted_one": "{{actor}} ha tolto il giorno «{{title}}»",
-          "deleted_other": "{{actor}} ha tolto {{count}} giorni"
-        },
-        "place": {
-          "added_one": "{{actor}} ha aggiunto il luogo «{{title}}»",
-          "added_other": "{{actor}} ha aggiunto {{count}} luoghi",
-          "updated_one": "{{actor}} ha modificato il luogo «{{title}}»",
-          "updated_other": "{{actor}} ha modificato il luogo «{{title}}»",
-          "photo_one": "{{actor}} ha cambiato la foto di «{{title}}»",
-          "photo_other": "{{actor}} ha cambiato la foto di «{{title}}»",
-          "deleted_one": "{{actor}} ha tolto il luogo «{{title}}»",
-          "deleted_other": "{{actor}} ha tolto {{count}} luoghi"
-        },
-        "booking": {
-          "added_one": "{{actor}} ha aggiunto la prenotazione «{{title}}»",
-          "added_other": "{{actor}} ha aggiunto {{count}} prenotazioni",
-          "updated_one": "{{actor}} ha modificato la prenotazione «{{title}}»",
-          "updated_other": "{{actor}} ha modificato la prenotazione «{{title}}»",
-          "deleted_one": "{{actor}} ha tolto la prenotazione «{{title}}»",
-          "deleted_other": "{{actor}} ha tolto {{count}} prenotazioni"
-        },
-        "budget": {
-          "added_one": "{{actor}} ha aggiunto la voce di budget «{{title}}»",
-          "added_other": "{{actor}} ha aggiunto {{count}} voci di budget",
-          "updated_one": "{{actor}} ha modificato la voce di budget «{{title}}»",
-          "updated_other": "{{actor}} ha modificato la voce di budget «{{title}}»",
-          "deleted_one": "{{actor}} ha tolto la voce di budget «{{title}}»",
-          "deleted_other": "{{actor}} ha tolto {{count}} voci di budget"
-        },
-        "packing": {
-          "added_one": "{{actor}} ha aggiunto ai bagagli «{{title}}»",
-          "added_other": "{{actor}} ha aggiunto {{count}} elementi ai bagagli",
-          "deleted_one": "{{actor}} ha tolto dai bagagli «{{title}}»",
-          "deleted_other": "{{actor}} ha tolto {{count}} elementi dai bagagli"
-        },
-        "tips": {
-          "updated_one": "{{actor}} ha modificato i consigli del programma",
-          "updated_other": "{{actor}} ha modificato i consigli del programma"
-        },
-        "replaced_one": "{{actor}} ha sostituito il programma ({{days}} giorni)",
-        "replaced_other": "{{actor}} ha sostituito il programma ({{days}} giorni)"
-      },
-      "ticket": {
-        "added_one": "{{actor}} ha aggiunto un biglietto",
-        "added_other": "{{actor}} ha aggiunto {{count}} biglietti"
-      },
-      "note": {
-        "created_one": "{{actor}} ha aggiunto la nota «{{title}}»",
-        "created_other": "{{actor}} ha aggiunto {{count}} note",
-        "updated_one": "{{actor}} ha modificato la nota «{{title}}»",
-        "updated_other": "{{actor}} ha modificato la nota «{{title}}»"
-      },
-      "member": {
-        "joined_one": "{{name}} è entrato nel viaggio",
-        "joined_other": "{{count}} persone sono entrate nel viaggio",
-        "left_one": "{{name}} è uscito dal viaggio",
-        "left_other": "{{count}} persone sono uscite dal viaggio",
-        "role_one": "{{actor}} ha cambiato il ruolo di {{name}}: {{role}}",
-        "role_other": "{{actor}} ha cambiato il ruolo di {{name}}: {{role}}"
-      },
-      "trip": {
-        "updated_one": "{{actor}} ha modificato i dati del viaggio",
-        "updated_other": "{{actor}} ha modificato i dati del viaggio",
-        "reset_one": "{{actor}} ha azzerato il viaggio",
-        "reset_other": "{{actor}} ha azzerato il viaggio"
-      }
-    },
     "open": "Apri"
+  },
+  "push": {
+    "title": "Notifiche push",
+    "text": "Ricevi un avviso sul telefono quando qualcuno modifica un tuo viaggio, anche con l'app chiusa.",
+    "thisDevice": "Notifiche su questo dispositivo",
+    "iosInstall": "Su iPhone e iPad le notifiche funzionano solo con l'app installata: aggiungila alla schermata Home da Safari (Condividi › Aggiungi alla schermata Home), aprila da lì e torna qui.",
+    "unsupported": "Questo browser non supporta le notifiche push.",
+    "denied": "Le notifiche sono bloccate per questo sito: riattivale dalle impostazioni del browser.",
+    "error": "Non è stato possibile attivare le notifiche. Riprova.",
+    "test": "Invia una notifica di prova",
+    "testSent": "Notifica inviata",
+    "testFailed": "Nessuna notifica inviata: controlla le impostazioni del dispositivo.",
+    "devices_one": "{{count}} dispositivo con le notifiche attive",
+    "devices_other": "{{count}} dispositivi con le notifiche attive",
+    "enablePrompt": "Attiva le notifiche sul telefono",
+    "enable": "Attiva"
   }
 }
