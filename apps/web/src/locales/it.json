@@ -306,7 +306,8 @@
     "aiTest": "Prova",
     "aiTestOk": "Funziona · {{model}} · {{ms}} ms · risposta: {{content}}",
     "aiTestError": "Errore con {{model}}: {{error}}",
-    "aiErrors": "Ultimi errori"
+    "aiErrors": "Ultimi errori",
+    "videoUploads": "Dimensione massima dei video dei ricordi (MB)"
   },
   "legal": {
     "privacyTitle": "Informativa sulla privacy",
@@ -1127,13 +1128,15 @@
       "expenses": "Spese",
       "plan": "Programma",
       "notes": "Note",
-      "group": "Gruppo e viaggio"
+      "group": "Gruppo e viaggio",
+      "memories": "Ricordi"
     },
     "categoryHints": {
       "expenses": "Spese, pagamenti e rimborsi",
       "plan": "Attività, luoghi, prenotazioni, bagagli e biglietti",
       "notes": "Note pubbliche degli altri",
-      "group": "Chi entra o esce, ruoli e dati del viaggio"
+      "group": "Chi entra o esce, ruoli e dati del viaggio",
+      "memories": "Foto e video condivisi dagli altri"
     },
     "muteTrip": "Silenzia le notifiche di questo viaggio",
     "muteTripHint": "Non ricevi avvisi né notifiche push, ma i dati restano aggiornati.",

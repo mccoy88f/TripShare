@@ -95,6 +95,11 @@ export const SETTINGS = {
   'openrouter.denyDataCollection': { schema: z.boolean(), default: true, secret: false },
   'payments.paypalEnabled': { schema: z.boolean(), default: true, secret: false },
   'uploads.maxMb': { schema: z.number().int().min(1).max(50), default: 10, secret: false },
+  'memories.maxVideoMb': {
+    schema: z.number().int().min(10).max(1000),
+    default: 200,
+    secret: false,
+  },
   'unsplash.accessKey': {
     schema: z.string().min(10).max(200).nullable(),
     default: null,

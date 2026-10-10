@@ -3,6 +3,7 @@ import { adminRouter } from './admin.js';
 import { aiRouter } from './ai.js';
 import { expensesRouter, settlementsRouter } from './expenses.js';
 import { invitationsRouter } from './invitations.js';
+import { memoriesRouter } from './memories.js';
 import { meRouter } from './me.js';
 import { notesRouter } from './notes.js';
 import { notificationsRouter } from './notifications.js';
@@ -20,6 +21,7 @@ export const appRouter = router({
   trips: tripsRouter,
   plan: planRouter,
   push: pushRouter,
+  memories: memoriesRouter,
   notes: notesRouter,
   notifications: notificationsRouter,
   tickets: ticketsRouter,

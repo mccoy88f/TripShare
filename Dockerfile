@@ -40,6 +40,8 @@ COPY --from=build --chown=node:node /out ./
 # Cartella delle foto caricate (volume "uploads" nel compose). Nessun RUN nello stage finale:
 # così l'immagine arm64 si costruisce senza emulazione.
 COPY --from=build --chown=node:node /uploads /data/uploads
+# ffmpeg e ffprobe statici (amd64 e arm64) per i video dei ricordi: ricodifica e anteprime.
+COPY --from=mwader/static-ffmpeg:7.1 /ffmpeg /ffprobe /usr/local/bin/
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \

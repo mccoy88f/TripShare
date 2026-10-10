@@ -4,6 +4,7 @@ import { createDb } from '@tripshare/db';
 import { AI_QUEUE, processAiJob } from './ai/jobs.js';
 import { EMAIL_QUEUE, createDirectEmailSender, type EmailJob } from './email/index.js';
 import { envWarnings, loadEnv } from './env.js';
+import { MEDIA_QUEUE, processVideoMemory } from './services/memories.js';
 import { createWebPushSender, NOTIFY_QUEUE, sendEventPush } from './services/push.js';
 import { SettingsService } from './settings.js';
 import { FileStorage } from './storage.js';
@@ -76,6 +77,17 @@ notifyWorker.on('failed', (job, err) =>
   console.error(`[push] evento ${job?.data.eventId} non inviato: ${err.message}`),
 );
 
+// Ricodifica dei video dei ricordi (lunga: ffmpeg), una alla volta per non saturare il server.
+const mediaWorker = new Worker<{ memoryId: string }>(
+  MEDIA_QUEUE,
+  async (job) =>
+    processVideoMemory({ db, storage, log: (msg) => console.warn(msg) }, job.data.memoryId),
+  { connection, concurrency: 1 },
+);
+mediaWorker.on('failed', (job, err) =>
+  console.error(`[media] ricordo ${job?.data.memoryId} non elaborato: ${err.message}`),
+);
+
 for (const warning of envWarnings(env)) console.warn(`[config] ${warning}`);
 console.log(`Worker avviato, SMTP ${env.smtp.host}:${env.smtp.port}`);
 
@@ -83,6 +95,7 @@ const shutdown = async () => {
   await emailWorker.close();
   await aiWorker.close();
   await notifyWorker.close();
+  await mediaWorker.close();
   connection.disconnect();
   await close();
   process.exit(0);

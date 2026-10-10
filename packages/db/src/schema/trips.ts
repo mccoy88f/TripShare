@@ -410,3 +410,44 @@ export const notificationPref = pgTable('notification_pref', {
   disabled: jsonb().$type<string[]>().notNull().default([]),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Ricordo personale: una foto o un video di chi lo carica, con data, posizione e didascalia
+ * (letti dal file o impostati a mano). Se collegato a un viaggio è visibile ai suoi
+ * partecipanti, a meno che l'autore lo tenga privato (`shared` = false). I file stanno
+ * nell'archivio privato e si leggono solo dopo il controllo dei permessi.
+ */
+export const memory = pgTable(
+  'memory',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    /** Nullo = ricordo personale non legato a un viaggio (sempre privato). */
+    tripId: uuid().references(() => trip.id, { onDelete: 'set null' }),
+    /** "photo" o "video". */
+    kind: text().notNull(),
+    /** File principale (foto ridimensionata o video ricodificato) e anteprime, nell'archivio privato. */
+    storageName: text().notNull(),
+    thumbName: text(),
+    mimeType: text().notNull(),
+    size: integer().notNull().default(0),
+    width: integer(),
+    height: integer(),
+    durationSec: doublePrecision(),
+    /** Momento dello scatto o della ripresa (assoluto); nullo se sconosciuto. */
+    takenAt: timestamp({ withTimezone: true }),
+    lat: doublePrecision(),
+    lon: doublePrecision(),
+    caption: text(),
+    shared: boolean().notNull().default(true),
+    /** "ready", "processing" (video in ricodifica) o "failed". */
+    status: text().notNull().default('ready'),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('memory_user_idx').on(t.userId, t.takenAt),
+    index('memory_trip_idx').on(t.tripId, t.takenAt),
+  ],
+);

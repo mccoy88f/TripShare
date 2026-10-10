@@ -289,11 +289,13 @@ function GeneralSettings() {
   const [domains, setDomains] = useState('');
   const [appName, setAppName] = useState('');
   const [maxMb, setMaxMb] = useState('10');
+  const [maxVideoMb, setMaxVideoMb] = useState('200');
   useEffect(() => {
     if (!settings) return;
     setDomains((value<string[]>('registration.allowedDomains') ?? []).join(', '));
     setAppName(value<string | null>('general.appName') ?? '');
     setMaxMb(String(value<number>('uploads.maxMb') ?? 10));
+    setMaxVideoMb(String(value<number>('memories.maxVideoMb') ?? 200));
   }, [settings]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!settings) return <Loader2 className="mx-auto mt-10 animate-spin text-muted-foreground" />;
 
@@ -367,6 +369,18 @@ function GeneralSettings() {
                 max={50}
                 value={maxMb}
                 onChange={(e) => setMaxMb(e.target.value)}
+              />
+            </Field>
+          </SaveRow>
+          <SaveRow onSave={() => save('memories.maxVideoMb', Number(maxVideoMb))}>
+            <Field label={t('admin.videoUploads')} htmlFor="max-video-mb">
+              <Input
+                id="max-video-mb"
+                type="number"
+                min={10}
+                max={1000}
+                value={maxVideoMb}
+                onChange={(e) => setMaxVideoMb(e.target.value)}
               />
             </Field>
           </SaveRow>

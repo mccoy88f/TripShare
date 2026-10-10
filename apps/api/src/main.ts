@@ -2,6 +2,7 @@ import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
 import { createDb, runMigrations } from '@tripshare/db';
 import { AI_QUEUE } from './ai/jobs.js';
+import { MEDIA_QUEUE } from './services/memories.js';
 import { pruneEvents } from './services/events.js';
 import { ensureVapid, NOTIFY_QUEUE } from './services/push.js';
 import { createAuth } from './auth.js';
@@ -31,6 +32,7 @@ const emailQueue = new Queue<EmailJob>(EMAIL_QUEUE, { connection: redis });
 const email = createQueuedEmailSender(emailQueue);
 const aiQueue = new Queue<{ jobId: string }>(AI_QUEUE, { connection: redis });
 const notifyQueue = new Queue<{ eventId: string }>(NOTIFY_QUEUE, { connection: redis });
+const mediaQueue = new Queue<{ memoryId: string }>(MEDIA_QUEUE, { connection: redis });
 const direct = createDirectEmailSender(env);
 const settings = new SettingsService(db, env.ENCRYPTION_KEY);
 const auth = createAuth({ env, db, settings, email });
@@ -50,6 +52,7 @@ const app = await buildServer(
     emailQueue,
     aiQueue,
     notifyQueue,
+    mediaQueue,
     sendDirect: direct.send,
     storage,
     verifySmtp: async () => {
@@ -80,6 +83,7 @@ const shutdown = async () => {
   await emailQueue.close();
   await aiQueue.close();
   await notifyQueue.close();
+  await mediaQueue.close();
   redis.disconnect();
   await close();
   process.exit(0);

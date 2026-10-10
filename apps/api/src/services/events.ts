@@ -43,6 +43,7 @@ export const EVENT_TYPES = [
   'plan.tips.updated',
   'plan.replaced',
   'ticket.added',
+  'memory.added',
   'note.created',
   'note.updated',
   'member.joined',

@@ -26,6 +26,8 @@ export interface AppServices {
   aiQueue?: Queue<{ jobId: string }>;
   /** Coda dei messaggi push (inviati dal worker). Senza coda e senza mittente non si inviano. */
   notifyQueue?: Queue<{ eventId: string }>;
+  /** Coda della ricodifica dei video dei ricordi (worker). Senza coda si fa nel processo dell'API. */
+  mediaQueue?: Queue<{ memoryId: string }>;
   /** Mittente delle notifiche push, sostituibile nei test. */
   pushSender?: (
     target: { endpoint: string; p256dh: string; auth: string },

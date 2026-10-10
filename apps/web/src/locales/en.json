@@ -306,7 +306,8 @@
     "aiTest": "Test",
     "aiTestOk": "Working · {{model}} · {{ms}} ms · answer: {{content}}",
     "aiTestError": "Error with {{model}}: {{error}}",
-    "aiErrors": "Latest errors"
+    "aiErrors": "Latest errors",
+    "videoUploads": "Maximum size of memory videos (MB)"
   },
   "legal": {
     "privacyTitle": "Privacy policy",
@@ -1127,13 +1128,15 @@
       "expenses": "Expenses",
       "plan": "Plan",
       "notes": "Notes",
-      "group": "Group and trip"
+      "group": "Group and trip",
+      "memories": "Memories"
     },
     "categoryHints": {
       "expenses": "Expenses, payments and repayments",
       "plan": "Activities, places, bookings, packing and tickets",
       "notes": "Other people's public notes",
-      "group": "Who joins or leaves, roles and trip details"
+      "group": "Who joins or leaves, roles and trip details",
+      "memories": "Photos and videos shared by others"
     },
     "muteTrip": "Mute notifications for this trip",
     "muteTripHint": "No alerts or push notifications, but the data stays up to date.",

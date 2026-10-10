@@ -49,6 +49,11 @@ export class FileStorage {
     }
   }
 
+  /** Percorso su disco di un file privato (per ffmpeg e per servirlo a pezzi); nullo se il nome non è valido. */
+  privatePath(name: string): string | null {
+    return PRIVATE_NAME.test(name) ? join(this.dir, 'private', name) : null;
+  }
+
   async removePrivate(name: string | null | undefined) {
     if (!name || !PRIVATE_NAME.test(name)) return;
     await rm(join(this.dir, 'private', name), { force: true });

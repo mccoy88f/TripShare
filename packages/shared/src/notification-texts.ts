@@ -117,6 +117,10 @@ export const NOTIFICATION_TEXTS: Record<Locale, NotificationTexts> = {
         one: '{{actor}} ha aggiunto un biglietto',
         other: '{{actor}} ha aggiunto {{count}} biglietti',
       },
+      'memory.added': {
+        one: '{{actor}} ha condiviso un ricordo',
+        other: '{{actor}} ha condiviso {{count}} ricordi',
+      },
       'note.created': {
         one: '{{actor}} ha aggiunto la nota «{{title}}»',
         other: '{{actor}} ha aggiunto {{count}} note',
@@ -256,6 +260,10 @@ export const NOTIFICATION_TEXTS: Record<Locale, NotificationTexts> = {
         one: '{{actor}} added a ticket',
         other: '{{actor}} added {{count}} tickets',
       },
+      'memory.added': {
+        one: '{{actor}} shared a memory',
+        other: '{{actor}} shared {{count}} memories',
+      },
       'note.created': {
         one: '{{actor}} added the note “{{title}}”',
         other: '{{actor}} added {{count}} notes',
@@ -363,6 +371,7 @@ export function notificationTarget(
   if (type.startsWith('plan.packing.')) return { tab: 'packing', key: key('packing') };
   if (type === 'ticket.added') return { tab: 'bookings', key: id ? `booking:${id}` : '' };
   if (type.startsWith('note.')) return { tab: 'notes', key: key('note') };
+  if (type === 'memory.added') return { tab: 'memories', key: '' };
   if (type.startsWith('member.')) return { tab: 'members', key: '' };
   return { tab: 'plan', key: '' };
 }
@@ -386,7 +395,7 @@ export function notificationUrl(
 }
 
 /** Categorie di notifica che l'utente può attivare o disattivare. */
-export const NOTIFICATION_CATEGORIES = ['expenses', 'plan', 'notes', 'group'] as const;
+export const NOTIFICATION_CATEGORIES = ['expenses', 'plan', 'notes', 'memories', 'group'] as const;
 export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
 
 /** Categoria di un tipo di evento: spese e rimborsi, programma, note, gruppo e viaggio. */
@@ -394,5 +403,6 @@ export function eventCategory(type: string): NotificationCategory {
   if (type.startsWith('expense.') || type.startsWith('settlement.')) return 'expenses';
   if (type.startsWith('plan.') || type.startsWith('ticket.')) return 'plan';
   if (type.startsWith('note.')) return 'notes';
+  if (type.startsWith('memory.')) return 'memories';
   return 'group';
 }
