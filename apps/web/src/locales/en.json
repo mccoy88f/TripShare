@@ -1086,8 +1086,8 @@
   },
   "placePhoto": {
     "none": "No photo",
-    "upload": "Upload photo",
-    "search": "Search online",
+    "upload": "Upload",
+    "search": "Search",
     "remove": "Remove",
     "searchTitle": "Find a photo of the place",
     "placeholder": "Search, e.g. Edinburgh Castle",
@@ -1105,11 +1105,11 @@
     "rights": "Free photos from Wikimedia Commons: the author and licence are saved as the credit.",
     "view": "Open the photo of {{name}}",
     "failed": "Some photos could not be downloaded: invalid or unreachable address.",
-    "fromUrl": "From a link",
-    "urlTitle": "Photo from a link",
-    "urlHint": "Paste the direct link to an image (a .jpg, .png or .webp file, not the page that contains it): the app downloads and saves it.",
-    "urlHttps": "The address must start with https://",
-    "urlDownload": "Download the photo"
+    "ask": "Ask the assistant to find a photo",
+    "askTitle": "Photos found by the assistant",
+    "asking": "The assistant is searching the web for photos and checking they can be downloaded… this may take a moment.",
+    "askNone": "I couldn't find reliable photos for this place. Try Search or upload your own.",
+    "askPick": "Pick the photo you prefer:"
   },
   "notifications": {
     "title": "Notifications",

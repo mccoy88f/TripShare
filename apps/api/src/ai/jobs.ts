@@ -9,6 +9,7 @@ import { computeLedgers } from '../services/trips.js';
 import type { SettingsService } from '../settings.js';
 import type { FileStorage } from '../storage.js';
 import { AiAccessError, resolveAiAccess } from './access.js';
+import { downloadImage } from '../image-download.js';
 import { AiError, complete, type ChatMessage } from './client.js';
 import {
   AiInputSchema,
@@ -18,6 +19,7 @@ import {
   PURPOSE,
   type AiInput,
   type ChatResult,
+  type PlacePhotoResult,
   type TaskContext,
   type VerifyResult,
 } from './tasks.js';
@@ -234,6 +236,8 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
         v.sources = citations.slice(0, 5).map((c) => ({ title: c.title ?? c.url, url: c.url }));
     }
     let result: unknown = value;
+    if (input.kind === 'placePhoto')
+      result = { candidates: await fetchPlacePhotos(deps, value as PlacePhotoResult) };
     if (input.kind === 'chat') {
       const chat = value as ChatResult;
       const [msg] = await db
@@ -290,6 +294,39 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
       })
       .where(eq(aiJob.id, jobId));
   }
+}
+
+/**
+ * Legge gli indirizzi proposti dall'AI: scarica le immagini (solo quelle che esistono davvero e
+ * sono abbastanza grandi), le salva e restituisce le prime tre. Quelle che l'utente non sceglie
+ * le elimina l'app con plan.placePhotoDiscard.
+ */
+async function fetchPlacePhotos(deps: AiDeps, found: PlacePhotoResult) {
+  if (!deps.storage) return [];
+  const storage = deps.storage;
+  const maxBytes = (await deps.settings.get('uploads.maxMb')) * 1024 * 1024;
+  const downloads = await Promise.allSettled(
+    found.images.slice(0, 8).map(async (img) => {
+      const data = await downloadImage(img.url, maxBytes, deps.httpFetch);
+      const meta = await sharp(data, { limitInputPixels: 80_000_000 }).metadata();
+      if ((meta.width ?? 0) < 500) throw new Error('TOO_SMALL');
+      return { data, url: img.url };
+    }),
+  );
+  const candidates: { photo: string; credit: string }[] = [];
+  for (const d of downloads) {
+    if (d.status !== 'fulfilled' || candidates.length >= 3) continue;
+    const host = (() => {
+      try {
+        return new URL(d.value.url).hostname.replace(/^www\./, '');
+      } catch {
+        return '';
+      }
+    })();
+    const photo = await storage.saveImage(d.value.data, 'place').catch(() => null);
+    if (photo) candidates.push({ photo, credit: host });
+  }
+  return candidates;
 }
 
 /** Messaggi di una conversazione con l'assistente (dal più vecchio). */

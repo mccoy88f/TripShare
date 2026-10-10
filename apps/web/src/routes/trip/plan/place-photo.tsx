@@ -1,11 +1,12 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { ImagePlus, Link2, Loader2, Search, Trash2, Upload } from 'lucide-react';
-import { useRef, useState, type FormEvent } from 'react';
+import { ImagePlus, Loader2, Search, Sparkles, Trash2, Upload } from 'lucide-react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { useAiStatus, useAiTask } from '@/lib/ai';
 import { useTRPC } from '@/lib/trpc';
 import { uploadImage } from '@/lib/upload';
 
@@ -19,18 +20,24 @@ export function PlacePhotoField({
   tripId,
   value,
   searchQuery,
+  placeName,
+  destination,
   onChange,
 }: {
   tripId: string;
   value: PlacePhoto;
   searchQuery: string;
+  /** Nome del luogo e destinazione, per chiedere all'assistente una foto. */
+  placeName: string;
+  destination?: string;
   onChange: (next: PlacePhoto) => void;
 }) {
   const { t } = useTranslation();
   const input = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [searching, setSearching] = useState(false);
-  const [pasting, setPasting] = useState(false);
+  const [asking, setAsking] = useState(false);
+  const ai = useAiStatus();
 
   const upload = async (file: File) => {
     setUploading(true);
@@ -82,10 +89,19 @@ export function PlacePhotoField({
           <Search />
           {t('placePhoto.search')}
         </Button>
-        <Button type="button" size="sm" variant="outline" onClick={() => setPasting(true)}>
-          <Link2 />
-          {t('placePhoto.fromUrl')}
-        </Button>
+        {ai.data?.available && (
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="size-9 bg-amber-400/15 text-amber-500 hover:bg-amber-400/25"
+            title={t('placePhoto.ask')}
+            aria-label={t('placePhoto.ask')}
+            onClick={() => setAsking(true)}
+          >
+            <Sparkles />
+          </Button>
+        )}
         {value.photo && (
           <Button
             type="button"
@@ -110,13 +126,15 @@ export function PlacePhotoField({
           if (file) void upload(file);
         }}
       />
-      {pasting && (
-        <UrlDialog
+      {asking && (
+        <AssistantPhotoDialog
           tripId={tripId}
-          onClose={() => setPasting(false)}
+          name={placeName}
+          destination={destination}
+          onClose={() => setAsking(false)}
           onPick={(photo) => {
             onChange(photo);
-            setPasting(false);
+            setAsking(false);
           }}
         />
       )}
@@ -249,73 +267,102 @@ function PhotoSearchDialog({
   );
 }
 
-/** Foto da un indirizzo: l'app scarica l'immagine e la salva, come per quelle cercate. */
-function UrlDialog({
+interface Candidate {
+  photo: string;
+  credit: string;
+}
+
+/**
+ * Chiede all'assistente di trovare foto del luogo: legge gli indirizzi che propone, ne scarica
+ * fino a tre e le mostra per sceglierne una. Le altre vengono eliminate.
+ */
+function AssistantPhotoDialog({
   tripId,
+  name,
+  destination,
   onClose,
   onPick,
 }: {
   tripId: string;
+  name: string;
+  destination?: string;
   onClose: () => void;
   onPick: (photo: PlacePhoto) => void;
 }) {
   const { t } = useTranslation();
   const trpc = useTRPC();
-  const [url, setUrl] = useState('');
-  const download = useMutation(trpc.plan.placePhotoFromUrl.mutationOptions());
-  const address = url.trim();
-  const valid = /^https:\/\/\S+$/i.test(address);
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    // Il modulo sta dentro quello del luogo: l'invio non deve salvarlo.
-    e.stopPropagation();
-    if (!valid) return;
-    const saved = await download.mutateAsync({ tripId, url: address }).catch(() => null);
-    if (!saved) return;
-    const host = (() => {
-      try {
-        return new URL(address).hostname.replace(/^www\./, '');
-      } catch {
-        return '';
-      }
-    })();
-    onPick({ photo: saved.url, photoCredit: host || undefined });
+  const { run } = useAiTask();
+  const discard = useMutation(trpc.plan.placePhotoDiscard.mutationOptions());
+  const [candidates, setCandidates] = useState<Candidate[] | null>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    void run<{ candidates: Candidate[] }>(tripId, {
+      kind: 'placePhoto',
+      name: name.trim() || destination || 'luogo',
+      ...(destination ? { destination } : {}),
+    }).then((r) => setCandidates(r?.candidates ?? []));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const dropUnchosen = (keep?: string) => {
+    const urls = (candidates ?? []).map((c) => c.photo).filter((u) => u !== keep);
+    if (urls.length) discard.mutate({ tripId, urls });
   };
+
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent title={t('placePhoto.urlTitle')} description={t('placePhoto.urlHint')}>
-        <form onSubmit={submit} className="grid grid-cols-1 gap-3 pt-2">
-          <Input
-            autoFocus
-            type="url"
-            inputMode="url"
-            placeholder="https://…/foto.jpg"
-            value={url}
-            onChange={(e) => {
-              setUrl(e.target.value);
-              download.reset();
-            }}
-            aria-label={t('placePhoto.urlTitle')}
-          />
-          {address && !valid && (
-            <p className="text-sm text-destructive">{t('placePhoto.urlHttps')}</p>
+    <Dialog
+      open
+      onOpenChange={(o) => {
+        if (o) return;
+        dropUnchosen();
+        onClose();
+      }}
+    >
+      <DialogContent title={t('placePhoto.askTitle')} description={name}>
+        <div className="min-h-40 pt-2">
+          {candidates === null && (
+            <div className="grid place-items-center gap-3 py-10 text-center text-sm text-muted-foreground">
+              <Loader2 className="size-6 animate-spin" />
+              {t('placePhoto.asking')}
+            </div>
           )}
-          {download.isError && (
-            <p className="text-sm text-destructive">
-              {t(`placePhoto.errors.${download.error.message}`, {
-                defaultValue: t('placePhoto.error'),
-              })}
+          {candidates?.length === 0 && (
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              {t('placePhoto.askNone')}
             </p>
           )}
-          <Button
-            type="submit"
-            disabled={!valid || download.isPending}
-            className="justify-self-end"
-          >
-            {download.isPending ? <Loader2 className="animate-spin" /> : <Link2 />}
-            {t('placePhoto.urlDownload')}
-          </Button>
-        </form>
+          {candidates && candidates.length > 0 && (
+            <>
+              <p className="mb-3 text-sm text-muted-foreground">{t('placePhoto.askPick')}</p>
+              <div className="grid grid-cols-3 gap-2">
+                {candidates.map((c) => (
+                  <button
+                    key={c.photo}
+                    type="button"
+                    onClick={() => {
+                      dropUnchosen(c.photo);
+                      onPick({ photo: c.photo, photoCredit: c.credit || undefined });
+                    }}
+                    className="group relative aspect-[3/4] overflow-hidden rounded-xl bg-muted text-left"
+                  >
+                    <img
+                      src={c.photo}
+                      alt=""
+                      className="size-full object-cover transition group-hover:scale-105"
+                    />
+                    {c.credit && (
+                      <span className="absolute inset-x-0 bottom-0 truncate bg-black/55 px-2 py-1 text-[11px] text-white">
+                        {c.credit}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -131,6 +131,26 @@ export const VerifyResultSchema = z.object({
 });
 export type VerifyResult = z.infer<typeof VerifyResultSchema>;
 
+// ─── Foto di un luogo trovate sul web ───────────────────────────────────────
+
+export const PlacePhotoResultSchema = z.object({
+  images: z
+    .array(
+      z.object({
+        url: z
+          .string()
+          .regex(/^https:\/\/\S+$/)
+          .describe(
+            'Indirizzo https DIRETTO di un file immagine (jpg, png o webp), non di una pagina',
+          ),
+        title: z.string().max(160).optional(),
+      }),
+    )
+    .max(8)
+    .default([]),
+});
+export type PlacePhotoResult = z.infer<typeof PlacePhotoResultSchema>;
+
 // ─── Documento fotografato (scontrino, ricevuta, conferma, carta d'imbarco…) ──
 
 export const DOCUMENT_TYPES = [
@@ -255,6 +275,12 @@ export const AiInputSchema = z.discriminatedUnion('kind', [
     conversationId: z.uuid().optional(),
   }),
   z.object({ kind: z.literal('verify'), placeId: z.string().max(64) }),
+  z.object({
+    kind: z.literal('placePhoto'),
+    name: z.string().min(2).max(160),
+    address: z.string().max(240).optional(),
+    destination: z.string().max(160).optional(),
+  }),
   z.object({ kind: z.literal('packing') }),
   z.object({ kind: z.literal('schedule'), placeId: z.string().max(64) }),
   z.object({
@@ -273,6 +299,7 @@ export const PURPOSE: Record<AiInput['kind'], AiPurpose> = {
   generate: 'planner',
   chat: 'chat',
   verify: 'web',
+  placePhoto: 'web',
   packing: 'light',
   schedule: 'chat',
   document: 'vision',
@@ -510,6 +537,29 @@ Dati del viaggio: ${planContext(ctx.plan!, ctx.extra)}`,
         ],
       };
     }
+    case 'placePhoto':
+      return {
+        schemaName: 'tripshare_place_photo',
+        schema: PlacePhotoResultSchema,
+        jsonSchema: schemaOf(PlacePhotoResultSchema),
+        web: true,
+        repairs: 1,
+        messages: [
+          {
+            role: 'system',
+            content: `Cerca sul web fotografie reali del luogo indicato e dai fino a 6 indirizzi https DIRETTI di file immagine (.jpg, .png o .webp). Preferisci Wikimedia Commons (upload.wikimedia.org), siti ufficiali e di enti del turismo. Niente pagine web, miniature dei motori di ricerca, loghi, mappe o illustrazioni. NON inventare indirizzi: se non ne trovi di sicuri, restituisci l'elenco vuoto. Rispondi in ${L} SOLO con JSON secondo lo schema.
+JSON Schema: ${JSON.stringify(schemaOf(PlacePhotoResultSchema))}`,
+          },
+          {
+            role: 'user',
+            content: JSON.stringify({
+              place: { name: input.name, address: input.address },
+              destination: input.destination,
+            }),
+          },
+        ],
+      };
+
     case 'verify': {
       const place = ctx.plan!.places.find((p) => p.id === input.placeId);
       const dates = ctx

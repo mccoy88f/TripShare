@@ -1086,8 +1086,8 @@
   },
   "placePhoto": {
     "none": "Nessuna foto",
-    "upload": "Carica foto",
-    "search": "Cerca online",
+    "upload": "Carica",
+    "search": "Cerca",
     "remove": "Rimuovi",
     "searchTitle": "Cerca una foto del luogo",
     "placeholder": "Cerca, es. Edinburgh Castle",
@@ -1105,11 +1105,11 @@
     "rights": "Foto libere di Wikimedia Commons: l'autore e la licenza vengono salvati come credito.",
     "view": "Apri la foto di {{name}}",
     "failed": "Alcune foto non si sono potute scaricare: indirizzo non valido o non raggiungibile.",
-    "fromUrl": "Da indirizzo",
-    "urlTitle": "Foto da un indirizzo",
-    "urlHint": "Incolla il link diretto a un'immagine (un file .jpg, .png o .webp, non la pagina che la contiene): l'app la scarica e la salva.",
-    "urlHttps": "Serve un indirizzo che inizi con https://",
-    "urlDownload": "Scarica la foto"
+    "ask": "Chiedi all'assistente di trovare una foto",
+    "askTitle": "Foto trovate dall'assistente",
+    "asking": "L'assistente cerca delle foto sul web e controlla che si possano scaricare… può richiedere un po' di tempo.",
+    "askNone": "Non ho trovato foto affidabili per questo luogo. Prova con Cerca oppure Carica una tua foto.",
+    "askPick": "Scegli la foto che preferisci:"
   },
   "notifications": {
     "title": "Notifiche",

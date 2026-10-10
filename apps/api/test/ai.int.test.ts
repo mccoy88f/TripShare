@@ -8,6 +8,13 @@ import { createTestApp } from './helpers.js';
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
 const run = DATABASE_URL ? describe : describe.skip;
 
+const photo = (width: number, height: number) =>
+  sharp({ create: { width, height, channels: 3, background: '#3a7bd5' } })
+    .jpeg()
+    .toBuffer();
+const BIG_PHOTO = await photo(800, 600);
+const SMALL_PHOTO = await photo(200, 100);
+
 interface Call {
   url: string;
   body: Record<string, unknown>;
@@ -25,6 +32,14 @@ function fakeAi(calls: Call[], replies: Record<string, unknown[]>) {
       body,
       auth: headers.get('authorization') ?? headers.get('x-goog-api-key'),
     });
+    // Foto che l'AI indica per un luogo: una scaricabile e grande, una piccola, una inesistente.
+    if (url.startsWith('https://93.184.216.34/')) {
+      const name = url.split('/').pop()!;
+      if (name.startsWith('missing')) return new Response('', { status: 404 });
+      return new Response(new Uint8Array(name.startsWith('small') ? SMALL_PHOTO : BIG_PHOTO), {
+        headers: { 'content-type': 'image/jpeg' },
+      });
+    }
     if (url.endsWith('/models?pageSize=1000'))
       return Response.json({
         models: [
@@ -501,5 +516,60 @@ run('AI jobs (integration)', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toBe('image/jpeg');
+  });
+
+  it('finds place photos suggested by the AI, keeping only real, large images', async () => {
+    await t.settings.set('openrouter.apiKey', 'sk-or-central-key-123');
+    const { marco, tripId } = await setup();
+    replies.tripshare_place_photo = [
+      {
+        images: [
+          { url: 'https://93.184.216.34/missing-1.jpg' },
+          { url: 'https://93.184.216.34/small-1.jpg' },
+          { url: 'https://93.184.216.34/big-1.jpg' },
+          { url: 'https://93.184.216.34/big-2.jpg', title: 'Castello' },
+          { url: 'https://93.184.216.34/big-3.jpg' },
+          { url: 'https://93.184.216.34/big-4.jpg' },
+          { url: 'http://insecure.example.com/x.jpg' },
+        ].slice(0, 6),
+      },
+    ];
+    const started = await t.trpc<{ id: string }>('ai.start', marco, {
+      tripId,
+      input: { kind: 'placePhoto', name: 'Edinburgh Castle', destination: 'Scozia' },
+    });
+    expect(started.status).toBe(200);
+    const job = await t.trpc<{
+      status: string;
+      result: { candidates: { photo: string; credit: string }[] };
+    }>('ai.job', marco, { id: started.data.id }, 'query');
+    expect(job.data.status).toBe('done');
+    // Scartate la inesistente e la piccola; al massimo tre.
+    expect(job.data.result.candidates).toHaveLength(3);
+    for (const c of job.data.result.candidates) {
+      expect(c.photo).toMatch(/^\/api\/files\/place-[a-f0-9]{32}\.webp$/);
+      expect(c.credit).toBe('93.184.216.34');
+      expect((await t.app.inject({ method: 'GET', url: c.photo })).statusCode).toBe(200);
+    }
+
+    // Le foto non scelte si eliminano; quella usata nel programma resta.
+    const [chosen, ...others] = job.data.result.candidates.map((c) => c.photo);
+    await t.trpc('plan.applyOps', marco, {
+      tripId,
+      ops: [
+        {
+          type: 'upsertPlace',
+          place: { id: 'castello', name: 'Castello', kind: 'sight', photo: chosen },
+        },
+      ],
+    });
+    const discarded = await t.trpc('plan.placePhotoDiscard', marco, {
+      tripId,
+      urls: [chosen, ...others],
+    });
+    expect(discarded.status).toBe(200);
+    expect((await t.app.inject({ method: 'GET', url: chosen! })).statusCode).toBe(200);
+    for (const url of others)
+      expect((await t.app.inject({ method: 'GET', url })).statusCode).toBe(404);
   });
 });

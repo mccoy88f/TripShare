@@ -152,6 +152,31 @@ export const planRouter = router({
       }
     }),
 
+  /**
+   * Elimina le foto proposte dall'assistente che l'utente non ha scelto. Si tolgono solo file di
+   * foto dei luoghi che nessun programma usa.
+   */
+  placePhotoDiscard: authedProcedure
+    .input(
+      z.object({
+        tripId: z.uuid(),
+        urls: z
+          .array(z.string().regex(/^\/api\/files\/place-[a-f0-9]{32}\.webp$/))
+          .min(1)
+          .max(8),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
+      for (const url of input.urls) {
+        const used = await ctx.db.execute(
+          sql`select 1 from trip where plan::text like ${`%${url}%`} limit 1`,
+        );
+        if (used.length === 0) await ctx.storage?.removeByUrl(url);
+      }
+      return { ok: true };
+    }),
+
   /** Scarica la foto scelta dalla ricerca e la salva; restituisce l'URL da usare nel luogo. */
   placePhotoFromUrl: authedProcedure
     .input(z.object({ tripId: z.uuid(), url: z.url().max(2000) }))
