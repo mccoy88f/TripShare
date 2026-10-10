@@ -115,19 +115,26 @@
   border-radius: 0.75rem;
 }
 
-/* Card con foto di sfondo: testo chiaro e controlli in vetro su un velo scuro. */
+/*
+ * Card con foto di sfondo: un velo chiaro (tema chiaro) o scuro (tema scuro) e un alone dello
+ * stesso colore attorno al testo, così si legge bene su qualsiasi foto.
+ */
 .photo-card {
-  --color-foreground: #fff;
-  --color-card-foreground: #fff;
-  --color-muted-foreground: rgb(255 255 255 / 0.84);
-  --color-card: rgb(255 255 255 / 0.14);
-  --color-muted: rgb(255 255 255 / 0.2);
-  --color-secondary: rgb(255 255 255 / 0.22);
-  --color-secondary-foreground: #fff;
-  --color-input: rgb(255 255 255 / 0.4);
-  --color-primary: oklch(0.9 0.1 185);
-  --color-border: rgb(255 255 255 / 0.22);
-  color: #fff;
+  --veil: linear-gradient(to bottom, rgb(255 255 255 / 0.3), rgb(255 255 255 / 0.88));
+  --halo: rgb(255 255 255 / 0.95);
+  background-image: var(--veil), var(--photo);
   background-size: cover;
   background-position: center;
+  text-shadow:
+    0 0 3px var(--halo),
+    0 0 8px var(--halo),
+    0 0 14px var(--halo);
+}
+.dark .photo-card {
+  --veil: linear-gradient(to bottom, rgb(0 0 0 / 0.35), rgb(0 0 0 / 0.82));
+  --halo: rgb(0 0 0 / 0.95);
+}
+/* Controlli e badge hanno già il loro sfondo: niente alone. */
+.photo-card :is(button, [class*='bg-']) {
+  text-shadow: none;
 }

@@ -137,6 +137,46 @@ run('place photos (integration)', () => {
     );
     expect(plan.data.plan.places[0]!.photo).toBe(saved.data.url);
 
+    // Foto indicata con un indirizzo (ad es. dall'assistente): si scarica e si salva; se non si
+    // riesce, la foto viene tolta e segnalata mentre il resto delle modifiche si applica.
+    const viaUrl = await t.trpc<{ photoFailures: string[] }>('plan.applyOps', owner, {
+      tripId,
+      ops: [
+        { type: 'upsertPlace', place: { id: 'altro-luogo', name: 'Altro luogo', kind: 'sight' } },
+        {
+          type: 'setPlacePhoto',
+          id: 'altro-luogo',
+          photo: 'https://93.184.216.34/castello.jpg',
+          photoCredit: 'Esempio',
+        },
+        {
+          type: 'upsertPlace',
+          place: {
+            id: 'terzo',
+            name: 'Terzo',
+            kind: 'sight',
+            photo: 'https://93.184.216.34/non-esiste.jpg',
+          },
+        },
+      ],
+    });
+    expect(viaUrl.status).toBe(200);
+    expect(viaUrl.data.photoFailures).toEqual(['terzo']);
+    const afterUrl = await t.trpc<{
+      plan: { places: { id: string; photo?: string; photoCredit?: string }[] };
+    }>('plan.get', owner, { tripId }, 'query');
+    const altro = afterUrl.data.plan.places.find((p) => p.id === 'altro-luogo')!;
+    expect(altro.photo).toMatch(/^\/api\/files\/place-[a-f0-9]{32}\.webp$/);
+    expect(altro.photoCredit).toBe('Esempio');
+    expect(afterUrl.data.plan.places.find((p) => p.id === 'terzo')!.photo).toBeUndefined();
+    await t.trpc('plan.applyOps', owner, {
+      tripId,
+      ops: [
+        { type: 'deletePlace', id: 'altro-luogo' },
+        { type: 'deletePlace', id: 'terzo' },
+      ],
+    });
+
     // Un indirizzo che non è https né un nostro file non è ammesso come foto.
     const wrong = await t.trpc('plan.applyOps', owner, {
       tripId,

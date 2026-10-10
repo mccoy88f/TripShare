@@ -9,7 +9,7 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isCurrencyCode } from '@tripshare/shared';
 import {
@@ -124,16 +124,10 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
               onClick={() => canEdit && setEditing(p)}
               className={cn(
                 'flex flex-col gap-2 p-4',
-                p.photo && 'photo-card min-h-56 justify-end border-transparent',
+                p.photo && 'photo-card min-h-56 justify-end',
                 canEdit && 'cursor-pointer transition hover:bg-muted/40',
               )}
-              style={
-                p.photo
-                  ? {
-                      backgroundImage: `linear-gradient(to bottom, rgb(0 0 0 / 0.25), rgb(0 0 0 / 0.78)), url("${p.photo}")`,
-                    }
-                  : undefined
-              }
+              style={p.photo ? ({ '--photo': `url("${p.photo}")` } as CSSProperties) : undefined}
             >
               <div className="flex items-start gap-3">
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-xl">

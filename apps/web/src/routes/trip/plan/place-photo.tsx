@@ -144,6 +144,9 @@ function PhotoSearchDialog({
   const download = useMutation(trpc.plan.placePhotoFromUrl.mutationOptions());
   const submit = (e: FormEvent) => {
     e.preventDefault();
+    // La finestra sta dentro il modulo del luogo: senza questo l'invio salverebbe il luogo
+    // e chiuderebbe tutto (React fa risalire gli eventi anche attraverso i portali).
+    e.stopPropagation();
     setQuery(draft.trim());
   };
   return (

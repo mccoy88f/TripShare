@@ -18,6 +18,69 @@ import { forecast, forecastWindow, geocode } from '../weather.js';
 
 const localeOf = (l: unknown) => (l === 'en' ? 'en' : 'it');
 
+type PlanOpInput = z.infer<typeof PlanOpSchema>;
+const MAX_PHOTO_DOWNLOADS = 8;
+
+/** Sostituisce gli indirizzi https delle foto dei luoghi con file salvati su TripShare. */
+async function localizePhotoOps(
+  ctx: {
+    storage?: { saveImage(data: Buffer, preset: 'place'): Promise<string> };
+    settings: { get(key: 'uploads.maxMb'): Promise<number> };
+    httpFetch?: typeof fetch;
+  },
+  ops: PlanOpInput[],
+): Promise<{ ops: PlanOpInput[]; failed: string[] }> {
+  const failed: string[] = [];
+  const external = (url: string | undefined) => !!url && url.startsWith('https://');
+  if (
+    !ctx.storage ||
+    !ops.some((o) =>
+      o.type === 'setPlacePhoto'
+        ? external(o.photo)
+        : o.type === 'upsertPlace' && external(o.place.photo),
+    )
+  )
+    return { ops, failed };
+  const maxBytes = (await ctx.settings.get('uploads.maxMb')) * 1024 * 1024;
+  const cache = new Map<string, string | null>();
+  let downloads = 0;
+  const save = async (url: string) => {
+    if (cache.has(url)) return cache.get(url)!;
+    let saved: string | null = null;
+    if (downloads++ < MAX_PHOTO_DOWNLOADS) {
+      try {
+        saved = await ctx.storage!.saveImage(
+          await downloadImage(url, maxBytes, ctx.httpFetch),
+          'place',
+        );
+      } catch {
+        saved = null;
+      }
+    }
+    cache.set(url, saved);
+    return saved;
+  };
+  const out: PlanOpInput[] = [];
+  for (const op of ops) {
+    if (op.type === 'setPlacePhoto' && external(op.photo)) {
+      const saved = await save(op.photo!);
+      if (saved) out.push({ ...op, photo: saved });
+      else failed.push(op.id);
+    } else if (op.type === 'upsertPlace' && external(op.place.photo)) {
+      const saved = await save(op.place.photo!);
+      if (saved) out.push({ ...op, place: { ...op.place, photo: saved } });
+      else {
+        failed.push(op.place.id ?? op.place.name);
+        const { photo: _photo, photoCredit: _credit, ...place } = op.place;
+        void _photo;
+        void _credit;
+        out.push({ ...op, place });
+      }
+    } else out.push(op);
+  }
+  return { ops: out, failed };
+}
+
 export const planRouter = router({
   get: authedProcedure.input(z.object({ tripId: z.uuid() })).query(async ({ ctx, input }) => {
     const { trip: row } = await requireMember(ctx.db, input.tripId, ctx.user.id);
@@ -40,6 +103,9 @@ export const planRouter = router({
     .mutation(async ({ ctx, input }) => {
       await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
       const members = await activeMemberCount(ctx.db, input.tripId);
+      // Le foto indicate con un indirizzo (ad es. dall'assistente) si scaricano e si salvano qui;
+      // quelle che non si riescono a scaricare vengono tolte e segnalate, il resto si applica.
+      const { ops, failed } = await localizePhotoOps(ctx, input.ops);
       try {
         let before: ReturnType<typeof readPlan> | undefined;
         let after: ReturnType<typeof readPlan> | undefined;
@@ -47,7 +113,7 @@ export const planRouter = router({
           const [row] = await tx.select().from(trip).where(eq(trip.id, input.tripId)).for('update');
           if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
           before = readPlan(row, members, localeOf(ctx.session?.user.locale));
-          const next = prepareForStorage(applyPlanOps(before, input.ops));
+          const next = prepareForStorage(applyPlanOps(before, ops));
           after = next;
           const [updated] = await tx
             .update(trip)
@@ -57,7 +123,7 @@ export const planRouter = router({
           return { version: updated!.version };
         });
         await removeOrphanPhotos(ctx.storage, before, after);
-        return result;
+        return { ...result, photoFailures: failed };
       } catch (err) {
         planError(err);
       }

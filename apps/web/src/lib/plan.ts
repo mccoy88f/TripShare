@@ -104,11 +104,14 @@ export function usePlanOps(tripId: string) {
   const { t } = useTranslation();
   const mutation = useMutation(
     trpc.plan.applyOps.mutationOptions({
-      onSuccess: () =>
-        Promise.all([
+      onSuccess: (res) => {
+        // Foto indicate con un indirizzo che non si è riusciti a scaricare.
+        if (res.photoFailures?.length) toast.warning(t('placePhoto.failed'));
+        return Promise.all([
           queryClient.invalidateQueries({ queryKey: trpc.plan.get.queryKey({ tripId }) }),
           queryClient.invalidateQueries({ queryKey: trpc.trips.get.queryKey({ id: tripId }) }),
-        ]),
+        ]);
+      },
       onError: (err) =>
         toast.error(
           err.message.startsWith('PLAN_INVALID')

@@ -25,7 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/input';
 import { useAiStatus, useAiTask } from '@/lib/ai';
 import { money, shortDate } from '@/lib/format';
-import { usePlanOps } from '@/lib/plan';
+import { usePlan, usePlanOps } from '@/lib/plan';
 import { useTRPC } from '@/lib/trpc';
 import type { TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -37,8 +37,18 @@ import { hasPendingAsk, takePendingAsk } from '@/lib/assistant-ask';
 import { confirmDialog } from '@/components/confirm';
 
 /** Descrizione breve di una modifica proposta dall'assistente. */
-function describeOp(op: PlanOp, t: TFunction): string {
+function describeOp(op: PlanOp, t: TFunction, placeNames: Record<string, string> = {}): string {
   switch (op.type) {
+    case 'setPlacePhoto': {
+      const host = (() => {
+        try {
+          return op.photo ? new URL(op.photo).hostname.replace(/^www\./, '') : '';
+        } catch {
+          return '';
+        }
+      })();
+      return `📷 ${t('ai.chat.ops.setPlacePhoto')}: ${placeNames[op.id] ?? op.id}${host ? ` · ${host}` : ''}`;
+    }
     case 'upsertActivity':
       return `${op.activity.id ? '✏️' : '➕'} ${op.activity.title} · ${shortDate(op.date)}${op.activity.time ? ` ${op.activity.time}` : ''}`;
     case 'deleteActivity':
@@ -113,6 +123,8 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
   const status = useAiStatus();
   const { run, running } = useAiTask();
   const { apply, pending: applying } = usePlanOps(trip.id);
+  const { data: planData } = usePlan(trip.id);
+  const placeNames = Object.fromEntries((planData?.plan.places ?? []).map((p) => [p.id, p.name]));
   const keyboard = useKeyboard();
   const conversationsKey = trpc.ai.chat.conversations.queryKey({ tripId: trip.id });
   const { data: conversations } = useQuery(
@@ -344,7 +356,7 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
                   </p>
                   <ul className="grid grid-cols-1 gap-1 text-[13px]">
                     {actions.map((op, i) => (
-                      <li key={i}>{describeOp(op, t)}</li>
+                      <li key={i}>{describeOp(op, t, placeNames)}</li>
                     ))}
                   </ul>
                   {m.appliedAt ? (
@@ -387,7 +399,7 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
       {reviewing && (
         <ProposalDialog
           ops={reviewing.ops}
-          describe={describeOp}
+          describe={(op, tr) => describeOp(op, tr, placeNames)}
           applying={applying}
           onClose={() => setReviewing(null)}
           onApply={async (ops) => {

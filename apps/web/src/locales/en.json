@@ -961,7 +961,8 @@
         "deleteBudgetItem": "Remove budget item",
         "deletePackingItem": "Remove from packing",
         "deleteAlternative": "Remove alternative",
-        "setExchangeRates": "Exchange rates"
+        "setExchangeRates": "Exchange rates",
+        "setPlacePhoto": "Place photo"
       },
       "addExpense": "Add",
       "newChat": "New chat",
@@ -1099,6 +1100,8 @@
       "INVALID_IMAGE": "Invalid image.",
       "COMMONS_RATE_LIMIT": "Too many requests to Wikimedia: try again shortly."
     },
-    "rights": "Free photos from Wikimedia Commons: the author and licence are saved as the credit."
+    "rights": "Free photos from Wikimedia Commons: the author and licence are saved as the credit.",
+    "view": "Open the photo of {{name}}",
+    "failed": "Some photos could not be downloaded: invalid or unreachable address."
   }
 }

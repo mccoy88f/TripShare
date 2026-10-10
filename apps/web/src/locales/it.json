@@ -961,7 +961,8 @@
         "deleteBudgetItem": "Rimuovi voce di budget",
         "deletePackingItem": "Rimuovi dai bagagli",
         "deleteAlternative": "Rimuovi alternativa",
-        "setExchangeRates": "Tassi di cambio"
+        "setExchangeRates": "Tassi di cambio",
+        "setPlacePhoto": "Foto del luogo"
       },
       "addExpense": "Aggiungi",
       "newChat": "Nuova chat",
@@ -1099,6 +1100,8 @@
       "INVALID_IMAGE": "Immagine non valida.",
       "COMMONS_RATE_LIMIT": "Troppe richieste a Wikimedia: riprova tra poco."
     },
-    "rights": "Foto libere di Wikimedia Commons: l'autore e la licenza vengono salvati come credito."
+    "rights": "Foto libere di Wikimedia Commons: l'autore e la licenza vengono salvati come credito.",
+    "view": "Apri la foto di {{name}}",
+    "failed": "Alcune foto non si sono potute scaricare: indirizzo non valido o non raggiungibile."
   }
 }

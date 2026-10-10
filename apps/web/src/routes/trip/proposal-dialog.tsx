@@ -64,6 +64,7 @@ function withDependencies(all: PlanOp[], chosen: boolean[]): PlanOp[] {
       if (op.activity.bookingId) bookingIds.add(op.activity.bookingId);
     }
     if (op.type === 'upsertBooking' && op.booking.placeId) placeIds.add(op.booking.placeId);
+    if (op.type === 'setPlacePhoto') placeIds.add(op.id);
   }
   const extra = all.filter(
     (op, i) =>
