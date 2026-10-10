@@ -11,6 +11,7 @@ import {
   removeOrphanPhotos,
 } from '../services/plan.js';
 import { downloadImage, ImageDownloadError } from '../image-download.js';
+import { diffPlan, notifyTrip } from '../services/events.js';
 import { searchCommons } from '../photo-search.js';
 import { requireMember } from '../services/trips.js';
 import { authedProcedure, router } from '../trpc/init.js';
@@ -123,6 +124,9 @@ export const planRouter = router({
           return { version: updated!.version };
         });
         await removeOrphanPhotos(ctx.storage, before, after);
+        if (before && after)
+          for (const change of diffPlan(before, after))
+            await notifyTrip(ctx.db, { tripId: input.tripId, actorUserId: ctx.user.id, ...change });
         return { ...result, photoFailures: failed };
       } catch (err) {
         planError(err);
@@ -210,6 +214,12 @@ export const planRouter = router({
         })
         .where(eq(trip.id, input.tripId));
       await removeOrphanPhotos(ctx.storage, previous, plan);
+      await notifyTrip(ctx.db, {
+        tripId: input.tripId,
+        actorUserId: ctx.user.id,
+        type: 'plan.replaced',
+        data: { days: plan.days.length },
+      });
       return { ok: true };
     }),
 

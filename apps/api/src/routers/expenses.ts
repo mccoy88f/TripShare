@@ -19,6 +19,7 @@ import {
   type SplitInput,
 } from '@tripshare/shared';
 import { getRate } from '../fx.js';
+import { notifyTrip } from '../services/events.js';
 import { requireMember } from '../services/trips.js';
 import { authedProcedure, router, type Context } from '../trpc/init.js';
 
@@ -186,7 +187,7 @@ export const expensesRouter = router({
     const { trip } = await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
     const { active } = await activeMemberIds(ctx.db, input.tripId);
     const prepared = await prepare(ctx, input, trip.currency as CurrencyCode, active);
-    return ctx.db.transaction(async (tx) => {
+    const created = await ctx.db.transaction(async (tx) => {
       const [row] = await tx
         .insert(expense)
         .values({
@@ -210,6 +211,14 @@ export const expensesRouter = router({
       await writeParts(tx, row!.id, input, prepared.shares, prepared.weights);
       return { id: row!.id };
     });
+    await notifyTrip(ctx.db, {
+      tripId: input.tripId,
+      actorUserId: ctx.user.id,
+      type: 'expense.created',
+      entityId: created.id,
+      data: { title: input.title, amount: input.amount, currency: input.currency },
+    });
+    return created;
   }),
 
   update: authedProcedure
@@ -252,6 +261,13 @@ export const expensesRouter = router({
           .where(eq(expense.id, input.id));
         await writeParts(tx, input.id, input, prepared.shares, prepared.weights);
       });
+      await notifyTrip(ctx.db, {
+        tripId: input.tripId,
+        actorUserId: ctx.user.id,
+        type: 'expense.updated',
+        entityId: input.id,
+        data: { title: input.title, amount: input.amount, currency: input.currency },
+      });
       return { ok: true };
     }),
 
@@ -281,8 +297,20 @@ export const expensesRouter = router({
             isNull(expense.deletedAt),
           ),
         )
-        .returning({ id: expense.id });
+        .returning({
+          id: expense.id,
+          title: expense.title,
+          amount: expense.amount,
+          currency: expense.currency,
+        });
       if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+      await notifyTrip(ctx.db, {
+        tripId: input.tripId,
+        actorUserId: ctx.user.id,
+        type: input.status === 'paid' ? 'expense.paid' : 'expense.updated',
+        entityId: row.id,
+        data: { title: row.title, amount: row.amount, currency: row.currency },
+      });
       return { ok: true };
     }),
 
@@ -351,7 +379,7 @@ export const expensesRouter = router({
         convertMinor(amount, row.currency as CurrencyCode, trip.currency as CurrencyCode, row.rate);
       const date = input.date ?? row.date;
 
-      return ctx.db.transaction(async (tx) => {
+      const result = await ctx.db.transaction(async (tx) => {
         const writePayers = async (
           expenseId: string,
           payers: { memberId: string; amount: number }[],
@@ -430,6 +458,14 @@ export const expensesRouter = router({
           .where(eq(expense.id, row.id));
         return { paidId: newId, remainingId: row.id };
       });
+      await notifyTrip(ctx.db, {
+        tripId: input.tripId,
+        actorUserId: ctx.user.id,
+        type: 'expense.paid',
+        entityId: result.paidId,
+        data: { title: row.title, amount: paid, currency: row.currency },
+      });
+      return result;
     }),
 
   /**
@@ -521,6 +557,17 @@ export const expensesRouter = router({
           })
           .where(eq(expense.id, row.id));
       });
+      await notifyTrip(ctx.db, {
+        tripId: input.tripId,
+        actorUserId: ctx.user.id,
+        type: input.status === 'paid' && row.status !== 'paid' ? 'expense.paid' : 'expense.updated',
+        entityId: row.id,
+        data: {
+          title: row.title,
+          amount: changeAmount ? input.amount! : row.amount,
+          currency: row.currency,
+        },
+      });
       return { ok: true };
     }),
 
@@ -528,10 +575,25 @@ export const expensesRouter = router({
     .input(z.object({ tripId: z.uuid(), id: z.uuid() }))
     .mutation(async ({ ctx, input }) => {
       await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
-      await ctx.db
+      const [removed] = await ctx.db
         .update(expense)
         .set({ deletedAt: new Date() })
-        .where(and(eq(expense.id, input.id), eq(expense.tripId, input.tripId)));
+        .where(
+          and(
+            eq(expense.id, input.id),
+            eq(expense.tripId, input.tripId),
+            isNull(expense.deletedAt),
+          ),
+        )
+        .returning({ title: expense.title, amount: expense.amount, currency: expense.currency });
+      if (removed)
+        await notifyTrip(ctx.db, {
+          tripId: input.tripId,
+          actorUserId: ctx.user.id,
+          type: 'expense.deleted',
+          entityId: input.id,
+          data: { title: removed.title, amount: removed.amount, currency: removed.currency },
+        });
       return { ok: true };
     }),
 
@@ -575,7 +637,7 @@ export const settlementsRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { member } = await requireMember(ctx.db, input.tripId, ctx.user.id);
+      const { member, trip } = await requireMember(ctx.db, input.tripId, ctx.user.id);
       // Un rimborso può registrarlo chi lo paga, chi lo riceve, oppure un editor del viaggio.
       const involved = member.id === input.fromMemberId || member.id === input.toMemberId;
       if (!involved && member.role === 'viewer') throw new TRPCError({ code: 'FORBIDDEN' });
@@ -589,6 +651,13 @@ export const settlementsRouter = router({
         .insert(settlement)
         .values({ ...input, createdBy: ctx.user.id })
         .returning({ id: settlement.id });
+      await notifyTrip(ctx.db, {
+        tripId: input.tripId,
+        actorUserId: ctx.user.id,
+        type: 'settlement.created',
+        entityId: row!.id,
+        data: { amount: input.amount, currency: trip.currency },
+      });
       return row!;
     }),
 

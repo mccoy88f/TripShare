@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { and, asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { bookingTicket, tripMember } from '@tripshare/db';
+import { notifyTrip } from '../services/events.js';
 import { requireMember } from '../services/trips.js';
 import { authedProcedure, router, type Context } from '../trpc/init.js';
 
@@ -69,6 +70,13 @@ export const ticketsRouter = router({
         .insert(bookingTicket)
         .values({ ...input, memberId: input.memberId ?? null, createdBy: ctx.user.id })
         .returning({ id: bookingTicket.id });
+      await notifyTrip(ctx.db, {
+        tripId: input.tripId,
+        actorUserId: ctx.user.id,
+        type: 'ticket.added',
+        entityId: input.bookingId,
+        data: { title: input.label },
+      });
       return row!;
     }),
 
@@ -112,6 +120,13 @@ export const ticketsRouter = router({
           createdBy: ctx.user.id,
         })
         .returning({ id: bookingTicket.id });
+      await notifyTrip(ctx.db, {
+        tripId: input.tripId,
+        actorUserId: ctx.user.id,
+        type: 'ticket.added',
+        entityId: input.bookingId,
+        data: { title: input.label },
+      });
       return row!;
     }),
 

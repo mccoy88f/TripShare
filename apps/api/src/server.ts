@@ -8,6 +8,7 @@ import { and, eq } from 'drizzle-orm';
 import { bookingTicket, expense, trip, tripMember, user } from '@tripshare/db';
 import { TICKET_CODE_FORMATS } from './routers/tickets.js';
 import { tripDocumentJsonSchema } from '@tripshare/shared/trip-format';
+import { notifyTrip } from './services/events.js';
 import { requireMember } from './services/trips.js';
 import { appRouter, type AppRouter } from './routers/index.js';
 import type { AppServices, Context } from './trpc/init.js';
@@ -205,6 +206,13 @@ export async function buildServer(
           createdBy: session.user.id,
         })
         .returning({ id: bookingTicket.id });
+      await notifyTrip(services.db, {
+        tripId: req.params.id,
+        actorUserId: session.user.id,
+        type: 'ticket.added',
+        entityId: bookingId,
+        data: { title: field('label')?.slice(0, 120) },
+      });
       return { id: row!.id };
     });
 

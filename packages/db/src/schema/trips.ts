@@ -325,3 +325,54 @@ export const tripNote = pgTable(
   },
   (t) => [index('trip_note_trip_idx').on(t.tripId, t.createdAt)],
 );
+
+/**
+ * Registro delle modifiche a un viaggio (aggiunta di una spesa, di un luogo…). Una riga per
+ * modifica; più modifiche simili dello stesso autore in pochi minuti si fondono in una sola
+ * (`count`). I testi non sono salvati: si compongono nella lingua di chi legge dai parametri.
+ */
+export const tripEvent = pgTable(
+  'trip_event',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    tripId: uuid()
+      .notNull()
+      .references(() => trip.id, { onDelete: 'cascade' }),
+    /** Chi ha fatto la modifica (nullo se il membro non esiste più). */
+    actorMemberId: uuid().references(() => tripMember.id, { onDelete: 'set null' }),
+    /** Tipo, es. "expense.created" o "plan.place.added". */
+    type: text().notNull(),
+    /** Elemento interessato (id della spesa, del luogo, della prenotazione…). */
+    entityId: text(),
+    /** Parametri per comporre il testo: titolo, importo, data del giorno… */
+    data: jsonb().notNull().default({}),
+    /** Quante modifiche dello stesso tipo sono state fuse in questo evento. */
+    count: integer().notNull().default(1),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('trip_event_trip_idx').on(t.tripId, t.updatedAt)],
+);
+
+/** Notifica per un destinatario: l'evento, da leggere o già letto. */
+export const notification = pgTable(
+  'notification',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    tripId: uuid()
+      .notNull()
+      .references(() => trip.id, { onDelete: 'cascade' }),
+    eventId: uuid()
+      .notNull()
+      .references(() => tripEvent.id, { onDelete: 'cascade' }),
+    readAt: timestamp({ withTimezone: true }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('notification_user_event_idx').on(t.userId, t.eventId),
+    index('notification_user_idx').on(t.userId, t.readAt, t.createdAt),
+  ],
+);

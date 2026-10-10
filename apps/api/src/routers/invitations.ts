@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { trip, tripInvitation, tripMember, user, type Database } from '@tripshare/db';
 import { isLocale } from '@tripshare/shared';
 import { listMembers } from '../services/members.js';
+import { notifyTrip } from '../services/events.js';
 import { requireMember } from '../services/trips.js';
 import { authedProcedure, publicProcedure, router } from '../trpc/init.js';
 
@@ -336,6 +337,12 @@ export const invitationsRouter = router({
           .update(tripInvitation)
           .set({ uses: sql`${tripInvitation.uses} + 1` })
           .where(eq(tripInvitation.id, invitation.id));
+      });
+      await notifyTrip(ctx.db, {
+        tripId: invitation.tripId,
+        actorUserId: ctx.user.id,
+        type: 'member.joined',
+        data: { name: ctx.user.name },
       });
       return { tripId: invitation.tripId };
     }),

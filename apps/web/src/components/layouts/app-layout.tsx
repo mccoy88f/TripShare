@@ -4,6 +4,7 @@ import { LogOut, Plane, Plus, UserRound } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Logo } from '@/components/brand';
+import { NotificationBell } from '@/components/notifications';
 import { InstallBanner } from '@/components/pwa';
 import { LanguageSwitcher, ThemeToggle } from '@/components/preferences';
 import { UserAvatar } from '@/components/ui/avatar';
@@ -77,6 +78,7 @@ export function AppLayout() {
           </div>
         )}
         <div className="flex items-center gap-1">
+          <NotificationBell />
           <LanguageSwitcher />
           <ThemeToggle />
         </div>
@@ -87,6 +89,7 @@ export function AppLayout() {
         <header className="sticky top-0 z-30 flex h-14 items-center gap-1 border-b bg-background/80 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl lg:hidden">
           <Logo to="/app" />
           <div className="flex-1" />
+          <NotificationBell />
           <ThemeToggle />
           <Button variant="ghost" size="icon" onClick={logout} title={t('nav.signOut')}>
             <LogOut />

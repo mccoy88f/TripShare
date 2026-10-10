@@ -5,6 +5,7 @@ import { expensesRouter, settlementsRouter } from './expenses.js';
 import { invitationsRouter } from './invitations.js';
 import { meRouter } from './me.js';
 import { notesRouter } from './notes.js';
+import { notificationsRouter } from './notifications.js';
 import { planRouter } from './plan.js';
 import { ticketsRouter } from './tickets.js';
 import { tripsRouter } from './trips.js';
@@ -18,6 +19,7 @@ export const appRouter = router({
   trips: tripsRouter,
   plan: planRouter,
   notes: notesRouter,
+  notifications: notificationsRouter,
   tickets: ticketsRouter,
   invitations: invitationsRouter,
   expenses: expensesRouter,

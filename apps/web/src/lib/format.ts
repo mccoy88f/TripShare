@@ -32,3 +32,17 @@ export function todayIso() {
   const d = new Date();
   return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
 }
+
+/** "2 min fa", "ieri": tempo trascorso da una data, nella lingua dell'app. */
+export function timeAgo(date: string | Date, locale: Locale = currentLocale()) {
+  const seconds = Math.round((new Date(date).getTime() - Date.now()) / 1000);
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  const steps: [Intl.RelativeTimeFormatUnit, number][] = [
+    ['day', 86_400],
+    ['hour', 3_600],
+    ['minute', 60],
+  ];
+  for (const [unit, size] of steps)
+    if (Math.abs(seconds) >= size) return rtf.format(Math.round(seconds / size), unit);
+  return rtf.format(0, 'second');
+}

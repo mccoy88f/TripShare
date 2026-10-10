@@ -14,6 +14,7 @@ import {
   user,
 } from '@tripshare/db';
 import { CURRENCY_CODES } from '@tripshare/shared';
+import { notifyTrip } from '../services/events.js';
 import { readPlan, removeOrphanPhotos } from '../services/plan.js';
 import { computeLedgers, requireMember } from '../services/trips.js';
 import { downloadPhoto, searchPhotos } from '../unsplash.js';
@@ -117,6 +118,24 @@ export const tripsRouter = router({
         .update(trip)
         .set({ ...input.data, updatedAt: new Date() })
         .where(eq(trip.id, input.id));
+      const changed = (
+        [
+          'title',
+          'emoji',
+          'description',
+          'destination',
+          'startDate',
+          'endDate',
+          'currency',
+        ] as const
+      ).some((k) => (input.data[k] ?? null) !== (current[k] ?? null));
+      if (changed)
+        await notifyTrip(ctx.db, {
+          tripId: input.id,
+          actorUserId: ctx.user.id,
+          type: 'trip.updated',
+          data: { title: input.data.title },
+        });
       return { ok: true };
     }),
 
@@ -218,6 +237,7 @@ export const tripsRouter = router({
     });
     for (const name of files) await ctx.storage?.removePrivate(name).catch(() => undefined);
     await removeOrphanPhotos(ctx.storage, previous, undefined);
+    await notifyTrip(ctx.db, { tripId: input.id, actorUserId: ctx.user.id, type: 'trip.reset' });
     return { ok: true };
   }),
 
@@ -276,6 +296,14 @@ export const tripsRouter = router({
         }
         if (Object.keys(patch).length)
           await ctx.db.update(tripMember).set(patch).where(eq(tripMember.id, target.id));
+        if (patch.role)
+          await notifyTrip(ctx.db, {
+            tripId: input.tripId,
+            actorUserId: ctx.user.id,
+            type: 'member.role',
+            entityId: target.id,
+            data: { name: target.name, role: patch.role },
+          });
         return { ok: true };
       }),
 
@@ -302,6 +330,13 @@ export const tripsRouter = router({
           .update(tripMember)
           .set({ removedAt: new Date(), role: 'viewer' })
           .where(eq(tripMember.id, target.id));
+        await notifyTrip(ctx.db, {
+          tripId: input.tripId,
+          actorUserId: ctx.user.id,
+          type: 'member.left',
+          entityId: target.id,
+          data: { name: target.name },
+        });
         return { ok: true };
       }),
   }),

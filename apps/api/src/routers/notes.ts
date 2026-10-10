@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { and, desc, eq, or } from 'drizzle-orm';
 import { z } from 'zod';
 import { tripNote } from '@tripshare/db';
+import { notifyTrip } from '../services/events.js';
 import { requireMember } from '../services/trips.js';
 import { authedProcedure, router } from '../trpc/init.js';
 
@@ -48,6 +49,15 @@ export const notesRouter = router({
         pinned: input.pinned ?? false,
       })
       .returning({ id: tripNote.id });
+    // Le note private non si notificano a nessuno.
+    if (input.visibility === 'public')
+      await notifyTrip(ctx.db, {
+        tripId: input.tripId,
+        actorUserId: ctx.user.id,
+        type: 'note.created',
+        entityId: row!.id,
+        data: { title: input.title || input.content.slice(0, 60) },
+      });
     return row!;
   }),
 
@@ -55,6 +65,10 @@ export const notesRouter = router({
     .input(NoteInput.extend({ id: z.uuid() }))
     .mutation(async ({ ctx, input }) => {
       const { member } = await requireMember(ctx.db, input.tripId, ctx.user.id);
+      const [previous] = await ctx.db
+        .select({ visibility: tripNote.visibility })
+        .from(tripNote)
+        .where(and(eq(tripNote.id, input.id), eq(tripNote.tripId, input.tripId)));
       const [row] = await ctx.db
         .update(tripNote)
         .set({
@@ -74,6 +88,15 @@ export const notesRouter = router({
         )
         .returning({ id: tripNote.id });
       if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+      // Una nota resa pubblica è una novità; una nota che resta o diventa privata non si notifica.
+      if (input.visibility === 'public')
+        await notifyTrip(ctx.db, {
+          tripId: input.tripId,
+          actorUserId: ctx.user.id,
+          type: previous?.visibility === 'public' ? 'note.updated' : 'note.created',
+          entityId: row.id,
+          data: { title: input.title || input.content.slice(0, 60) },
+        });
       return { ok: true };
     }),
 
