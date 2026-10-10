@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DIALOG_FOOTER } from '@/components/dialog-footer';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -147,27 +148,27 @@ export function StepForm({
           </fieldset>
         </div>
       ))}
-      <div className="flex items-center gap-2">
+      <div className={DIALOG_FOOTER}>
         {leading}
         <div className="flex-1" />
-        {index > 0 && (
+        {index > 0 && !readOnly && (
           <Button type="button" variant="ghost" onClick={() => go(index - 1)}>
             <ChevronLeft />
             {t('steps.back')}
           </Button>
         )}
-        {last && readOnly ? (
-          <Button type="button" size="lg" onClick={onEdit} aria-label={t('common.edit')}>
+        {readOnly ? (
+          <Button key="edit" type="button" size="lg" onClick={onEdit} aria-label={t('common.edit')}>
             <Pencil />
-            <span className="hidden sm:inline">{t('common.edit')}</span>
+            {t('common.edit')}
           </Button>
         ) : last ? (
-          <Button type="submit" size="lg" disabled={pending || submitDisabled}>
+          <Button key="save" type="submit" size="lg" disabled={pending || submitDisabled}>
             {pending && <Loader2 className="animate-spin" />}
             {submitLabel}
           </Button>
         ) : (
-          <Button type="submit" size="lg">
+          <Button key="next" type="submit" size="lg">
             {t('steps.next')}
             <ChevronRight />
           </Button>

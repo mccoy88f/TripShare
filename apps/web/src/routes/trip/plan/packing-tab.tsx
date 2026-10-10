@@ -6,6 +6,7 @@ import type { PackingItem } from '@tripshare/shared/trip-format';
 import { UserAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { DIALOG_FOOTER } from '@/components/dialog-footer';
 import { EditButton } from '@/components/edit-button';
 import { useDetailMode } from '@/lib/detail-mode';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -413,7 +414,7 @@ function PackingDialog({
               {t('packing.perPerson')}
             </label>
           </fieldset>
-          <div className="mt-2 flex items-center gap-2">
+          <div className={DIALOG_FOOTER}>
             <Button
               type="button"
               variant="ghost"

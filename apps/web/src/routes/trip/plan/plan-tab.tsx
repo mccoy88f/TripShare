@@ -19,6 +19,7 @@ import type { Activity, Day, TripDocument } from '@tripshare/shared/trip-format'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { DIALOG_FOOTER } from '@/components/dialog-footer';
 import { EditButton } from '@/components/edit-button';
 import { useDetailMode } from '@/lib/detail-mode';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -742,7 +743,7 @@ function DayDialog({
               </Field>
             )}
           </fieldset>
-          <div className="flex items-center gap-3">
+          <div className={DIALOG_FOOTER}>
             <Button
               type="button"
               variant="ghost"
@@ -822,7 +823,7 @@ function TipDialog({
               />
             </Field>
           </fieldset>
-          <div className="mt-2 flex items-center gap-2">
+          <div className={DIALOG_FOOTER}>
             {onDelete && (
               <Button
                 type="button"

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { UserAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { DIALOG_FOOTER } from '@/components/dialog-footer';
 import { EditButton } from '@/components/edit-button';
 import { useDetailMode } from '@/lib/detail-mode';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -241,7 +242,7 @@ function NoteDialog({
               </label>
             </div>
           </fieldset>
-          <div className="mt-2 flex items-center gap-2">
+          <div className={DIALOG_FOOTER}>
             {draft.id && (
               <Button
                 type="button"

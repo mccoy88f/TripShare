@@ -8,7 +8,7 @@ export function EditButton({ onClick }: { onClick: () => void }) {
   return (
     <Button type="button" size="lg" onClick={onClick} aria-label={t('common.edit')}>
       <Pencil />
-      <span className="hidden sm:inline">{t('common.edit')}</span>
+      {t('common.edit')}
     </Button>
   );
 }
