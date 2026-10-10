@@ -72,6 +72,37 @@ export const returnPoint = (s: WizardState): GeoPlace | null =>
 export const totalNights = (s: WizardState) =>
   s.start && s.end && s.end >= s.start ? nightsBetween(s.start, s.end) : 0;
 
+/** Stesso posto (le coordinate cercate due volte coincidono quasi esattamente). */
+export const sameSpot = (a: GeoPlace, b: GeoPlace) =>
+  Math.abs(a.lat - b.lat) < 0.01 && Math.abs(a.lon - b.lon) < 0.01;
+
+/** La tappa che corrisponde alla destinazione principale. */
+export const isMainStop = (s: WizardState, st: Stop) => !!s.main && sameSpot(st, s.main);
+
+/**
+ * La destinazione principale è una tappa del percorso: se ci sono altre tappe compare nell'elenco
+ * (la prima volta in testa) e se ne cambia la destinazione cambia anche quella tappa.
+ */
+function withMainStop(s: WizardState, previousMain: GeoPlace | null): WizardState {
+  let stops = s.stops;
+  if (previousMain && s.main && !sameSpot(previousMain, s.main)) {
+    const i = stops.findIndex((st) => sameSpot(st, previousMain));
+    if (i >= 0) stops = stops.map((st, j) => (j === i ? { ...s.main!, nights: st.nights } : st));
+  }
+  const main = s.main;
+  if (!main) return stops === s.stops ? s : { ...s, stops };
+  const has = stops.some((st) => sameSpot(st, main));
+  if (stops.length > 0 && !has) stops = [{ ...main, nights: 1 }, ...stops];
+  // Con la sola destinazione principale non c'è nessun giro da fare.
+  if (stops.length === 1 && has) stops = [];
+  return stops === s.stops ? s : { ...s, stops };
+}
+
+/** Cambia la bozza tenendo coerenti tappe, ordine e notti. */
+export function patchWizard(cur: WizardState, patch: Partial<WizardState>): WizardState {
+  return normalize(withMainStop({ ...cur, ...patch }, cur.main));
+}
+
 /** Riordina le tappe (se l'ordine non è manuale) e ripartisce le notti (se non sono state toccate). */
 export function normalize(s: WizardState): WizardState {
   let next = s;

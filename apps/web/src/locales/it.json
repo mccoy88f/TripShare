@@ -1282,6 +1282,8 @@
       "photos_other": "{{count}} foto"
     },
     "retry": "Riprova da qui",
+    "skip": "Salta questa fase",
+    "stuck": "Questa fase è ferma da troppo tempo.",
     "failedStep": "Questa fase non è riuscita.",
     "review": "Da controllare",
     "warnings": {
@@ -1311,6 +1313,7 @@
       "review": "Controlla e crea il viaggio. Toccando una riga la modifichi."
     },
     "main": "Destinazione principale",
+    "mainStop": "Destinazione principale",
     "mainHint": "Scrivi un luogo e premi Invio, poi tocca il risultato giusto.",
     "mainPlaceholder": "Sicilia, Lisbona, Scozia…",
     "origin": "Parti da",

@@ -811,6 +811,39 @@ run('AI jobs (integration)', () => {
       });
       expect(denied.error).toBeDefined();
     });
+
+    it('skips a failed step and goes on with the next ones', async () => {
+      const { marco, tripId } = await setupGeneration();
+      const noLodging = { ...BOOKINGS, bookings: [], stays: [] };
+      replies.tripshare_gen_strategy = [STRATEGY];
+      replies.tripshare_gen_places = [PLACES];
+      replies.tripshare_gen_days = [DAYS];
+      replies.tripshare_gen_bookings = [noLodging, noLodging];
+      replies.tripshare_gen_budget = [BUDGET];
+      replies.tripshare_gen_packing = [PACKING];
+      await t.trpc('ai.start', marco, { tripId, input: { kind: 'generateTrip' } });
+      expect((await state(marco, tripId)).steps[3]!.status).toBe('failed');
+
+      const before = calls.length;
+      await t.trpc('ai.start', marco, {
+        tripId,
+        input: { kind: 'generateTrip', from: 'bookings', skip: true },
+      });
+      const done = await state(marco, tripId);
+      expect(done.status).toBe('done');
+      expect(done.steps.map((s) => s.status)).toEqual([
+        'done',
+        'done',
+        'done',
+        'skipped',
+        'done',
+        'done',
+        'done',
+      ]);
+      const again = calls.slice(before).map((c) => JSON.stringify(c.body));
+      expect(again.some((b) => b.includes('Fase 4 di 7'))).toBe(false);
+      expect(again.some((b) => b.includes('Fase 5 di 7'))).toBe(true);
+    });
   });
 
   it('prefers the personal Gemini key in mixed mode', async () => {

@@ -286,6 +286,8 @@ export const AiInputSchema = z.discriminatedUnion('kind', [
       .optional(),
     /** Genera solo ciò che manca, senza cambiare titolo né le altre sezioni. */
     keep: z.boolean().optional(),
+    /** Salta la fase `from` e prosegue con le successive. */
+    skip: z.boolean().optional(),
   }),
   z.object({
     kind: z.literal('refine'),

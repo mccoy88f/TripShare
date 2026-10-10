@@ -122,8 +122,8 @@ export const aiRouter = router({
           .from(trip)
           .where(eq(trip.id, input.tripId));
         const current = row?.generation as GenerationState | null;
-        // Una generazione in corso (non ferma da più di mezz'ora) non si avvia due volte.
-        if (current?.status === 'running' && Date.now() - row!.updatedAt.getTime() < 30 * 60_000)
+        // Una generazione in corso (non ferma da più di 4 minuti) non si avvia due volte.
+        if (current?.status === 'running' && Date.now() - row!.updatedAt.getTime() < 4 * 60_000)
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'GENERATION_RUNNING' });
         await ctx.db
           .update(trip)
@@ -131,6 +131,7 @@ export const aiRouter = router({
             generation: initialState(job.from ?? 'strategy', current ?? undefined, {
               until: job.until,
               keep: job.keep,
+              skip: job.skip,
             }),
           })
           .where(eq(trip.id, input.tripId));

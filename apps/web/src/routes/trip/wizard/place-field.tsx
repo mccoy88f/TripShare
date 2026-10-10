@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { Loader2, MapPin, Search, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/input';
@@ -11,9 +11,13 @@ interface Hit extends GeoPlace {
   detail: string;
 }
 
+/** Dopo questa pausa nella scrittura la ricerca parte da sola. */
+const AUTO_SEARCH_MS = 700;
+
 /**
- * Campo per scegliere un luogo cercandolo su OpenStreetMap: si scrive, si preme Invio (o la
- * lente) e si tocca il risultato giusto. Il luogo scelto resta come etichetta con le coordinate.
+ * Campo per scegliere un luogo cercandolo su OpenStreetMap: si scrive e, dopo una breve pausa (o
+ * subito con Invio o la lente), compaiono i risultati da toccare. Il luogo scelto resta come
+ * etichetta con le coordinate.
  */
 export function PlaceField({
   id,
@@ -41,26 +45,54 @@ export function PlaceField({
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  const search = async () => {
-    const q = query.trim();
-    if (q.length < 2 || loading) return;
+  // Conta le ricerche: conta solo l'ultima, le risposte in ritardo di quelle vecchie si scartano.
+  const seq = useRef(0);
+
+  const search = async (text = query) => {
+    const q = text.trim();
+    if (q.length < 2) return;
+    const mine = ++seq.current;
     setLoading(true);
     setFailed(false);
     try {
       const res = await queryClient.fetchQuery(trpc.geo.search.queryOptions({ query: q }));
+      if (mine !== seq.current) return;
       setHits(res.map((h) => ({ label: h.label, lat: h.lat, lon: h.lon, detail: h.detail })));
     } catch {
+      if (mine !== seq.current) return;
       setHits(null);
       setFailed(true);
     } finally {
-      setLoading(false);
+      if (mine === seq.current) setLoading(false);
     }
   };
 
+  const lastSearched = useRef('');
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      // Testo cancellato: i risultati di prima non valgono più.
+      seq.current++;
+      lastSearched.current = '';
+      setHits(null);
+      setLoading(false);
+      return;
+    }
+    if (q === lastSearched.current) return;
+    const timer = setTimeout(() => {
+      lastSearched.current = q;
+      void search(q);
+    }, AUTO_SEARCH_MS);
+    return () => clearTimeout(timer);
+    // `search` usa solo valori stabili o letti al momento della chiamata
+  }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const pick = (h: Hit) => {
     onChange({ label: h.label, lat: h.lat, lon: h.lon });
+    seq.current++;
     setHits(null);
     setQuery('');
+    setLoading(false);
   };
 
   if (value && !clearOnPick)
@@ -94,6 +126,7 @@ export function PlaceField({
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
+              lastSearched.current = query.trim();
               void search();
             }
           }}
@@ -107,7 +140,10 @@ export function PlaceField({
           variant="outline"
           size="icon"
           className="size-11"
-          onClick={() => void search()}
+          onClick={() => {
+            lastSearched.current = query.trim();
+            void search();
+          }}
           disabled={query.trim().length < 2}
           aria-label={t('common.search')}
         >

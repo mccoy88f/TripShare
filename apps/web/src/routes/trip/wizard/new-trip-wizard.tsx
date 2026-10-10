@@ -47,7 +47,8 @@ import {
   lastOrigin,
   loadDraft,
   nightsAssigned,
-  normalize,
+  isMainStop,
+  patchWizard,
   otherPeople,
   peopleCount,
   rememberOrigin,
@@ -201,7 +202,9 @@ export function NewTripWizard() {
   const { data: me } = useMe();
   const ai = useAiStatus();
   const keyboard = useKeyboard();
-  const [s, setS] = useState<WizardState>(() => loadDraft() ?? { ...emptyWizard(lastOrigin()) });
+  const [s, setS] = useState<WizardState>(() =>
+    patchWizard(loadDraft() ?? emptyWizard(lastOrigin()), {}),
+  );
   const [stepIndex, setStepIndex] = useState(0);
   const [creating, setCreating] = useState(false);
   const [bookedOpen, setBookedOpen] = useState(false);
@@ -211,7 +214,7 @@ export function NewTripWizard() {
 
   useEffect(() => saveDraft(s), [s]);
   const aiAvailable = !!ai.data?.available;
-  const update = (patch: Partial<WizardState>) => setS((cur) => normalize({ ...cur, ...patch }));
+  const update = (patch: Partial<WizardState>) => setS((cur) => patchWizard(cur, patch));
 
   const steps: StepId[] = useMemo(
     () =>
@@ -392,6 +395,11 @@ export function NewTripWizard() {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{st.label}</span>
+                    {isMainStop(s, st) && (
+                      <span className="block text-xs font-medium text-primary">
+                        {t('wizard.mainStop')}
+                      </span>
+                    )}
                     {r && (
                       <span className="block text-xs text-muted-foreground">
                         {t('wizard.legFrom', { km: km(r.legs[i]!) })}
@@ -428,18 +436,20 @@ export function NewTripWizard() {
                   >
                     <ArrowDown />
                   </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 text-muted-foreground"
-                    aria-label={t('common.delete')}
-                    onClick={() =>
-                      update({ stops: s.stops.filter((_, j) => j !== i), nightsTouched: false })
-                    }
-                  >
-                    <Trash2 />
-                  </Button>
+                  {!isMainStop(s, st) && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-muted-foreground"
+                      aria-label={t('common.delete')}
+                      onClick={() =>
+                        update({ stops: s.stops.filter((_, j) => j !== i), nightsTouched: false })
+                      }
+                    >
+                      <Trash2 />
+                    </Button>
+                  )}
                 </li>
               ))}
             </ol>
@@ -948,7 +958,7 @@ export function NewTripWizard() {
 
       <div
         className={cn(
-          'fixed inset-x-0 z-40 border-t bg-background/95 px-4 py-3 backdrop-blur',
+          'fixed inset-x-0 z-20 border-t bg-background/95 px-4 py-3 backdrop-blur',
           keyboard.open
             ? 'bottom-0'
             : 'bottom-[calc(4rem+env(safe-area-inset-bottom))] lg:bottom-0 lg:pl-[260px]',

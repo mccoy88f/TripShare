@@ -1,5 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Check, Circle, Loader2, RotateCcw, Sparkles, X } from 'lucide-react';
+import {
+  AlertTriangle,
+  Check,
+  Circle,
+  Loader2,
+  RotateCcw,
+  SkipForward,
+  Sparkles,
+  X,
+} from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -9,6 +18,8 @@ import { useTRPC } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
 type StepKey = 'strategy' | 'places' | 'days' | 'bookings' | 'budget' | 'packing' | 'photos';
+/** Dopo questo tempo senza avanzamenti la fase si considera bloccata (come nel server). */
+const STUCK_MS = 4 * 60_000;
 const COUNT_KEY: Partial<Record<StepKey, string>> = {
   places: 'places',
   days: 'days',
@@ -46,11 +57,17 @@ export function GenerationPanel({ tripId, canEdit }: { tripId: string; canEdit: 
   }, [progress, queryClient, tripId, trpc]);
 
   if (!gen || gen.dismissed) return null;
-  const done = gen.steps.filter((s) => s.status === 'done').length;
+  const done = gen.steps.filter((s) => s.status === 'done' || s.status === 'skipped').length;
   const failed = gen.steps.find((s) => s.status === 'failed');
-  const retry = async (from: StepKey) => {
+  // Una fase in corso che non salva più da qualche minuto è rimasta bloccata.
+  const stuck =
+    gen.status === 'running' && !!gen.updatedAt && Date.now() - Date.parse(gen.updatedAt) > STUCK_MS
+      ? gen.steps.find((s) => s.status === 'running')
+      : undefined;
+  const stopped = failed ?? stuck;
+  const retry = async (from: StepKey, skip = false) => {
     try {
-      await start.mutateAsync({ tripId, input: { kind: 'generateTrip', from } });
+      await start.mutateAsync({ tripId, input: { kind: 'generateTrip', from, skip } });
       await queryClient.invalidateQueries({
         queryKey: trpc.ai.generation.state.queryKey({ tripId }),
       });
@@ -124,7 +141,7 @@ export function GenerationPanel({ tripId, canEdit }: { tripId: string; canEdit: 
                 s.status === 'done' && 'bg-primary text-primary-foreground',
                 s.status === 'running' && 'text-primary',
                 s.status === 'failed' && 'bg-amber-500 text-white',
-                s.status === 'pending' && 'text-muted-foreground/50',
+                (s.status === 'pending' || s.status === 'skipped') && 'text-muted-foreground/50',
               )}
             >
               {s.status === 'done' ? (
@@ -133,6 +150,8 @@ export function GenerationPanel({ tripId, canEdit }: { tripId: string; canEdit: 
                 <Loader2 className="size-4 animate-spin" />
               ) : s.status === 'failed' ? (
                 <X className="size-3.5" />
+              ) : s.status === 'skipped' ? (
+                <SkipForward className="size-3.5" />
               ) : (
                 <Circle className="size-3.5" />
               )}
@@ -160,12 +179,23 @@ export function GenerationPanel({ tripId, canEdit }: { tripId: string; canEdit: 
         ))}
       </ol>
 
-      {failed && canEdit && gen.status === 'failed' && (
+      {stopped && canEdit && (gen.status === 'failed' || stuck) && (
         <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-amber-500/10 p-3 text-sm">
           <span className="min-w-0 flex-1">
-            {t(`ai.errors.${failed.error ?? ''}`, { defaultValue: t('generation.failedStep') })}
+            {failed
+              ? t(`ai.errors.${failed.error ?? ''}`, { defaultValue: t('generation.failedStep') })
+              : t('generation.stuck')}
           </span>
-          <Button size="sm" disabled={start.isPending} onClick={() => void retry(failed.key)}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={start.isPending}
+            onClick={() => void retry(stopped.key, true)}
+          >
+            <SkipForward />
+            {t('generation.skip')}
+          </Button>
+          <Button size="sm" disabled={start.isPending} onClick={() => void retry(stopped.key)}>
             {start.isPending ? <Loader2 className="animate-spin" /> : <RotateCcw />}
             {t('generation.retry')}
           </Button>

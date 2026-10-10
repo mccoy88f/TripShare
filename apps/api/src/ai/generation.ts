@@ -53,7 +53,7 @@ export type GenStepKey = (typeof GENERATION_STEPS)[number];
 
 export interface GenStep {
   key: GenStepKey;
-  status: 'pending' | 'running' | 'done' | 'failed';
+  status: 'pending' | 'running' | 'done' | 'failed' | 'skipped';
   /** Cosa sta facendo o ha fatto, per la schermata (testo localizzato dal client). */
   detail?: { k: string; p?: Record<string, string | number> };
   /** Elementi prodotti (luoghi, giorni, prenotazioni…). */
@@ -69,6 +69,8 @@ export interface GenerationState {
   strategy?: Strategy;
   dismissed?: boolean;
   startedAt: string;
+  /** Ultimo salvataggio: se è vecchio, la generazione è rimasta ferma. */
+  updatedAt?: string;
   finishedAt?: string;
 }
 
@@ -281,7 +283,10 @@ interface RunCtx {
 async function saveState(ctx: RunCtx) {
   await ctx.db
     .update(trip)
-    .set({ generation: ctx.state, updatedAt: new Date() })
+    .set({
+      generation: { ...ctx.state, updatedAt: new Date().toISOString() },
+      updatedAt: new Date(),
+    })
     .where(eq(trip.id, ctx.tripId));
 }
 
@@ -888,6 +893,8 @@ export interface GenerationRange {
    * fasi seguenti. Serve ai pulsanti "Proponi con l'AI" delle sezioni vuote.
    */
   keep?: boolean;
+  /** Salta la fase `from` (bloccata o fallita) e prosegue con quelle successive. */
+  skip?: boolean;
 }
 
 export function initialState(
@@ -895,7 +902,8 @@ export function initialState(
   previous?: GenerationState,
   range: GenerationRange = {},
 ): GenerationState {
-  const first = GENERATION_STEPS.indexOf(from);
+  const skipped = range.skip && !range.keep ? GENERATION_STEPS.indexOf(from) : -1;
+  const first = skipped >= 0 ? skipped + 1 : GENERATION_STEPS.indexOf(from);
   if (range.keep) {
     const last = Math.max(first, GENERATION_STEPS.indexOf(range.until ?? from));
     const keys = GENERATION_STEPS.slice(first, last + 1);
@@ -917,7 +925,8 @@ export function initialState(
     strategy: first === 0 ? undefined : previous?.strategy,
     steps: GENERATION_STEPS.map((key, i) => {
       const prior = previous?.steps.find((s) => s.key === key);
-      return i < first && prior?.status === 'done'
+      if (i === skipped) return { key, status: 'skipped' } satisfies GenStep;
+      return i < first && (prior?.status === 'done' || prior?.status === 'skipped')
         ? prior
         : ({ key, status: 'pending' } satisfies GenStep);
     }).filter((_, i) => i <= last),
@@ -996,9 +1005,17 @@ export async function runGeneration(
   const brief = await ensureBrief(deps, row, members.length, base.locale);
   const from = base.from ?? 'strategy';
   const previous = (row.generation ?? undefined) as GenerationState | undefined;
-  if (!base.keep && from !== 'strategy' && !previous?.strategy)
+  // Saltando una fase si riparte dalla successiva (le fasi già fatte restano).
+  const resume = base.skip
+    ? (GENERATION_STEPS[GENERATION_STEPS.indexOf(from) + 1] ?? 'photos')
+    : from;
+  if (!base.keep && resume !== 'strategy' && !previous?.strategy)
     throw new AiJobError('GENERATION_NOT_READY');
-  const state = initialState(from, previous, { until: base.until, keep: base.keep });
+  const state = initialState(from, previous, {
+    until: base.until,
+    keep: base.keep,
+    skip: base.skip,
+  });
   const plan0 = readPlan(row, members.length, base.locale);
   const ctx: RunCtx = {
     deps,
@@ -1011,7 +1028,7 @@ export async function runGeneration(
     brief,
     describe: describeBrief(brief, row, base.locale),
     // Ripartendo da una fase si riparte dal programma già costruito.
-    plan: base.keep ? plan0 : clearFrom(plan0, from),
+    plan: base.keep || base.skip ? plan0 : clearFrom(plan0, from),
     keep: base.keep,
     state,
     usage: { promptTokens: 0, completionTokens: 0, cost: null, model: null },

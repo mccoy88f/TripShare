@@ -311,6 +311,7 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
         from: input.from,
         until: input.until,
         keep: input.keep,
+        skip: input.skip,
       });
       model = out.model;
       promptTokens = out.promptTokens;

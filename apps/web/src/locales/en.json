@@ -1282,6 +1282,8 @@
       "photos_other": "{{count}} photos"
     },
     "retry": "Retry from here",
+    "skip": "Skip this step",
+    "stuck": "This step has been stuck for too long.",
     "failedStep": "This step did not work.",
     "review": "To check",
     "warnings": {
@@ -1311,6 +1313,7 @@
       "review": "Check and create the trip. Tap a row to edit it."
     },
     "main": "Main destination",
+    "mainStop": "Main destination",
     "mainHint": "Type a place and press Enter, then tap the right result.",
     "mainPlaceholder": "Sicily, Lisbon, Scotland…",
     "origin": "Leaving from",

@@ -176,7 +176,7 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
   };
   useEffect(() => {
     scrollToEnd();
-  }, [history?.length, sent, conversationId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [history?.length, sent, conversationId]);
   // Con la tastiera aperta l'ultimo messaggio resta visibile sopra la casella di testo.
   useEffect(() => {
     if (keyboard.open) scrollToEnd();
@@ -191,7 +191,7 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
   };
   useEffect(() => {
     autosize();
-  }, [message]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [message]);
 
   const send = async (text: string) => {
     const msg = text.trim();
