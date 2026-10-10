@@ -1,4 +1,4 @@
-import { Download, X } from 'lucide-react';
+import { Download, Share, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -43,6 +43,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 const HIDE_KEY = 'tripshare-install-hidden-until';
 const VISIBLE_MS = 10_000;
+const TIP_MS = 15_000;
 const DAY = 86_400_000;
 
 const hiddenNow = () => {
@@ -81,6 +82,8 @@ export function InstallBanner() {
   const [event, setEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [ios] = useState(isIosBrowser);
   const [open, setOpen] = useState(false);
+  // Su iOS: dopo il tocco si apre il menu Condividi e il banner spiega cosa scegliere.
+  const [iosTip, setIosTip] = useState(false);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -98,12 +101,15 @@ export function InstallBanner() {
   useEffect(() => {
     if (!open) return;
     // Sparita da sola: non si ripropone per qualche giorno.
-    const timer = window.setTimeout(() => {
-      hideFor(3);
-      setOpen(false);
-    }, VISIBLE_MS);
+    const timer = window.setTimeout(
+      () => {
+        hideFor(3);
+        setOpen(false);
+      },
+      iosTip ? TIP_MS : VISIBLE_MS,
+    );
     return () => window.clearTimeout(timer);
-  }, [open]);
+  }, [open, iosTip]);
 
   if (!open) return null;
   return (
@@ -113,23 +119,34 @@ export function InstallBanner() {
     >
       <div className="flex items-center gap-2.5 py-1.5 pr-1.5 pl-2.5">
         <img src="/favicon.svg" alt="" className="size-7 shrink-0 rounded-lg" />
-        <p className="min-w-0 flex-1 truncate text-sm font-medium">
-          {event ? t('app.installTitle') : t('app.installIos')}
+        <p className="min-w-0 flex-1 text-sm leading-tight font-medium">
+          {iosTip ? t('app.installIosTip') : t('app.installTitle')}
         </p>
-        {event && (
+        {(event || ios) && !iosTip && (
           <Button
             size="icon"
             className="size-8 shrink-0"
             title={t('app.install')}
             aria-label={t('app.install')}
             onClick={async () => {
-              await event.prompt();
-              await event.userChoice;
-              setEvent(null);
-              setOpen(false);
+              if (event) {
+                await event.prompt();
+                await event.userChoice;
+                setEvent(null);
+                setOpen(false);
+                return;
+              }
+              // iOS non ha un'installazione da codice: si apre il menu Condividi di Safari,
+              // dove c'è «Aggiungi alla schermata Home», e il banner lo ricorda.
+              setIosTip(true);
+              try {
+                await navigator.share?.({ title: 'TripShare', url: location.origin });
+              } catch {
+                // chiuso senza scegliere: il suggerimento resta visibile
+              }
             }}
           >
-            <Download />
+            {event ? <Download /> : <Share />}
           </Button>
         )}
         <Button
@@ -146,7 +163,11 @@ export function InstallBanner() {
         </Button>
       </div>
       <div className="h-0.5 bg-muted">
-        <div className="install-progress h-full bg-primary" />
+        <div
+          key={String(iosTip)}
+          className="install-progress h-full bg-primary"
+          style={{ animationDuration: `${(iosTip ? TIP_MS : VISIBLE_MS) / 1000}s` }}
+        />
       </div>
     </div>
   );
