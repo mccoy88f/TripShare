@@ -572,7 +572,7 @@
     "night": "Night",
     "deleteDay": "Delete day",
     "confirmDeleteDay": "Delete the day with all its activities?",
-    "noActivities": "No activities on this day.",
+    "noActivities": "The days are there but have no activities yet.",
     "alternative": "Plan B",
     "useAlternative": "Use this plan",
     "tips": "Good to know",
@@ -1489,9 +1489,21 @@
         "s1": "Add similar items",
         "s2": "Suggest an alternative",
         "s3": "Lighter"
+      },
+      "tips": {
+        "s1": "More practical tips",
+        "s2": "Less obvious, more local",
+        "s3": "Adapt to the season"
       }
     },
     "apply_one": "Apply the change",
     "apply_other": "Apply {{count}} changes"
+  },
+  "section": {
+    "places": "Suggest places with AI",
+    "bookings": "Suggest bookings with AI",
+    "budget": "Suggest a budget with AI",
+    "plan": "Suggest the plan with AI",
+    "needDates": "The trip dates are needed."
   }
 }

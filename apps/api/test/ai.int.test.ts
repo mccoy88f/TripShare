@@ -666,6 +666,92 @@ run('AI jobs (integration)', () => {
       expect((jobs as unknown as { n: number }[])[0]!.n).toBe(1);
     });
 
+    it('generates only one empty section, keeping title and the rest of the trip', async () => {
+      await t.settings.set('openrouter.apiKey', 'sk-or-central-key-123');
+      const marco = (await t.signUp('marco@example.com', 'Marco')).cookie;
+      // Un viaggio senza scheda (creato prima della creazione guidata): si ricava dalla destinazione.
+      const { data } = await t.trpc<{ id: string }>('trips.create', marco, {
+        title: 'Il mio viaggio',
+        currency: 'EUR',
+        destination: 'Palermo',
+        startDate: '2026-10-12',
+        endDate: '2026-10-14',
+      });
+      const stop = 'Palermo, Italia';
+      replies.tripshare_gen_strategy = [
+        {
+          ...STRATEGY,
+          legs: STRATEGY.legs.slice(0, 2),
+          bases: [{ ...STRATEGY.bases[0], stop, nights: 2 }],
+        },
+      ];
+      replies.tripshare_gen_places = [
+        {
+          places: [
+            'Cattedrale',
+            'Quattro Canti',
+            'Teatro Massimo',
+            'Mercato Ballarò',
+            'Palazzo dei Normanni',
+            'Monreale',
+          ].map((n, i) => ({
+            stop,
+            place: { id: `luogo-${i}`, name: n, kind: 'sight', mapsQuery: `${n}, Palermo` },
+          })),
+        },
+      ];
+      await t.trpc('ai.start', marco, {
+        tripId: data.id,
+        input: { kind: 'generateTrip', from: 'places', until: 'places', keep: true },
+      });
+      const gen = await state(marco, data.id);
+      expect(gen.status).toBe('done');
+      // Solo ciò che serve: la strategia (senza cambiare il viaggio) e i luoghi.
+      expect(gen.steps.map((x) => x.key)).toEqual(['strategy', 'places']);
+      const { data: planRes } = await t.trpc<{
+        plan: { trip: { title: string }; places: unknown[]; days: unknown[] };
+      }>('plan.get', marco, { tripId: data.id }, 'query');
+      expect(planRes.plan.trip.title).toBe('Il mio viaggio');
+      expect(planRes.plan.places).toHaveLength(6);
+      expect(planRes.plan.days).toHaveLength(0);
+
+      // Bagagli e consigli si possono far cambiare dall'AI come ogni altro elemento.
+      await t.trpc('plan.applyOps', marco, {
+        tripId: data.id,
+        ops: [
+          {
+            type: 'upsertPackingItem',
+            item: { id: 'passaporto', item: 'Passaporto', group: 'documents' },
+          },
+          { type: 'setTips', tips: [{ title: 'Caldo', text: 'Porta acqua.' }] },
+        ],
+      });
+      replies.tripshare_refine = [
+        {
+          summary: 'Aggiungo un consiglio.',
+          actions: [
+            { type: 'setTips', tips: [{ title: 'Caldo', text: 'Porta acqua e cappello.' }] },
+          ],
+        },
+      ];
+      for (const target of [
+        { type: 'packing', id: 'passaporto' },
+        { type: 'tips', id: 'Caldo' },
+      ]) {
+        const started = await t.trpc<{ id: string }>('ai.start', marco, {
+          tripId: data.id,
+          input: { kind: 'refine', target, instruction: 'Fai una proposta' },
+        });
+        const job = await t.trpc<{ status: string }>(
+          'ai.job',
+          marco,
+          { id: started.data.id },
+          'query',
+        );
+        expect(job.data.status).toBe('done');
+      }
+    });
+
     it('repairs invalid answers, stops at a failing step and resumes from it', async () => {
       const { marco, tripId } = await setupGeneration();
       const tooBusy = {

@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { DIALOG_FOOTER } from '@/components/dialog-footer';
 import { CloseButton, EditButton } from '@/components/edit-button';
 import { useDetailMode } from '@/lib/detail-mode';
+import { AskAiButton } from '../ask-ai';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Input, Select } from '@/components/ui/input';
 import { confirmDialog } from '@/components/confirm';
@@ -278,6 +279,7 @@ export function PackingTab({ trip }: { trip: TripDetail }) {
       })}
       {editing && (
         <PackingDialog
+          tripId={trip.id}
           item={editing}
           pending={pending}
           onClose={() => setEditing(null)}
@@ -341,12 +343,14 @@ export function PackingTab({ trip }: { trip: TripDetail }) {
 }
 
 function PackingDialog({
+  tripId,
   item,
   pending,
   onClose,
   onSave,
   onDelete,
 }: {
+  tripId: string;
   item: PackingItem;
   pending: boolean;
   onClose: () => void;
@@ -427,6 +431,14 @@ function PackingDialog({
               <span className="hidden sm:inline">{t('expense.delete')}</span>
             </Button>
             {detail.readOnly && <EditButton onClick={detail.startEdit} />}
+            {detail.readOnly && (
+              <AskAiButton
+                tripId={tripId}
+                target={{ type: 'packing', id: item.id ?? item.item }}
+                name={item.item}
+                onDone={onClose}
+              />
+            )}
             <div className="flex-1" />
             {detail.readOnly ? (
               <CloseButton />

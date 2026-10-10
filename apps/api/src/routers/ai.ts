@@ -127,7 +127,12 @@ export const aiRouter = router({
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'GENERATION_RUNNING' });
         await ctx.db
           .update(trip)
-          .set({ generation: initialState(job.from ?? 'strategy', current ?? undefined) })
+          .set({
+            generation: initialState(job.from ?? 'strategy', current ?? undefined, {
+              until: job.until,
+              keep: job.keep,
+            }),
+          })
           .where(eq(trip.id, input.tripId));
       }
       if (job.kind === 'chat' && input.tripId) {

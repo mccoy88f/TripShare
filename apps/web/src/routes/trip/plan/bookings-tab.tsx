@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useDetailMode } from '@/lib/detail-mode';
 import { AskAiButton } from '../ask-ai';
+import { SectionAiButton } from '../section-ai';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Step, StepForm } from '@/components/ui/steps';
 import { Field, Input, Select } from '@/components/ui/input';
@@ -138,6 +139,14 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
         <p className="rounded-xl border border-dashed px-6 py-10 text-center text-sm text-muted-foreground">
           {t('plan.booking.empty')}
         </p>
+      )}
+      {bookings.length === 0 && (
+        <SectionAiButton
+          trip={trip}
+          from="bookings"
+          until="bookings"
+          label={t('section.bookings')}
+        />
       )}
       <div className="grid grid-cols-1 gap-3">
         {bookings.map((b) => (

@@ -280,12 +280,18 @@ export const AiInputSchema = z.discriminatedUnion('kind', [
     from: z
       .enum(['strategy', 'places', 'days', 'bookings', 'budget', 'packing', 'photos'])
       .optional(),
+    /** Ultima fase da eseguire (di default tutte fino alle foto). */
+    until: z
+      .enum(['strategy', 'places', 'days', 'bookings', 'budget', 'packing', 'photos'])
+      .optional(),
+    /** Genera solo ciò che manca, senza cambiare titolo né le altre sezioni. */
+    keep: z.boolean().optional(),
   }),
   z.object({
     kind: z.literal('refine'),
     /** Elemento del programma da cambiare: id (o data, per un giorno). */
     target: z.object({
-      type: z.enum(['activity', 'place', 'booking', 'day', 'budget', 'packing']),
+      type: z.enum(['activity', 'place', 'booking', 'day', 'budget', 'packing', 'tips']),
       id: z.string().min(1).max(64),
     }),
     instruction: z.string().trim().min(3).max(1000),

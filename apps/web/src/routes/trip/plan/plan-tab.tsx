@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { DIALOG_FOOTER } from '@/components/dialog-footer';
 import { AskAiButton } from '../ask-ai';
+import { SectionAiButton } from '../section-ai';
 import { CloseButton, EditButton } from '@/components/edit-button';
 import { useDetailMode } from '@/lib/detail-mode';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -121,6 +122,12 @@ export function PlanTab({ trip }: { trip: TripDetail }) {
         </div>
         {canEdit && (
           <div className="flex flex-wrap justify-center gap-2">
+            <SectionAiButton
+              trip={trip}
+              from={plan.places.length > 0 ? 'days' : 'places'}
+              until="days"
+              label={t('section.plan')}
+            />
             {trip.startDate && (
               <Button
                 disabled={pending}
@@ -149,8 +156,21 @@ export function PlanTab({ trip }: { trip: TripDetail }) {
 
   const day = plan.days.find((d) => d.date === selected) ?? plan.days[0]!;
 
+  const noActivities = plan.days.every((d) => d.activities.length === 0);
+
   return (
     <div className="grid grid-cols-1 gap-5 pb-8">
+      {canEdit && noActivities && (
+        <div className="grid justify-items-center gap-2 rounded-xl border border-dashed px-4 py-5 text-center">
+          <p className="text-sm text-muted-foreground">{t('plan.noActivities')}</p>
+          <SectionAiButton
+            trip={trip}
+            from={plan.places.length > 0 ? 'days' : 'places'}
+            until="days"
+            label={t('section.plan')}
+          />
+        </div>
+      )}
       <div
         ref={stripRef}
         className="-mx-4 flex snap-x scroll-px-4 gap-2 overflow-x-auto px-4 pt-0.5 pb-2 [scrollbar-width:none] lg:mx-0 lg:scroll-px-0 lg:px-0"
@@ -238,6 +258,7 @@ export function PlanTab({ trip }: { trip: TripDetail }) {
       )}
       {tipIndex !== null && (
         <TipDialog
+          tripId={trip.id}
           tip={plan.tips[tipIndex]}
           pending={pending}
           onClose={() => setTipIndex(null)}
@@ -784,12 +805,14 @@ function DayDialog({
 }
 
 function TipDialog({
+  tripId,
   tip,
   pending,
   onClose,
   onSave,
   onDelete,
 }: {
+  tripId: string;
   tip?: { title: string; text: string };
   pending: boolean;
   onClose: () => void;
@@ -848,6 +871,14 @@ function TipDialog({
               </Button>
             )}
             {detail.readOnly && <EditButton onClick={detail.startEdit} />}
+            {detail.readOnly && tip && (
+              <AskAiButton
+                tripId={tripId}
+                target={{ type: 'tips', id: tip.title }}
+                name={tip.title}
+                onDone={onClose}
+              />
+            )}
             <div className="flex-1" />
             {detail.readOnly ? (
               <CloseButton />

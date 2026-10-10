@@ -141,6 +141,8 @@ function describeTarget(plan: TripDocument, target: { type: string; id: string }
       return { type: 'day', day: found(plan.days.find((d) => d.date === target.id)) };
     case 'budget':
       return { type: 'budget', item: found(plan.budget.find((b) => b.id === target.id)) };
+    case 'tips':
+      return { type: 'tips', focus: target.id, tips: plan.tips };
     default:
       return {
         type: 'packing',
@@ -307,6 +309,8 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
         locale,
         access,
         from: input.from,
+        until: input.until,
+        keep: input.keep,
       });
       model = out.model;
       promptTokens = out.promptTokens;

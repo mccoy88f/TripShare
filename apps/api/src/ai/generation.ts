@@ -274,6 +274,8 @@ interface RunCtx {
   plan: TripDocument;
   state: GenerationState;
   usage: Usage;
+  /** Generazione di una sola sezione: il resto del viaggio non si tocca. */
+  keep?: boolean;
 }
 
 async function saveState(ctx: RunCtx) {
@@ -373,6 +375,7 @@ JSON Schema: ${JSON.stringify(schemaOf(StrategySchema))}`,
   };
   const value = (await ask(ctx, spec)) as Strategy;
   ctx.state.strategy = value;
+  if (ctx.keep) return { count: value.legs.length };
   ctx.plan.trip = {
     ...ctx.plan.trip,
     title: value.title,
@@ -877,11 +880,36 @@ async function stepPhotos(
 // Orchestrazione
 // ---------------------------------------------------------------------------------------------
 
+export interface GenerationRange {
+  /** Ultima fase da eseguire (di default l'ultima). */
+  until?: GenStepKey;
+  /**
+   * Genera solo ciò che manca senza cambiare il resto: niente nuovo titolo, niente pulizia delle
+   * fasi seguenti. Serve ai pulsanti "Proponi con l'AI" delle sezioni vuote.
+   */
+  keep?: boolean;
+}
+
 export function initialState(
   from: GenStepKey = 'strategy',
   previous?: GenerationState,
+  range: GenerationRange = {},
 ): GenerationState {
   const first = GENERATION_STEPS.indexOf(from);
+  if (range.keep) {
+    const last = Math.max(first, GENERATION_STEPS.indexOf(range.until ?? from));
+    const keys = GENERATION_STEPS.slice(first, last + 1);
+    // Senza una strategia già decisa si parte da quella (senza toccare titolo e foto del viaggio).
+    if (!previous?.strategy && from !== 'strategy') keys.unshift('strategy');
+    return {
+      status: 'running',
+      startedAt: new Date().toISOString(),
+      warnings: [],
+      strategy: previous?.strategy,
+      steps: keys.map((key) => ({ key, status: 'pending' }) satisfies GenStep),
+    };
+  }
+  const last = GENERATION_STEPS.indexOf(range.until ?? 'photos');
   return {
     status: 'running',
     startedAt: new Date().toISOString(),
@@ -892,8 +920,37 @@ export function initialState(
       return i < first && prior?.status === 'done'
         ? prior
         : ({ key, status: 'pending' } satisfies GenStep);
-    }),
+    }).filter((_, i) => i <= last),
   };
+}
+
+/**
+ * La scheda del viaggio: quella della creazione guidata oppure, per i viaggi creati senza (o prima
+ * della creazione guidata), una minima ricavata dalla destinazione cercata su OpenStreetMap.
+ */
+async function ensureBrief(
+  deps: AiDeps,
+  row: typeof trip.$inferSelect,
+  members: number,
+  locale: Locale,
+): Promise<TripBrief> {
+  const parsed = TripBriefSchema.safeParse(row.brief);
+  if (parsed.success) return parsed.data;
+  const name = row.destination || row.title;
+  let hit: Awaited<ReturnType<typeof searchPlaces>>[number] | undefined;
+  try {
+    hit = (await searchPlaces(name, locale, deps.httpFetch))[0];
+  } catch {
+    hit = undefined;
+  }
+  if (!hit) throw new AiJobError('GENERATION_BRIEF_MISSING');
+  const brief: TripBrief = {
+    main: { label: hit.label, lat: hit.lat, lon: hit.lon },
+    stops: [],
+    travelers: { adults: Math.max(1, members), children: [] },
+  };
+  await deps.db.update(trip).set({ brief }).where(eq(trip.id, row.id));
+  return brief;
 }
 
 /** Toglie dal programma ciò che le fasi da `from` in poi ricostruiscono (e i collegamenti a esso). */
@@ -929,20 +986,19 @@ export async function runGeneration(
     locale: Locale;
     access: AiAccess;
     from?: GenStepKey;
-  },
+  } & GenerationRange,
 ): Promise<Usage & { failedStep?: GenStepKey }> {
   const { db } = deps;
   const [row] = await db.select().from(trip).where(eq(trip.id, base.tripId));
   if (!row) throw new AiJobError('TRIP_NOT_FOUND');
-  const parsedBrief = TripBriefSchema.safeParse(row.brief);
-  if (!parsedBrief.success || !row.startDate || !row.endDate)
-    throw new AiJobError('GENERATION_BRIEF_MISSING');
-  const brief = parsedBrief.data;
+  if (!row.startDate || !row.endDate) throw new AiJobError('GENERATION_DATES_MISSING');
   const members = (await listMembers(db, base.tripId)).filter((m) => !m.removed);
+  const brief = await ensureBrief(deps, row, members.length, base.locale);
   const from = base.from ?? 'strategy';
   const previous = (row.generation ?? undefined) as GenerationState | undefined;
-  if (from !== 'strategy' && !previous?.strategy) throw new AiJobError('GENERATION_NOT_READY');
-  const state = initialState(from, previous);
+  if (!base.keep && from !== 'strategy' && !previous?.strategy)
+    throw new AiJobError('GENERATION_NOT_READY');
+  const state = initialState(from, previous, { until: base.until, keep: base.keep });
   const plan0 = readPlan(row, members.length, base.locale);
   const ctx: RunCtx = {
     deps,
@@ -955,7 +1011,8 @@ export async function runGeneration(
     brief,
     describe: describeBrief(brief, row, base.locale),
     // Ripartendo da una fase si riparte dal programma già costruito.
-    plan: clearFrom(plan0, from),
+    plan: base.keep ? plan0 : clearFrom(plan0, from),
+    keep: base.keep,
     state,
     usage: { promptTokens: 0, completionTokens: 0, cost: null, model: null },
   };
@@ -980,7 +1037,7 @@ export async function runGeneration(
   };
   const step = (key: GenStepKey) => state.steps.find((s) => s.key === key)!;
 
-  for (const key of GENERATION_STEPS.slice(GENERATION_STEPS.indexOf(from))) {
+  for (const { key } of state.steps.filter((x) => x.status === 'pending')) {
     const s = step(key);
     s.status = 'running';
     s.detail = undefined;

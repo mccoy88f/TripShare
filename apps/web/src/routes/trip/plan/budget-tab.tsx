@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useDetailMode } from '@/lib/detail-mode';
 import { AskAiButton } from '../ask-ai';
+import { SectionAiButton } from '../section-ai';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Step, StepForm } from '@/components/ui/steps';
 import { Field, Input, Select } from '@/components/ui/input';
@@ -159,6 +160,9 @@ export function BudgetTab({ trip }: { trip: TripDetail }) {
           <p className="rounded-xl border border-dashed px-6 py-8 text-center text-sm text-muted-foreground">
             {t('budget.empty')}
           </p>
+        )}
+        {summary.lines.length === 0 && (
+          <SectionAiButton trip={trip} from="budget" until="budget" label={t('section.budget')} />
         )}
         <div className="divide-y rounded-xl border bg-card">
           {summary.lines.map(({ item, total }) => (
