@@ -216,12 +216,11 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
               {createInvite.isPending ? <Loader2 className="animate-spin" /> : <Share2 />}
               {t('members.createLink')}
             </Button>
-            <form onSubmit={inviteByEmail} className="flex flex-wrap items-end gap-3">
-              <Field
-                label={t('members.byEmail')}
-                htmlFor="inv-email"
-                className="min-w-0 basis-56 flex-1"
-              >
+            <form
+              onSubmit={inviteByEmail}
+              className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr] sm:items-end"
+            >
+              <Field label={t('members.byEmail')} htmlFor="inv-email" className="min-w-0">
                 <Input
                   id="inv-email"
                   type="email"
@@ -231,11 +230,7 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </Field>
-              <Field
-                label={t('members.inviteName')}
-                htmlFor="inv-name"
-                className="min-w-0 basis-40 flex-1"
-              >
+              <Field label={t('members.inviteName')} htmlFor="inv-name" className="min-w-0">
                 <Input
                   id="inv-name"
                   maxLength={80}
@@ -244,22 +239,24 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
                   onChange={(e) => setInviteName(e.target.value)}
                 />
               </Field>
-              <Select
-                className="w-44"
-                value={emailRole}
-                onChange={(e) => setEmailRole(e.target.value as 'editor' | 'viewer')}
-                aria-label={t('members.role')}
-              >
-                <option value="editor">{t('members.roles.editor')}</option>
-                <option value="viewer">{t('members.roles.viewer')}</option>
-              </Select>
-              <Button type="submit" variant="outline" disabled={createInvite.isPending}>
-                <Mail />
-                {t('members.send')}
-              </Button>
+              <div className="flex items-center gap-3 sm:col-span-2">
+                <Select
+                  className="min-w-0 flex-1"
+                  value={emailRole}
+                  onChange={(e) => setEmailRole(e.target.value as 'editor' | 'viewer')}
+                  aria-label={t('members.role')}
+                >
+                  <option value="editor">{t('members.roles.editor')}</option>
+                  <option value="viewer">{t('members.roles.viewer')}</option>
+                </Select>
+                <Button type="submit" variant="outline" disabled={createInvite.isPending}>
+                  <Mail />
+                  {t('members.send')}
+                </Button>
+              </div>
             </form>
             <form
-              className="flex flex-wrap items-end gap-3"
+              className="grid grid-cols-1 gap-3"
               onSubmit={async (e) => {
                 e.preventDefault();
                 await addPlaceholder.mutateAsync({ tripId: trip.id, name: placeholder.trim() });
@@ -270,7 +267,7 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
                 label={t('members.addPlaceholder')}
                 htmlFor="ph-name"
                 hint={t('members.placeholderHint')}
-                className="min-w-0 basis-56 flex-1"
+                className="min-w-0"
               >
                 <Input
                   id="ph-name"
@@ -281,7 +278,12 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
                   onChange={(e) => setPlaceholder(e.target.value)}
                 />
               </Field>
-              <Button type="submit" variant="outline" disabled={addPlaceholder.isPending}>
+              <Button
+                type="submit"
+                variant="outline"
+                className="justify-self-start"
+                disabled={addPlaceholder.isPending}
+              >
                 <UserPlus />
                 {t('members.add')}
               </Button>
