@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useDetailMode } from '@/lib/detail-mode';
+import { AskAiButton } from '../ask-ai';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Step, StepForm } from '@/components/ui/steps';
 import { Field, Input, Select } from '@/components/ui/input';
@@ -372,6 +373,16 @@ function BookingDialog({
         <StepForm
           readOnly={detail.readOnly}
           onEdit={detail.startEdit}
+          extra={
+            booking && (
+              <AskAiButton
+                tripId={tripId}
+                target={{ type: 'booking', id: booking.id }}
+                name={booking.title}
+                onDone={onClose}
+              />
+            )
+          }
           onSubmit={submit}
           freeNavigation={!!booking}
           pending={pending}

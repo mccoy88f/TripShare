@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useDetailMode } from '@/lib/detail-mode';
+import { AskAiButton } from '../ask-ai';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Step, StepForm } from '@/components/ui/steps';
 import { Field, Input, Select } from '@/components/ui/input';
@@ -286,6 +287,16 @@ function BudgetDialog({
         <StepForm
           readOnly={detail.readOnly}
           onEdit={detail.startEdit}
+          extra={
+            item && (
+              <AskAiButton
+                tripId={tripId}
+                target={{ type: 'budget', id: item.id }}
+                name={item.title}
+                onDone={onClose}
+              />
+            )
+          }
           onSubmit={submit}
           freeNavigation={!!item}
           pending={pending}

@@ -121,7 +121,8 @@ export function usePlanOps(tripId: string) {
     }),
   );
   return {
-    apply: (ops: PlanOp[]) => mutation.mutateAsync({ tripId, ops: ops as never }),
+    apply: (ops: PlanOp[], options: { snapshot?: string } = {}) =>
+      mutation.mutateAsync({ tripId, ops: ops as never, snapshot: options.snapshot }),
     pending: mutation.isPending,
   };
 }

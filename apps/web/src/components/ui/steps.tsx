@@ -38,6 +38,7 @@ export function StepForm({
   freeNavigation = false,
   readOnly = false,
   onEdit,
+  extra,
   className,
   children,
 }: {
@@ -51,6 +52,8 @@ export function StepForm({
   /** Modalità "dettaglio": campi non modificabili e matita al posto di "Salva". */
   readOnly?: boolean;
   onEdit?: () => void;
+  /** Azioni in più accanto alla matita, nella scheda "Dettaglio". */
+  extra?: ReactNode;
   className?: string;
   children: ReactNode;
 }) {
@@ -163,6 +166,7 @@ export function StepForm({
             <Pencil />
           </Button>
         )}
+        {readOnly && extra}
         <div className="flex-1" />
         {index > 0 && (
           <Button type="button" variant="ghost" onClick={() => go(index - 1)}>

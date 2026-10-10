@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { DIALOG_FOOTER } from '@/components/dialog-footer';
+import { AskAiButton } from '../ask-ai';
 import { CloseButton, EditButton } from '@/components/edit-button';
 import { useDetailMode } from '@/lib/detail-mode';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -758,6 +759,14 @@ function DayDialog({
               {t('plan.deleteDay')}
             </Button>
             {detail.readOnly && <EditButton onClick={detail.startEdit} />}
+            {detail.readOnly && (
+              <AskAiButton
+                tripId={tripId}
+                target={{ type: 'day', id: day.date }}
+                name={day.title}
+                onDone={() => onOpenChange(false)}
+              />
+            )}
             <div className="flex-1" />
             {detail.readOnly ? (
               <CloseButton />

@@ -10,6 +10,7 @@ import {
 } from '@tripshare/shared/trip-format';
 import { Button } from '@/components/ui/button';
 import { useDetailMode } from '@/lib/detail-mode';
+import { AskAiButton } from '../ask-ai';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Step, StepForm } from '@/components/ui/steps';
 import { EmojiPicker } from '@/components/ui/emoji-picker';
@@ -192,6 +193,16 @@ export function ActivityDialog({
         <StepForm
           readOnly={detail.readOnly}
           onEdit={detail.startEdit}
+          extra={
+            activity && (
+              <AskAiButton
+                tripId={tripId}
+                target={{ type: 'activity', id: activity.id }}
+                name={activity.title}
+                onDone={() => onOpenChange(false)}
+              />
+            )
+          }
           onSubmit={submit}
           freeNavigation={!!activity}
           pending={pending}

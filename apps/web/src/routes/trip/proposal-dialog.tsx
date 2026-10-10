@@ -82,9 +82,18 @@ export function ProposalDialog({
   applying,
   onClose,
   onApply,
+  title,
+  hint,
+  before,
+  applyLabel,
 }: {
   ops: PlanOp[];
   describe: (op: PlanOp, t: TFunction) => string;
+  /** Com'era prima (per le voci che cambiano qualcosa di esistente). */
+  before?: (op: PlanOp) => string | null;
+  title?: string;
+  hint?: string;
+  applyLabel?: (count: number) => string;
   applying: boolean;
   onClose: () => void;
   onApply: (ops: PlanOp[]) => Promise<void>;
@@ -96,7 +105,10 @@ export function ProposalDialog({
   const count = chosen.filter(Boolean).length;
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent title={t('ai.chat.reviewTitle')} description={t('ai.chat.reviewHint')}>
+      <DialogContent
+        title={title ?? t('ai.chat.reviewTitle')}
+        description={hint ?? t('ai.chat.reviewHint')}
+      >
         <div className="grid grid-cols-1 gap-1 pt-2">
           {draft.map((op, i) => {
             const text = mainText(op);
@@ -114,6 +126,11 @@ export function ProposalDialog({
                   />
                   <span className={cn('min-w-0 flex-1 text-sm', !chosen[i] && 'opacity-50')}>
                     {describe(op, t)}
+                    {before?.(op) && (
+                      <span className="mt-0.5 block text-xs text-muted-foreground line-through">
+                        {before(op)}
+                      </span>
+                    )}
                   </span>
                   {text !== null && (
                     <Button
@@ -187,7 +204,7 @@ export function ProposalDialog({
             onClick={() => onApply(withDependencies(draft, chosen))}
           >
             {applying ? <Loader2 className="animate-spin" /> : <Check />}
-            {t('ai.chat.applySelected', { count })}
+            {applyLabel ? applyLabel(count) : t('ai.chat.applySelected', { count })}
           </Button>
         </div>
       </DialogContent>

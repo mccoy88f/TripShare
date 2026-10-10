@@ -39,7 +39,11 @@ import { hasPendingAsk, takePendingAsk } from '@/lib/assistant-ask';
 import { confirmDialog } from '@/components/confirm';
 
 /** Descrizione breve di una modifica proposta dall'assistente. */
-function describeOp(op: PlanOp, t: TFunction, placeNames: Record<string, string> = {}): string {
+export function describeOp(
+  op: PlanOp,
+  t: TFunction,
+  placeNames: Record<string, string> = {},
+): string {
   switch (op.type) {
     case 'setPlacePhoto': {
       const host = (() => {

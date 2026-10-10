@@ -1447,5 +1447,51 @@
       "notes": "Altro da tenere in considerazione",
       "notesPlaceholder": "Es. amiamo i mercati, niente musei il primo giorno, una cena speciale a Roma…"
     }
+  },
+  "refine": {
+    "ask": "Chiedi all'AI",
+    "title": "Chiedi all'AI",
+    "placeholder": "Cosa vuoi cambiare? Es. «cambia luogo con qualcosa di più tranquillo»",
+    "send": "Chiedi",
+    "thinking": "L'AI sta preparando una proposta…",
+    "reviewTitle": "Proposta dell'AI",
+    "applied": "Modifica applicata",
+    "undo": "Annulla",
+    "undone": "Modifica annullata",
+    "cannotUndo": "Non posso annullare: il programma è stato modificato nel frattempo.",
+    "suggestions": {
+      "activity": {
+        "s1": "Cambia luogo",
+        "s2": "Spostala in un altro orario",
+        "s3": "Proponi un'alternativa"
+      },
+      "place": {
+        "s1": "Trova un luogo simile",
+        "s2": "Qualcosa di meno turistico",
+        "s3": "Proponi un'alternativa se piove"
+      },
+      "booking": {
+        "s1": "Trova un'opzione più economica",
+        "s2": "Cambia mezzo di trasporto",
+        "s3": "Proponi altri orari"
+      },
+      "day": {
+        "s1": "Riorganizza la giornata",
+        "s2": "Meno tappe, più tempo libero",
+        "s3": "Piano alternativo se piove"
+      },
+      "budget": {
+        "s1": "Stima più bassa",
+        "s2": "Stima più prudente",
+        "s3": "Dividila in più voci"
+      },
+      "packing": {
+        "s1": "Aggiungi cose simili",
+        "s2": "Proponi un'alternativa",
+        "s3": "Più leggero"
+      }
+    },
+    "apply_one": "Applica la modifica",
+    "apply_other": "Applica {{count}} modifiche"
   }
 }

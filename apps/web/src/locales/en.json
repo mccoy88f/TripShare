@@ -1447,5 +1447,51 @@
       "notes": "Anything else to take into account",
       "notesPlaceholder": "E.g. we love markets, no museums on day one, a special dinner in Rome…"
     }
+  },
+  "refine": {
+    "ask": "Ask the AI",
+    "title": "Ask the AI",
+    "placeholder": "What do you want to change? E.g. \"swap the place for something quieter\"",
+    "send": "Ask",
+    "thinking": "The AI is preparing a proposal…",
+    "reviewTitle": "AI proposal",
+    "applied": "Change applied",
+    "undo": "Undo",
+    "undone": "Change undone",
+    "cannotUndo": "Cannot undo: the plan was changed in the meantime.",
+    "suggestions": {
+      "activity": {
+        "s1": "Change the place",
+        "s2": "Move it to another time",
+        "s3": "Suggest an alternative"
+      },
+      "place": {
+        "s1": "Find a similar place",
+        "s2": "Something less touristy",
+        "s3": "Suggest a rainy-day alternative"
+      },
+      "booking": {
+        "s1": "Find a cheaper option",
+        "s2": "Change the transport",
+        "s3": "Suggest other times"
+      },
+      "day": {
+        "s1": "Reorganize the day",
+        "s2": "Fewer stops, more free time",
+        "s3": "Rainy-day alternative plan"
+      },
+      "budget": {
+        "s1": "Lower estimate",
+        "s2": "More cautious estimate",
+        "s3": "Split into more items"
+      },
+      "packing": {
+        "s1": "Add similar items",
+        "s2": "Suggest an alternative",
+        "s3": "Lighter"
+      }
+    },
+    "apply_one": "Apply the change",
+    "apply_other": "Apply {{count}} changes"
   }
 }
