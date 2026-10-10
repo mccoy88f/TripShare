@@ -1093,15 +1093,20 @@
     "searchError": "Search unavailable.",
     "error": "The photo could not be saved.",
     "errors": {
-      "INVALID_URL": "Invalid image address.",
-      "NOT_AN_IMAGE": "The file is not an image.",
+      "INVALID_URL": "Invalid or non-public address: use an https link to an image.",
+      "NOT_AN_IMAGE": "The address does not lead to an image: use the direct link to the file (.jpg, .png, .webp), not the page that contains it.",
       "FILE_TOO_LARGE": "The image is too large.",
-      "DOWNLOAD_FAILED": "Could not download the image.",
+      "DOWNLOAD_FAILED": "Could not download the image from this address.",
       "INVALID_IMAGE": "Invalid image.",
       "COMMONS_RATE_LIMIT": "Too many requests to Wikimedia: try again shortly."
     },
     "rights": "Free photos from Wikimedia Commons: the author and licence are saved as the credit.",
     "view": "Open the photo of {{name}}",
-    "failed": "Some photos could not be downloaded: invalid or unreachable address."
+    "failed": "Some photos could not be downloaded: invalid or unreachable address.",
+    "fromUrl": "From a link",
+    "urlTitle": "Photo from a link",
+    "urlHint": "Paste the direct link to an image (a .jpg, .png or .webp file, not the page that contains it): the app downloads and saves it.",
+    "urlHttps": "The address must start with https://",
+    "urlDownload": "Download the photo"
   }
 }
