@@ -979,7 +979,10 @@
       "reviewHint": "Togli la spunta a ciò che non vuoi e tocca la matita per correggere.",
       "editProposal": "Modifica",
       "applySelected_one": "Aggiungi {{count}} voce",
-      "applySelected_other": "Aggiungi {{count}} voci"
+      "applySelected_other": "Aggiungi {{count}} voci",
+      "retry": "Ripeti",
+      "retryApplied": "Ripetere da qui?",
+      "retryAppliedText": "Le modifiche già applicate al programma restano: verranno tolti solo i messaggi."
     },
     "verify": {
       "button": "Verifica",

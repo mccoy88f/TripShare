@@ -979,7 +979,10 @@
       "reviewHint": "Untick what you don't want and tap the pencil to fix it.",
       "editProposal": "Edit",
       "applySelected_one": "Add {{count}} item",
-      "applySelected_other": "Add {{count}} items"
+      "applySelected_other": "Add {{count}} items",
+      "retry": "Repeat",
+      "retryApplied": "Repeat from here?",
+      "retryAppliedText": "Changes already applied to the plan stay: only the messages are removed."
     },
     "verify": {
       "button": "Verify",

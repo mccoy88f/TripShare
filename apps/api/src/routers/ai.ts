@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, gte, isNull, lte } from 'drizzle-orm';
 import { z } from 'zod';
 import { aiChatMessage, aiConversation, aiJob, userSecret } from '@tripshare/db';
 import { AI_PROVIDERS, monthlyCentralUsage, userKeys } from '../ai/access.js';
@@ -207,6 +207,48 @@ export const aiRouter = router({
             ),
           );
         return { ok: true };
+      }),
+
+    /**
+     * "Ripeti": toglie dalla conversazione un messaggio e tutto ciò che viene dopo. Per un
+     * messaggio dell'assistente si riparte dalla domanda che lo precede. Restituisce il testo
+     * della domanda, da rimandare.
+     */
+    retry: authedProcedure
+      .input(z.object({ tripId: z.uuid(), conversationId: z.uuid(), messageId: z.uuid() }))
+      .mutation(async ({ ctx, input }) => {
+        await requireMember(ctx.db, input.tripId, ctx.user.id);
+        const own = and(
+          eq(aiChatMessage.tripId, input.tripId),
+          eq(aiChatMessage.userId, ctx.user.id),
+          eq(aiChatMessage.conversationId, input.conversationId),
+        );
+        const [target] = await ctx.db
+          .select()
+          .from(aiChatMessage)
+          .where(and(own, eq(aiChatMessage.id, input.messageId)));
+        if (!target) throw new TRPCError({ code: 'NOT_FOUND', message: 'MESSAGE_NOT_FOUND' });
+        const [anchor] =
+          target.role === 'user'
+            ? [target]
+            : await ctx.db
+                .select()
+                .from(aiChatMessage)
+                .where(
+                  and(
+                    own,
+                    eq(aiChatMessage.role, 'user'),
+                    lte(aiChatMessage.createdAt, target.createdAt),
+                  ),
+                )
+                .orderBy(desc(aiChatMessage.createdAt))
+                .limit(1);
+        if (!anchor) throw new TRPCError({ code: 'NOT_FOUND', message: 'MESSAGE_NOT_FOUND' });
+        const removed = await ctx.db
+          .delete(aiChatMessage)
+          .where(and(own, gte(aiChatMessage.createdAt, anchor.createdAt)))
+          .returning({ id: aiChatMessage.id });
+        return { message: anchor.content, removed: removed.length };
       }),
 
     /** Segna come applicate le modifiche proposte da un messaggio dell'assistente. */

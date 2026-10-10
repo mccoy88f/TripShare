@@ -5,12 +5,14 @@ import {
   MessageSquarePlus,
   Pencil,
   Plus,
+  RotateCcw,
   Send,
   Sparkles,
   Trash2,
 } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import type { TFunction } from 'i18next';
 import {
   EXPENSE_CATEGORIES,
@@ -144,6 +146,7 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
     enabled: !!conversationId,
   });
   const markApplied = useMutation(trpc.ai.chat.markApplied.mutationOptions());
+  const retryMessage = useMutation(trpc.ai.chat.retry.mutationOptions());
   const removeChat = useMutation(
     trpc.ai.chat.remove.mutationOptions({
       onSuccess: async () => {
@@ -232,6 +235,37 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
   }
 
   const messages = conversationId ? (history ?? []) : [];
+  /** "Ripeti": toglie il messaggio e tutto ciò che segue, poi rimanda la domanda. */
+  const retry = async (m: (typeof messages)[number]) => {
+    if (running || retryMessage.isPending || !conversationId) return;
+    const at = messages.findIndex((x) => x.id === m.id);
+    const from =
+      m.role === 'user' ? at : messages.slice(0, at).findLastIndex((x) => x.role === 'user');
+    // Le modifiche già applicate al programma restano: meglio dirlo prima.
+    if (
+      messages.slice(Math.max(from, 0)).some((x) => x.appliedAt) &&
+      !(await confirmDialog({
+        title: t('ai.chat.retryApplied'),
+        description: t('ai.chat.retryAppliedText'),
+        confirmLabel: t('ai.chat.retry'),
+        destructive: false,
+      }))
+    )
+      return;
+    try {
+      const res = await retryMessage.mutateAsync({
+        tripId: trip.id,
+        conversationId,
+        messageId: m.id,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: trpc.ai.chat.history.queryKey({ tripId: trip.id, conversationId }),
+      });
+      await send(res.message);
+    } catch {
+      toast.error(t('common.error'));
+    }
+  };
   const suggestions = [t('ai.chat.s1'), t('ai.chat.s2'), t('ai.chat.s3'), t('ai.chat.s4')];
 
   return (
@@ -308,7 +342,20 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
         const expenses = (m.expenses ?? []) as ExpenseProposal[];
         const mine = m.role === 'user';
         return (
-          <div key={m.id} className={cn('flex', mine ? 'justify-end' : 'justify-start')}>
+          <div
+            key={m.id}
+            className={cn('flex items-start gap-1', mine ? 'justify-end' : 'justify-start')}
+          >
+            <button
+              type="button"
+              onClick={() => void retry(m)}
+              disabled={running || retryMessage.isPending}
+              aria-label={t('ai.chat.retry')}
+              title={t('ai.chat.retry')}
+              className="mt-1.5 shrink-0 rounded-full p-1.5 text-muted-foreground/70 transition hover:bg-muted hover:text-foreground disabled:opacity-40"
+            >
+              <RotateCcw className="size-4" />
+            </button>
             <div
               className={cn(
                 'max-w-[85%] rounded-2xl px-4 py-2.5 text-sm break-words',

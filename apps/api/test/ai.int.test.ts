@@ -247,6 +247,78 @@ run('AI jobs (integration)', () => {
     expect(again.error?.message).toBe('AI_QUOTA_EXCEEDED');
   });
 
+  it('repeats a chat message, dropping it and everything after it', async () => {
+    await t.settings.set('gemini.apiKey', 'AIza-central-gemini-key');
+    await t.settings.set('ai.provider', 'gemini');
+    const { marco, tripId } = await setup();
+    replies.tripshare_assistant = [
+      { reply: 'Prima risposta', actions: [] },
+      { reply: 'Seconda risposta', actions: [] },
+      { reply: 'Risposta rifatta', actions: [] },
+    ];
+    const first = await t.trpc<{ conversationId: string }>('ai.start', marco, {
+      tripId,
+      input: { kind: 'chat', message: 'Domanda uno' },
+    });
+    const conversationId = first.data.conversationId;
+    await t.trpc('ai.start', marco, {
+      tripId,
+      input: { kind: 'chat', message: 'Domanda due', conversationId },
+    });
+    const history = () =>
+      t.trpc<{ id: string; role: string; content: string }[]>(
+        'ai.chat.history',
+        marco,
+        { tripId, conversationId },
+        'query',
+      );
+    const before = (await history()).data;
+    expect(before.map((m) => m.content)).toEqual([
+      'Domanda uno',
+      'Prima risposta',
+      'Domanda due',
+      'Seconda risposta',
+    ]);
+
+    // Dalla risposta si riparte dalla domanda che la precede.
+    const fromAnswer = await t.trpc<{ message: string; removed: number }>('ai.chat.retry', marco, {
+      tripId,
+      conversationId,
+      messageId: before[3]!.id,
+    });
+    expect(fromAnswer.data).toEqual({ message: 'Domanda due', removed: 2 });
+    expect((await history()).data.map((m) => m.content)).toEqual(['Domanda uno', 'Prima risposta']);
+
+    // Dalla domanda si toglie lei e tutto il resto; poi si rimanda.
+    const fromQuestion = await t.trpc<{ message: string; removed: number }>(
+      'ai.chat.retry',
+      marco,
+      {
+        tripId,
+        conversationId,
+        messageId: before[0]!.id,
+      },
+    );
+    expect(fromQuestion.data).toEqual({ message: 'Domanda uno', removed: 2 });
+    await t.trpc('ai.start', marco, {
+      tripId,
+      input: { kind: 'chat', message: fromQuestion.data.message, conversationId },
+    });
+    expect((await history()).data.map((m) => m.content)).toEqual([
+      'Domanda uno',
+      expect.any(String),
+    ]);
+
+    // Non si tocca la chat di un altro.
+    const sara = (await t.signUp('sara@example.com', 'Sara')).cookie;
+    const denied = await t.trpc('ai.chat.retry', sara, {
+      tripId,
+      conversationId,
+      messageId: before[0]!.id,
+    });
+    expect(denied.error).toBeDefined();
+  });
+
   it('prefers the personal Gemini key in mixed mode', async () => {
     await t.settings.set('openrouter.apiKey', 'sk-or-central-key-123');
     await t.settings.set('openrouter.mode', 'mixed');
