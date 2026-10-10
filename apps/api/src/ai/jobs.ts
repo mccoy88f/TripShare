@@ -9,7 +9,8 @@ import { computeLedgers } from '../services/trips.js';
 import type { SettingsService } from '../settings.js';
 import type { FileStorage } from '../storage.js';
 import { AiAccessError, resolveAiAccess } from './access.js';
-import { downloadImage } from '../image-download.js';
+import { downloadImageFromAnyUrl } from '../image-download.js';
+import { searchCommons } from '../photo-search.js';
 import { AiError, complete, type ChatMessage } from './client.js';
 import {
   AiInputSchema,
@@ -237,7 +238,9 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
     }
     let result: unknown = value;
     if (input.kind === 'placePhoto')
-      result = { candidates: await fetchPlacePhotos(deps, value as PlacePhotoResult) };
+      result = {
+        candidates: await fetchPlacePhotos(deps, input.name, value as PlacePhotoResult),
+      };
     if (input.kind === 'chat') {
       const chat = value as ChatResult;
       const [msg] = await db
@@ -301,31 +304,72 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
  * sono abbastanza grandi), le salva e restituisce le prime tre. Quelle che l'utente non sceglie
  * le elimina l'app con plan.placePhotoDiscard.
  */
-async function fetchPlacePhotos(deps: AiDeps, found: PlacePhotoResult) {
+async function fetchPlacePhotos(deps: AiDeps, name: string, found: PlacePhotoResult) {
   if (!deps.storage) return [];
   const storage = deps.storage;
   const maxBytes = (await deps.settings.get('uploads.maxMb')) * 1024 * 1024;
+  const candidates: { photo: string; credit: string }[] = [];
+  const seen = new Set<string>();
+  let failures = 0;
+
+  const host = (url: string) => {
+    try {
+      return new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+      return '';
+    }
+  };
+  /** Scarica l'immagine (o quella di anteprima della pagina), la controlla e la salva. */
+  const add = async (url: string, credit: string, download: () => Promise<Buffer>) => {
+    try {
+      const data = await download();
+      const meta = await sharp(data, { limitInputPixels: 80_000_000 }).metadata();
+      if ((meta.width ?? 0) < 500) throw new Error('TOO_SMALL');
+      const photo = await storage.saveImage(data, 'place');
+      candidates.push({ photo, credit });
+      seen.add(url);
+    } catch {
+      failures++;
+    }
+  };
+
+  // Gli indirizzi dell'AI si leggono in parallelo, poi si tengono i primi tre validi.
   const downloads = await Promise.allSettled(
     found.images.slice(0, 8).map(async (img) => {
-      const data = await downloadImage(img.url, maxBytes, deps.httpFetch);
+      const data = await downloadImageFromAnyUrl(img.url, maxBytes, deps.httpFetch);
       const meta = await sharp(data, { limitInputPixels: 80_000_000 }).metadata();
       if ((meta.width ?? 0) < 500) throw new Error('TOO_SMALL');
       return { data, url: img.url };
     }),
   );
-  const candidates: { photo: string; credit: string }[] = [];
   for (const d of downloads) {
-    if (d.status !== 'fulfilled' || candidates.length >= 3) continue;
-    const host = (() => {
-      try {
-        return new URL(d.value.url).hostname.replace(/^www\./, '');
-      } catch {
-        return '';
-      }
-    })();
+    if (d.status !== 'fulfilled') {
+      failures++;
+      continue;
+    }
+    if (candidates.length >= 3) continue;
     const photo = await storage.saveImage(d.value.data, 'place').catch(() => null);
-    if (photo) candidates.push({ photo, credit: host });
+    if (photo) candidates.push({ photo, credit: host(d.value.url) });
   }
+
+  // Se l'AI non ne ha dati abbastanza di validi, si completa con le foto libere di Wikimedia.
+  if (candidates.length < 3) {
+    try {
+      const commons = await searchCommons(name, deps.appName, deps.httpFetch);
+      for (const c of commons) {
+        if (candidates.length >= 3) break;
+        if (seen.has(c.full)) continue;
+        await add(c.full, c.credit ?? c.source, () =>
+          downloadImageFromAnyUrl(c.full, maxBytes, deps.httpFetch),
+        );
+      }
+    } catch (err) {
+      deps.log?.(`[ai] foto da Wikimedia: ${String(err)}`);
+    }
+  }
+  deps.log?.(
+    `[ai] foto di "${name}": ${found.images.length} proposte dall'AI, ${candidates.length} valide, ${failures} scartate`,
+  );
   return candidates;
 }
 

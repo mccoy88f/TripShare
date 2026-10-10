@@ -30,6 +30,7 @@ interface CommonsPage {
     thumburl?: string;
     url?: string;
     mime?: string;
+    width?: number;
     descriptionurl?: string;
     extmetadata?: Record<string, { value?: string } | undefined>;
   }[];
@@ -49,8 +50,9 @@ export async function searchCommons(
     gsrnamespace: '6',
     gsrlimit: '30',
     prop: 'imageinfo',
-    iiprop: 'url|mime|extmetadata',
-    iiurlwidth: '1200',
+    iiprop: 'url|mime|size|extmetadata',
+    // Wikimedia genera le miniature solo per larghezze fisse (330, 960…): altre danno errore.
+    iiurlwidth: '960',
     iiextmetadatafilter: 'Artist|LicenseShortName|ImageDescription',
   });
   const res = await fetchImpl(`${COMMONS()}/w/api.php?${params}`, {
@@ -76,8 +78,8 @@ export async function searchCommons(
     const artist = text(meta.Artist?.value);
     const license = text(meta.LicenseShortName?.value);
     out.push({
-      // La miniatura 1200 px è già abbastanza grande: si usa anche come anteprima ridotta.
-      thumb: info.thumburl.replace(/\/\d+px-/, '/360px-'),
+      // Anteprima da 330 px (larghezza ammessa da Wikimedia), se l'originale è più largo.
+      thumb: (info.width ?? 0) > 330 ? info.thumburl.replace(/\/\d+px-/, '/330px-') : info.thumburl,
       full: info.thumburl,
       title: (page.title ?? '')
         .replace(/^File:/, '')

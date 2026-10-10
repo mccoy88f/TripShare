@@ -248,6 +248,7 @@ function PhotoSearchDialog({
                 >
                   <img
                     src={p.thumb}
+                    referrerPolicy="no-referrer"
                     alt={p.title}
                     loading="lazy"
                     className="size-full object-cover transition group-hover:scale-105"

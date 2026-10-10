@@ -547,7 +547,7 @@ Dati del viaggio: ${planContext(ctx.plan!, ctx.extra)}`,
         messages: [
           {
             role: 'system',
-            content: `Cerca sul web fotografie reali del luogo indicato e dai fino a 6 indirizzi https DIRETTI di file immagine (.jpg, .png o .webp). Preferisci Wikimedia Commons (upload.wikimedia.org), siti ufficiali e di enti del turismo. Niente pagine web, miniature dei motori di ricerca, loghi, mappe o illustrazioni. NON inventare indirizzi: se non ne trovi di sicuri, restituisci l'elenco vuoto. Rispondi in ${L} SOLO con JSON secondo lo schema.
+            content: `Cerca sul web fotografie reali del luogo indicato e dai fino a 6 indirizzi https: meglio quelli diretti di file immagine (.jpg, .png, .webp), altrimenti la pagina che contiene la foto (una pagina di Wikipedia o di Wikimedia Commons, il sito ufficiale o di un ente del turismo). Niente miniature dei motori di ricerca, loghi, mappe o illustrazioni. NON inventare indirizzi: usa solo quelli che hai trovato davvero. Rispondi in ${L} SOLO con JSON secondo lo schema.
 JSON Schema: ${JSON.stringify(schemaOf(PlacePhotoResultSchema))}`,
           },
           {

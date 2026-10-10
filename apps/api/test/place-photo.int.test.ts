@@ -28,7 +28,7 @@ run('place photos (integration)', () => {
                 title: 'File:Altro_castello.png',
                 imageinfo: [
                   {
-                    thumburl: 'https://upload.wikimedia.org/thumb/a/ab/B.png/1200px-B.png',
+                    thumburl: 'https://upload.wikimedia.org/thumb/a/ab/B.png/960px-B.png',
                     mime: 'image/png',
                     extmetadata: {
                       Artist: { value: '<a href="x">Mario Rossi</a>' },
@@ -42,7 +42,7 @@ run('place photos (integration)', () => {
                 title: 'File:Edinburgh_Castle.jpg',
                 imageinfo: [
                   {
-                    thumburl: 'https://upload.wikimedia.org/thumb/a/aa/A.jpg/1200px-A.jpg',
+                    thumburl: 'https://upload.wikimedia.org/thumb/a/aa/A.jpg/960px-A.jpg',
                     mime: 'image/jpeg',
                     extmetadata: {
                       Artist: { value: 'Ada &amp; Bob' },

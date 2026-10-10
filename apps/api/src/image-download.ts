@@ -31,15 +31,25 @@ function isPrivateAddress(ip: string): boolean {
 
 export class ImageDownloadError extends Error {}
 
+/** Molti siti (Wikimedia in testa) rifiutano le richieste senza uno user-agent riconoscibile. */
+const USER_AGENT =
+  'Mozilla/5.0 (compatible; TripShareBot/1.0; +https://github.com/mccoy88f/TripShare)';
+
+interface Fetched {
+  data: Buffer;
+  contentType: string;
+  url: string;
+}
+
 /**
- * Scarica un'immagine da un indirizzo https pubblico: rifiuta host locali o privati (anche dopo
- * i reindirizzamenti), accetta solo contenuti immagine e si ferma oltre il limite di dimensione.
+ * Scarica un indirizzo https pubblico: rifiuta host locali o privati (anche dopo i
+ * reindirizzamenti), accetta solo i tipi di contenuto indicati e si ferma oltre il limite.
  */
-export async function downloadImage(
+async function safeGet(
   url: string,
-  maxBytes: number,
-  fetchImpl: typeof fetch = fetch,
-): Promise<Buffer> {
+  options: { accept: string; allowed: (type: string) => boolean; maxBytes: number },
+  fetchImpl: typeof fetch,
+): Promise<Fetched> {
   let current = url;
   for (let hop = 0; hop < 4; hop++) {
     let parsed: URL;
@@ -59,7 +69,7 @@ export async function downloadImage(
 
     const res = await fetchImpl(current, {
       redirect: 'manual',
-      headers: { accept: 'image/*' },
+      headers: { accept: options.accept, 'user-agent': USER_AGENT },
       signal: AbortSignal.timeout(20_000),
     }).catch(() => {
       throw new ImageDownloadError('DOWNLOAD_FAILED');
@@ -71,10 +81,10 @@ export async function downloadImage(
       continue;
     }
     if (!res.ok) throw new ImageDownloadError('DOWNLOAD_FAILED');
-    if (!(res.headers.get('content-type') ?? '').startsWith('image/'))
-      throw new ImageDownloadError('NOT_AN_IMAGE');
+    const contentType = (res.headers.get('content-type') ?? '').toLowerCase();
+    if (!options.allowed(contentType)) throw new ImageDownloadError('NOT_AN_IMAGE');
     const length = Number(res.headers.get('content-length') ?? 0);
-    if (length > maxBytes) throw new ImageDownloadError('FILE_TOO_LARGE');
+    if (length > options.maxBytes) throw new ImageDownloadError('FILE_TOO_LARGE');
     const reader = res.body?.getReader();
     if (!reader) throw new ImageDownloadError('DOWNLOAD_FAILED');
     const chunks: Uint8Array[] = [];
@@ -83,13 +93,72 @@ export async function downloadImage(
       const { done, value } = await reader.read();
       if (done) break;
       size += value.length;
-      if (size > maxBytes) {
+      if (size > options.maxBytes) {
         await reader.cancel();
         throw new ImageDownloadError('FILE_TOO_LARGE');
       }
       chunks.push(value);
     }
-    return Buffer.concat(chunks);
+    return { data: Buffer.concat(chunks), contentType, url: current };
   }
   throw new ImageDownloadError('DOWNLOAD_FAILED');
+}
+
+const isImage = (type: string) => type.startsWith('image/');
+
+/** Scarica un'immagine da un indirizzo https pubblico. */
+export async function downloadImage(
+  url: string,
+  maxBytes: number,
+  fetchImpl: typeof fetch = fetch,
+): Promise<Buffer> {
+  const { data } = await safeGet(url, { accept: 'image/*', allowed: isImage, maxBytes }, fetchImpl);
+  return data;
+}
+
+/** Indirizzo dell'immagine di anteprima dichiarata da una pagina (Open Graph o Twitter). */
+export function pageImageUrl(html: string, base: string): string | null {
+  const metas = html.match(/<meta\b[^>]*>/gi) ?? [];
+  for (const wanted of ['og:image:secure_url', 'og:image', 'twitter:image', 'twitter:image:src']) {
+    for (const tag of metas) {
+      const key = /(?:property|name)\s*=\s*["']([^"']+)["']/i.exec(tag)?.[1]?.toLowerCase();
+      if (key !== wanted) continue;
+      const content = /content\s*=\s*["']([^"']+)["']/i.exec(tag)?.[1];
+      if (!content) continue;
+      try {
+        return new URL(content.replace(/&amp;/g, '&'), base).toString();
+      } catch {
+        // indirizzo non valido: si prova il successivo
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Come downloadImage, ma accetta anche l'indirizzo di una pagina web: ne legge l'immagine di
+ * anteprima (Open Graph) e scarica quella. Utile con gli indirizzi proposti dall'AI, che spesso
+ * sono pagine (Wikipedia, siti turistici) e non il file dell'immagine.
+ */
+export async function downloadImageFromAnyUrl(
+  url: string,
+  maxBytes: number,
+  fetchImpl: typeof fetch = fetch,
+): Promise<Buffer> {
+  const first = await safeGet(
+    url,
+    {
+      accept: 'image/*,text/html;q=0.8',
+      allowed: (t) => isImage(t) || t.startsWith('text/html'),
+      maxBytes: Math.max(maxBytes, 1_500_000),
+    },
+    fetchImpl,
+  );
+  if (isImage(first.contentType)) {
+    if (first.data.length > maxBytes) throw new ImageDownloadError('FILE_TOO_LARGE');
+    return first.data;
+  }
+  const image = pageImageUrl(first.data.toString('utf8', 0, 400_000), first.url);
+  if (!image) throw new ImageDownloadError('NOT_AN_IMAGE');
+  return downloadImage(image, maxBytes, fetchImpl);
 }
