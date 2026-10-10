@@ -1226,9 +1226,10 @@
     "savedPlaces": "Scegli tra i luoghi del viaggio",
     "placeNotFound": "Nessun luogo trovato.",
     "searchFailed": "Ricerca non riuscita, riprova tra poco.",
-    "fromFiles": "Scegli da File (mantiene data e posizione)",
     "useHere": "Usa la mia posizione per le foto senza GPS",
     "useHereHint": "Utile se carichi subito dopo lo scatto. Il browser chiederà il permesso.",
-    "captionAll": "Didascalia (uguale per tutti i file)"
+    "captionAll": "Didascalia (uguale per tutti i file)",
+    "trips": "Viaggi",
+    "noTripGroup": "Senza viaggio"
   }
 }

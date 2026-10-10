@@ -3,7 +3,6 @@ import {
   Camera,
   ChevronLeft,
   ChevronRight,
-  FolderOpen,
   GalleryVerticalEnd,
   Loader2,
   LocateFixed,
@@ -12,6 +11,7 @@ import {
   MapPin,
   MapPinOff,
   Pencil,
+  Plane,
   Play,
   Search,
   Trash2,
@@ -58,7 +58,7 @@ import { textareaClass } from '../trip/plan/fields';
 const MemoryMap = lazy(() => import('./memory-map'));
 const PlacePicker = lazy(() => import('./memory-map').then((m) => ({ default: m.PlacePicker })));
 
-type ViewMode = 'timeline' | 'map';
+type ViewMode = 'trips' | 'timeline' | 'map';
 const VIEW_KEY = 'tripshare.memoriesView';
 const SHARE_KEY = 'tripshare.memoriesShare';
 
@@ -96,14 +96,14 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { data: memories } = useQuery(trpc.memories.list.queryOptions({ tripId }));
-  const [mode, setMode] = useState<ViewMode>(() =>
-    readPref(VIEW_KEY, 'timeline') === 'map' ? 'map' : 'timeline',
-  );
+  // Nella pagina Ricordi si parte divisi per viaggio; nella scheda di un viaggio non serve.
+  const modes: ViewMode[] = tripId ? ['timeline', 'map'] : ['trips', 'timeline', 'map'];
+  const [stored, setStored] = useState<string>(() => readPref(VIEW_KEY, 'trips'));
+  const mode = (modes as string[]).includes(stored) ? (stored as ViewMode) : modes[0]!;
   const [openId, setOpenId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Memory | null>(null);
   const [staged, setStaged] = useState<File[] | null>(null);
   const input = useRef<HTMLInputElement>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
   const pick = () => input.current?.click();
   useOnAdd('memories', pick);
 
@@ -125,7 +125,23 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
     return [...groups.entries()];
   }, [ordered]);
 
-  const open = openId ? ordered.findIndex((m) => m.id === openId) : -1;
+  // Divisi per viaggio: prima quello con il ricordo più recente, in fondo i ricordi senza viaggio.
+  const byTrip = useMemo(() => {
+    const groups = new Map<string, { title: string | null; items: Memory[] }>();
+    for (const m of ordered) {
+      const key = m.tripId ?? '';
+      const g = groups.get(key) ?? { title: m.tripTitle, items: [] };
+      g.items.push(m);
+      groups.set(key, g);
+    }
+    return [...groups.entries()].sort(([a], [b]) => (a === '' ? 1 : b === '' ? -1 : 0));
+  }, [ordered]);
+  // L'ordine in cui si scorre a schermo intero è quello mostrato.
+  const nav = useMemo(
+    () => (mode === 'trips' ? byTrip.flatMap(([, g]) => g.items) : ordered),
+    [mode, byTrip, ordered],
+  );
+  const open = openId ? nav.findIndex((m) => m.id === openId) : -1;
   const mapped = ordered.filter(hasPoint);
   const unmapped = ordered.filter((m) => !hasPoint(m));
   const dayLabel = (key: string) =>
@@ -139,36 +155,27 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
   return (
     <div className="grid grid-cols-1 gap-5 pb-8">
       {!tripId && <GlobalFab onAdd={pick} />}
-      {/* Dalla galleria; e dai File con l'elenco di estensioni, che apre il selettore di sistema e
-          non quello delle foto: lì il file arriva com'è, con data e posizione. */}
-      {(['gallery', 'files'] as const).map((kind) => (
-        <input
-          key={kind}
-          ref={kind === 'gallery' ? input : fileInput}
-          type="file"
-          accept={
-            kind === 'gallery'
-              ? 'image/*,video/*'
-              : '.jpg,.jpeg,.png,.webp,.heic,.heif,.avif,.gif,.mp4,.mov,.m4v,.webm,.3gp'
-          }
-          multiple
-          className="sr-only"
-          onChange={(e) => {
-            const files = [...(e.target.files ?? [])];
-            e.target.value = '';
-            if (files.length > 0) setStaged(files);
-          }}
-        />
-      ))}
+      <input
+        ref={input}
+        type="file"
+        accept="image/*,video/*"
+        multiple
+        className="sr-only"
+        onChange={(e) => {
+          const files = [...(e.target.files ?? [])];
+          e.target.value = '';
+          if (files.length > 0) setStaged(files);
+        }}
+      />
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="inline-flex rounded-full border bg-muted/50 p-1">
-          {(['timeline', 'map'] as const).map((m) => (
+          {modes.map((m) => (
             <button
               key={m}
               type="button"
               onClick={() => {
-                setMode(m);
+                setStored(m);
                 writePref(VIEW_KEY, m);
               }}
               aria-pressed={mode === m}
@@ -177,7 +184,9 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
                 mode === m ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground',
               )}
             >
-              {m === 'timeline' ? (
+              {m === 'trips' ? (
+                <Plane className="size-4" />
+              ) : m === 'timeline' ? (
                 <GalleryVerticalEnd className="size-4" />
               ) : (
                 <MapIcon className="size-4" />
@@ -186,20 +195,6 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
             </button>
           ))}
         </div>
-        <div className="flex-1" />
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => fileInput.current?.click()}
-          title={t('memories.fromFiles')}
-          aria-label={t('memories.fromFiles')}
-        >
-          <FolderOpen />
-        </Button>
-        <Button onClick={pick}>
-          <Upload />
-          {t('memories.upload')}
-        </Button>
       </div>
 
       {!memories ? (
@@ -214,6 +209,22 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
             <Upload />
             {t('memories.upload')}
           </Button>
+        </div>
+      ) : mode === 'trips' ? (
+        <div className="grid grid-cols-1 gap-7">
+          {byTrip.map(([key, g]) => (
+            <section key={key || 'none'}>
+              <h3 className="mb-2 flex items-baseline gap-2 text-base font-semibold">
+                {g.title ?? t('memories.noTripGroup')}
+                <span className="text-xs font-normal text-muted-foreground">{g.items.length}</span>
+              </h3>
+              <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 md:grid-cols-5">
+                {g.items.map((m) => (
+                  <Tile key={m.id} memory={m} showOwner={false} onOpen={() => setOpenId(m.id)} />
+                ))}
+              </div>
+            </section>
+          ))}
         </div>
       ) : mode === 'timeline' ? (
         <div className="grid grid-cols-1 gap-6">
@@ -270,9 +281,9 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
       )}
       {open >= 0 && (
         <Lightbox
-          memories={ordered}
+          memories={nav}
           index={open}
-          onIndex={(i) => setOpenId(ordered[i]!.id)}
+          onIndex={(i) => setOpenId(nav[i]!.id)}
           onClose={() => setOpenId(null)}
           onEdit={(m) => {
             setOpenId(null);
