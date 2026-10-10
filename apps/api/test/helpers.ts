@@ -116,6 +116,16 @@ export async function createTestApp(
       });
       if (res.statusCode !== 200) return { status: res.statusCode, body: res.json(), cookie: '' };
       const mail = sent.find((m) => m.to === email && m.template.kind === 'verify-email');
+      if (!mail) {
+        // Indirizzo già confermato dall'invito: nessuna email, si entra direttamente.
+        const login = await app.inject({
+          method: 'POST',
+          url: '/api/auth/sign-in/email',
+          headers: headers(),
+          payload: JSON.stringify({ email, password: 'password-123' }),
+        });
+        return { status: login.statusCode, body: null, cookie: cookieOf(login) };
+      }
       const url = new URL((mail!.template as { url: string }).url);
       const verify = await app.inject({ method: 'GET', url: url.pathname + url.search });
       return { status: 200, body: null, cookie: cookieOf(verify) };

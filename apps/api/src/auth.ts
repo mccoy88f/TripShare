@@ -116,6 +116,7 @@ export function createAuth(deps: AuthDeps) {
       autoSignInAfterVerification: true,
       expiresIn: 60 * 60 * 24,
       async sendVerificationEmail({ user, url }, request) {
+        if (user.emailVerified) return;
         await deps.email.send({
           to: user.email,
           locale: localeOf(user as { locale?: unknown }, request),
@@ -173,15 +174,24 @@ export function createAuth(deps: AuthDeps) {
       user: {
         create: {
           async before(user, ctx) {
-            await checkRegistration(
-              deps,
-              user.email,
-              ctx?.headers?.get('x-invite-token') ?? ctx?.request?.headers.get('x-invite-token'),
-            );
+            const inviteToken =
+              ctx?.headers?.get('x-invite-token') ?? ctx?.request?.headers.get('x-invite-token');
+            await checkRegistration(deps, user.email, inviteToken);
+            // Chi si registra dal link di un invito via email ha già dimostrato di possedere
+            // quell'indirizzo (l'invito è arrivato lì): non serve un'altra email di conferma.
+            const invited = inviteToken ? await findValidInvitation(db, inviteToken) : null;
+            const emailVerified =
+              !!invited?.invitation.email && invited.invitation.email === user.email.toLowerCase();
             const isSuperadmin =
               !!env.SUPERADMIN_EMAIL &&
               user.email.toLowerCase() === env.SUPERADMIN_EMAIL.toLowerCase();
-            return { data: { ...user, role: isSuperadmin ? 'superadmin' : 'user' } };
+            return {
+              data: {
+                ...user,
+                emailVerified: user.emailVerified || emailVerified,
+                role: isSuperadmin ? 'superadmin' : 'user',
+              },
+            };
           },
         },
       },

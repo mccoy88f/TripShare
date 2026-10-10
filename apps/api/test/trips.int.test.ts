@@ -224,6 +224,20 @@ run('trips, invitations, expenses and balances (integration)', () => {
     const denied = await t.trpc('invitations.accept', other.cookie, { token: again.data.token });
     expect(denied.error?.message).toBe('INVITATION_OTHER_EMAIL');
 
+    // Con il link dell'invito al proprio indirizzo l'email è già confermata: nessuna verifica.
+    const anna = await t.trpc<{ token: string }>('invitations.create', marco, {
+      tripId,
+      email: 'anna@example.com',
+    });
+    const annaUp = await t.signUp('anna@example.com', 'Anna', {
+      'x-invite-token': anna.data.token,
+    });
+    expect(annaUp.status).toBe(200);
+    expect(annaUp.cookie).not.toBe('');
+    expect(
+      t.sent.some((m) => m.to === 'anna@example.com' && m.template.kind === 'verify-email'),
+    ).toBe(false);
+
     const giulia = await t.signUp('giulia@example.com', 'Giulia');
     expect(
       (await t.trpc('invitations.accept', giulia.cookie, { token: again.data.token })).status,

@@ -205,6 +205,18 @@ export function SignupPage() {
     });
     setPending(false);
     if (error) return setError(authErrorMessage(t, error));
+    // Invito via email al proprio indirizzo: è già confermato, si entra subito nel viaggio.
+    if (
+      search.invite &&
+      search.email &&
+      search.email.toLowerCase() === form.email.trim().toLowerCase()
+    ) {
+      const signedIn = await signIn.email({ email: form.email.trim(), password: form.password });
+      if (!signedIn.error) {
+        window.location.assign(`/invite/${search.invite}`);
+        return;
+      }
+    }
     setSentTo(form.email.trim());
   };
 
