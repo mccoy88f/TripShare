@@ -2,6 +2,7 @@ import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
 import { createDb, runMigrations } from '@tripshare/db';
 import { AI_QUEUE } from './ai/jobs.js';
+import { pruneEvents } from './services/events.js';
 import { ensureVapid, NOTIFY_QUEUE } from './services/push.js';
 import { createAuth } from './auth.js';
 import { bootstrap } from './bootstrap.js';
@@ -67,7 +68,14 @@ direct.transport.verify().then(
 
 await bootstrap({ env, db, auth, settings, log: app.log });
 
+// Il registro delle modifiche tiene 90 giorni: la pulizia gira all'avvio e poi ogni 6 ore.
+const prune = () =>
+  pruneEvents(db).catch((err: unknown) => app.log.warn(`[events] pulizia: ${String(err)}`));
+void prune();
+const pruneTimer = setInterval(() => void prune(), 6 * 3600 * 1000);
+
 const shutdown = async () => {
+  clearInterval(pruneTimer);
   await app.close();
   await emailQueue.close();
   await aiQueue.close();

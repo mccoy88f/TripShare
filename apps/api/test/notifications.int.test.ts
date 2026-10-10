@@ -292,4 +292,40 @@ run('notifications (integration)', () => {
       (await t.trpc<{ devices: number }>('push.config', sara, undefined, 'query')).data.devices,
     ).toBe(0);
   });
+
+  it('respects category preferences and muted trips, but keeps screens in sync', async () => {
+    const { marco, sara, tripId, me } = await setup();
+    const prefs = () =>
+      t.trpc<{ disabled: string[]; mutedTrips: string[] }>(
+        'notifications.prefs',
+        sara,
+        undefined,
+        'query',
+      );
+    expect((await prefs()).data).toEqual({ disabled: [], mutedTrips: [] });
+
+    await t.trpc('notifications.setCategory', sara, { category: 'expenses', enabled: false });
+    expect((await prefs()).data.disabled).toEqual(['expenses']);
+    await t.trpc('expenses.create', marco, expense(tripId, me, 'Cena'));
+    expect(await unread(sara)).toBe(0);
+    await t.trpc('plan.applyOps', marco, {
+      tripId,
+      ops: [{ type: 'upsertPlace', place: { id: 'castello', name: 'Castello', kind: 'sight' } }],
+    });
+    expect(await unread(sara)).toBe(1); // il programma è ancora attivo
+
+    await t.trpc('notifications.setCategory', sara, { category: 'expenses', enabled: true });
+    await t.trpc('notifications.muteTrip', sara, { tripId, muted: true });
+    expect((await prefs()).data.mutedTrips).toEqual([tripId]);
+    await t.trpc('notifications.markAllRead', sara);
+    await t.trpc('expenses.create', marco, expense(tripId, me, 'Pranzo'));
+    await t.trpc('plan.applyOps', marco, {
+      tripId,
+      ops: [{ type: 'upsertPlace', place: { id: 'altro', name: 'Altro', kind: 'sight' } }],
+    });
+    expect(await unread(sara)).toBe(0);
+    await t.trpc('notifications.muteTrip', sara, { tripId, muted: false });
+    await t.trpc('expenses.create', marco, expense(tripId, me, 'Cena 2'));
+    expect(await unread(sara)).toBe(1);
+  });
 });

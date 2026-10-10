@@ -1,5 +1,12 @@
-import { and, desc, eq, gt, isNull, lt, sql } from 'drizzle-orm';
-import { notification, tripEvent, tripMember, type Database } from '@tripshare/db';
+import { and, desc, eq, gt, inArray, isNull, lt, sql } from 'drizzle-orm';
+import {
+  notification,
+  notificationPref,
+  tripEvent,
+  tripMember,
+  type Database,
+} from '@tripshare/db';
+import { eventCategory } from '@tripshare/shared';
 import type { TripDocument } from '@tripshare/shared/trip-format';
 
 /**
@@ -87,14 +94,56 @@ export interface EventInput {
 
 export async function recordEvent(db: Database, input: EventInput): Promise<RecordedEvent | null> {
   const members = await db
-    .select({ id: tripMember.id, userId: tripMember.userId, name: tripMember.name })
+    .select({
+      id: tripMember.id,
+      userId: tripMember.userId,
+      name: tripMember.name,
+      muted: tripMember.notificationsMuted,
+    })
     .from(tripMember)
     .where(and(eq(tripMember.tripId, input.tripId), isNull(tripMember.removedAt)));
   const actor = members.find((m) => m.userId === input.actorUserId);
-  const recipients = members
-    .filter((m) => m.userId && m.userId !== input.actorUserId)
-    .map((m) => m.userId!);
-  if (recipients.length === 0) return null;
+  const memberUsers = members.filter((m) => m.userId).map((m) => m.userId!);
+  // Chi non è l'autore, non ha silenziato il viaggio e non ha disattivato questa categoria.
+  const candidates = members.filter((m) => m.userId && m.userId !== input.actorUserId && !m.muted);
+  const prefs = candidates.length
+    ? await db
+        .select()
+        .from(notificationPref)
+        .where(
+          inArray(
+            notificationPref.userId,
+            candidates.map((m) => m.userId!),
+          ),
+        )
+    : [];
+  const category = eventCategory(input.type);
+  const off = new Set(prefs.filter((p) => p.disabled.includes(category)).map((p) => p.userId));
+  const recipients = candidates.map((m) => m.userId!).filter((id) => !off.has(id));
+  if (recipients.length === 0) {
+    // Nessuno da notificare, ma le schermate dei membri si aggiornano comunque.
+    const silent: RecordedEvent = {
+      eventId: '',
+      tripId: input.tripId,
+      type: input.type,
+      entityId: input.entityId ?? null,
+      data: (input.data ?? {}) as EventData,
+      count: 1,
+      actorUserId: input.actorUserId,
+      actorName: actor?.name ?? null,
+      recipients: [],
+      members: memberUsers,
+      created: false,
+    };
+    for (const fn of listeners) {
+      try {
+        fn(silent);
+      } catch {
+        // un ascoltatore che fallisce non deve bloccare gli altri
+      }
+    }
+    return null;
+  }
 
   const now = new Date();
   const data = (input.data ?? {}) as Record<string, unknown>;
@@ -162,7 +211,7 @@ export async function recordEvent(db: Database, input: EventInput): Promise<Reco
     actorUserId: input.actorUserId,
     actorName: actor?.name ?? null,
     recipients,
-    members: members.filter((m) => m.userId).map((m) => m.userId!),
+    members: memberUsers,
     created,
   };
   for (const fn of listeners) {

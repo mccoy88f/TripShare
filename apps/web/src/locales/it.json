@@ -1119,11 +1119,28 @@
     "markAll": "Segna tutte come lette",
     "more": "Mostra altre",
     "unreadDot": "Da leggere",
-    "open": "Apri"
+    "open": "Apri",
+    "what": "Cosa notificare",
+    "categories": {
+      "expenses": "Spese",
+      "plan": "Programma",
+      "notes": "Note",
+      "group": "Gruppo e viaggio"
+    },
+    "categoryHints": {
+      "expenses": "Spese, pagamenti e rimborsi",
+      "plan": "Attività, luoghi, prenotazioni, bagagli e biglietti",
+      "notes": "Note pubbliche degli altri",
+      "group": "Chi entra o esce, ruoli e dati del viaggio"
+    },
+    "muteTrip": "Silenzia le notifiche di questo viaggio",
+    "muteTripHint": "Non ricevi avvisi né notifiche push, ma i dati restano aggiornati.",
+    "tripUnread_one": "{{count}} notifica da leggere",
+    "tripUnread_other": "{{count}} notifiche da leggere"
   },
   "push": {
-    "title": "Notifiche push",
-    "text": "Ricevi un avviso sul telefono quando qualcuno modifica un tuo viaggio, anche con l'app chiusa.",
+    "title": "Notifiche",
+    "text": "Scegli cosa ricevere e se vuoi un avviso sul telefono, anche con l'app chiusa.",
     "thisDevice": "Notifiche su questo dispositivo",
     "iosInstall": "Su iPhone e iPad le notifiche funzionano solo con l'app installata: aggiungila alla schermata Home da Safari (Condividi › Aggiungi alla schermata Home), aprila da lì e torna qui.",
     "unsupported": "Questo browser non supporta le notifiche push.",

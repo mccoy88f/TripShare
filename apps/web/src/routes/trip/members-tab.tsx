@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, Input, Select } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { shortDate } from '@/lib/format';
 import { useTRPC } from '@/lib/trpc';
 import type { TripDetail } from '@/lib/types';
@@ -339,6 +340,8 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
         </Card>
       )}
 
+      <MuteTripRow tripId={trip.id} />
+
       <Button
         variant="ghost"
         className="justify-self-start text-destructive"
@@ -363,5 +366,36 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
         {t('members.leave')}
       </Button>
     </div>
+  );
+}
+
+/** Interruttore per silenziare le notifiche di questo viaggio (solo per chi lo usa). */
+function MuteTripRow({ tripId }: { tripId: string }) {
+  const { t } = useTranslation();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const { data } = useQuery(trpc.notifications.prefs.queryOptions());
+  const mute = useMutation(
+    trpc.notifications.muteTrip.mutationOptions({
+      onSuccess: () =>
+        queryClient.invalidateQueries({ queryKey: trpc.notifications.prefs.queryKey() }),
+    }),
+  );
+  const muted = data?.mutedTrips.includes(tripId) ?? false;
+  return (
+    <label className="flex items-center justify-between gap-4 rounded-xl border p-4">
+      <span className="min-w-0">
+        <span className="block font-medium">{t('notifications.muteTrip')}</span>
+        <span className="block text-sm text-muted-foreground">
+          {t('notifications.muteTripHint')}
+        </span>
+      </span>
+      <Switch
+        checked={muted}
+        disabled={!data || mute.isPending}
+        onCheckedChange={(v) => mute.mutate({ tripId, muted: v })}
+        aria-label={t('notifications.muteTrip')}
+      />
+    </label>
   );
 }

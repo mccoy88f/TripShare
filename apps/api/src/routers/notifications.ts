@@ -1,6 +1,7 @@
 import { and, count, desc, eq, inArray, isNull, lt } from 'drizzle-orm';
 import { z } from 'zod';
-import { notification, trip, tripEvent, tripMember, user } from '@tripshare/db';
+import { notification, notificationPref, trip, tripEvent, tripMember, user } from '@tripshare/db';
+import { NOTIFICATION_CATEGORIES } from '@tripshare/shared';
 import { authedProcedure, router, type Context } from '../trpc/init.js';
 
 /** Viaggi di cui l'utente fa ancora parte: le notifiche degli altri non si vedono più. */
@@ -140,6 +141,62 @@ export const notificationsRouter = router({
             eq(notification.userId, ctx.user.id),
             isNull(notification.readAt),
             ...(input?.tripId ? [eq(notification.tripId, input.tripId)] : []),
+          ),
+        );
+      return { ok: true };
+    }),
+
+  /** Cosa notificare: categorie disattivate e viaggi silenziati. */
+  prefs: authedProcedure.query(async ({ ctx }) => {
+    const [pref] = await ctx.db
+      .select()
+      .from(notificationPref)
+      .where(eq(notificationPref.userId, ctx.user.id));
+    const muted = await ctx.db
+      .select({ tripId: tripMember.tripId })
+      .from(tripMember)
+      .where(
+        and(
+          eq(tripMember.userId, ctx.user.id),
+          isNull(tripMember.removedAt),
+          eq(tripMember.notificationsMuted, true),
+        ),
+      );
+    return { disabled: pref?.disabled ?? [], mutedTrips: muted.map((m) => m.tripId) };
+  }),
+
+  setCategory: authedProcedure
+    .input(z.object({ category: z.enum(NOTIFICATION_CATEGORIES), enabled: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const [pref] = await ctx.db
+        .select()
+        .from(notificationPref)
+        .where(eq(notificationPref.userId, ctx.user.id));
+      const disabled = new Set(pref?.disabled ?? []);
+      if (input.enabled) disabled.delete(input.category);
+      else disabled.add(input.category);
+      await ctx.db
+        .insert(notificationPref)
+        .values({ userId: ctx.user.id, disabled: [...disabled] })
+        .onConflictDoUpdate({
+          target: notificationPref.userId,
+          set: { disabled: [...disabled], updatedAt: new Date() },
+        });
+      return { ok: true };
+    }),
+
+  /** Silenzia o riattiva le notifiche di un viaggio per chi lo chiede. */
+  muteTrip: authedProcedure
+    .input(z.object({ tripId: z.uuid(), muted: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .update(tripMember)
+        .set({ notificationsMuted: input.muted })
+        .where(
+          and(
+            eq(tripMember.tripId, input.tripId),
+            eq(tripMember.userId, ctx.user.id),
+            isNull(tripMember.removedAt),
           ),
         );
       return { ok: true };

@@ -118,6 +118,17 @@ packages/
 docker/      Caddyfile
 ```
 
+**Notifiche.** Ogni modifica a un viaggio (spese, rimborsi, programma, biglietti, note pubbliche,
+membri, dati del viaggio) diventa una notifica per gli altri membri: campanella con contatore,
+elenco con tocco che apre l'elemento giusto, avviso in tempo reale (SSE su `/api/events`, i
+dispositivi aperti si aggiornano da soli) e notifiche push anche con l'app chiusa. Modifiche
+simili dello stesso autore entro 5 minuti si fondono; il registro tiene 90 giorni. Ognuno sceglie
+le categorie da ricevere (profilo) e può silenziare un viaggio (scheda Membri). Le chiavi VAPID per
+le push si generano al primo avvio e restano nelle impostazioni cifrate; l'invio lo fa il worker
+(coda `notify`), quindi deve essere in esecuzione. Su iPhone e iPad le push funzionano solo con
+l'app installata nella schermata Home (iOS 16.4 o successivo). Dietro un proxy, `/api/events` non
+va bufferizzato (nel Caddyfile incluso è già così).
+
 **Schermata di avvio.** È definita in `apps/web/index.html` (blocco `boot-css` e `.boot`) e colori e
 sfondo del manifest sono in `apps/web/vite.config.ts`. Le immagini di avvio per iOS in
 `apps/web/public/splash` si rigenerano con `node scripts/generate-splash.mjs` (serve Playwright).

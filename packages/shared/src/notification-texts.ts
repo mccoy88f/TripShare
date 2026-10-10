@@ -384,3 +384,15 @@ export function notificationUrl(
   const query = params.toString();
   return `/app/trips/${tripId}${query ? `?${query}` : ''}`;
 }
+
+/** Categorie di notifica che l'utente può attivare o disattivare. */
+export const NOTIFICATION_CATEGORIES = ['expenses', 'plan', 'notes', 'group'] as const;
+export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
+
+/** Categoria di un tipo di evento: spese e rimborsi, programma, note, gruppo e viaggio. */
+export function eventCategory(type: string): NotificationCategory {
+  if (type.startsWith('expense.') || type.startsWith('settlement.')) return 'expenses';
+  if (type.startsWith('plan.') || type.startsWith('ticket.')) return 'plan';
+  if (type.startsWith('note.')) return 'notes';
+  return 'group';
+}

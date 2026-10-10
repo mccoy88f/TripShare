@@ -1,15 +1,27 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BellRing, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import { NOTIFICATION_CATEGORIES } from '@tripshare/shared';
 import { usePush } from '@/lib/push';
+import { useTRPC } from '@/lib/trpc';
 
 /** Impostazioni delle notifiche push di questo dispositivo, nel profilo. */
 export function PushCard() {
   const { t } = useTranslation();
   const push = usePush();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const prefs = useQuery(trpc.notifications.prefs.queryOptions());
+  const setCategory = useMutation(
+    trpc.notifications.setCategory.mutationOptions({
+      onSuccess: () =>
+        queryClient.invalidateQueries({ queryKey: trpc.notifications.prefs.queryKey() }),
+    }),
+  );
   const blocked = push.status === 'unsupported' || push.status === 'ios-install';
   return (
     <Card>
@@ -18,7 +30,28 @@ export function PushCard() {
         <CardDescription>{t('push.text')}</CardDescription>
       </CardHeader>
       <CardContent className="grid grid-cols-1 gap-3">
-        <label className="flex items-center justify-between gap-4">
+        <div className="grid grid-cols-1 gap-2">
+          <p className="text-sm font-semibold">{t('notifications.what')}</p>
+          {NOTIFICATION_CATEGORIES.map((c) => (
+            <label key={c} className="flex items-center justify-between gap-4">
+              <span className="min-w-0">
+                <span className="block text-sm font-medium">
+                  {t(`notifications.categories.${c}`)}
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  {t(`notifications.categoryHints.${c}`)}
+                </span>
+              </span>
+              <Switch
+                checked={!(prefs.data?.disabled ?? []).includes(c)}
+                disabled={!prefs.data || setCategory.isPending}
+                onCheckedChange={(enabled) => setCategory.mutate({ category: c, enabled })}
+                aria-label={t(`notifications.categories.${c}`)}
+              />
+            </label>
+          ))}
+        </div>
+        <label className="mt-2 flex items-center justify-between gap-4 border-t pt-4">
           <span className="font-medium">{t('push.thisDevice')}</span>
           <span className="flex items-center gap-2">
             {push.busy && <Loader2 className="size-4 animate-spin text-muted-foreground" />}

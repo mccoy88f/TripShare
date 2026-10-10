@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { CalendarDays, Plus } from 'lucide-react';
+import { Bell, CalendarDays, Plus } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -55,6 +55,10 @@ export function TripsPage() {
   const trpc = useTRPC();
   const { data: me } = useMe();
   const { data: trips } = useQuery(trpc.trips.list.queryOptions());
+  const { data: unread } = useQuery({
+    ...trpc.notifications.unread.queryOptions(),
+    staleTime: 15_000,
+  });
   const search = useSearch({ strict: false }) as { verified?: string };
   const navigate = useNavigate();
 
@@ -127,7 +131,18 @@ export function TripsPage() {
                     ) : (
                       <span />
                     )}
-                    <BalancePill amount={trip.myBalance} currency={trip.currency} />
+                    <span className="flex items-center gap-1.5">
+                      {(unread?.byTrip[trip.id] ?? 0) > 0 && (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-full bg-destructive px-2 py-1 text-xs font-bold text-white shadow"
+                          title={t('notifications.tripUnread', { count: unread!.byTrip[trip.id] })}
+                        >
+                          <Bell className="size-3" />
+                          {unread!.byTrip[trip.id]}
+                        </span>
+                      )}
+                      <BalancePill amount={trip.myBalance} currency={trip.currency} />
+                    </span>
                   </div>
                   <div className="flex items-end justify-between gap-3">
                     <div className="min-w-0">

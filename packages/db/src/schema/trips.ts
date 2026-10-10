@@ -60,6 +60,8 @@ export const tripMember = pgTable(
     role: text().notNull().default('editor'),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     removedAt: timestamp({ withTimezone: true }),
+    /** Il membro ha silenziato le notifiche di questo viaggio. */
+    notificationsMuted: boolean().notNull().default(false),
   },
   (t) => [
     index('trip_member_trip_idx').on(t.tripId),
@@ -398,3 +400,13 @@ export const pushSubscription = pgTable(
     index('push_subscription_user_idx').on(t.userId),
   ],
 );
+
+/** Cosa notificare a un utente, per categoria (spese, programma, gruppo, note). */
+export const notificationPref = pgTable('notification_pref', {
+  userId: text()
+    .primaryKey()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  /** Categorie disattivate. Vuoto = tutto attivo. */
+  disabled: jsonb().$type<string[]>().notNull().default([]),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});

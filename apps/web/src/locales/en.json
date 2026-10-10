@@ -1119,11 +1119,28 @@
     "markAll": "Mark all as read",
     "more": "Show more",
     "unreadDot": "Unread",
-    "open": "Open"
+    "open": "Open",
+    "what": "What to notify",
+    "categories": {
+      "expenses": "Expenses",
+      "plan": "Plan",
+      "notes": "Notes",
+      "group": "Group and trip"
+    },
+    "categoryHints": {
+      "expenses": "Expenses, payments and repayments",
+      "plan": "Activities, places, bookings, packing and tickets",
+      "notes": "Other people's public notes",
+      "group": "Who joins or leaves, roles and trip details"
+    },
+    "muteTrip": "Mute notifications for this trip",
+    "muteTripHint": "No alerts or push notifications, but the data stays up to date.",
+    "tripUnread_one": "{{count}} unread notification",
+    "tripUnread_other": "{{count}} unread notifications"
   },
   "push": {
-    "title": "Push notifications",
-    "text": "Get an alert on your phone when someone changes one of your trips, even with the app closed.",
+    "title": "Notifications",
+    "text": "Choose what to receive and whether to get an alert on your phone, even with the app closed.",
     "thisDevice": "Notifications on this device",
     "iosInstall": "On iPhone and iPad notifications only work with the installed app: add it to the Home Screen from Safari (Share › Add to Home Screen), open it from there and come back.",
     "unsupported": "This browser does not support push notifications.",
