@@ -24,6 +24,7 @@ import { ExpenseDialog } from './expense-dialog';
 import { ExpensesTab } from './expenses-tab';
 import { MembersTab } from './members-tab';
 import { rememberTrip } from '@/lib/memories';
+import { GenerationPanel } from './generation-panel';
 import { NotesTab } from './notes-tab';
 import { SettingsTab } from './settings-tab';
 import { BookingsTab } from './plan/bookings-tab';
@@ -214,6 +215,7 @@ export function TripPage() {
       </TripCover>
 
       <div className="mx-auto max-w-4xl px-4 pt-5 lg:px-8">
+        <GenerationPanel tripId={trip.id} canEdit={trip.role === 'owner'} />
         <AddRequestContext.Provider value={addRequest}>
           <Tabs value={tab} onValueChange={(value) => go(value as Tab)}>
             {/* La riga resta ferma sotto l'intestazione mentre si scorre. */}

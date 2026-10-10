@@ -1244,5 +1244,208 @@
     "downloadStarted": "Download avviato",
     "shareRetry": "File pronti: tocca di nuovo Condividi.",
     "shareUnsupported": "Questo dispositivo non può condividere i file: usa Scarica."
+  },
+  "generation": {
+    "title": {
+      "running": "Sto creando il tuo viaggio",
+      "done": "Viaggio creato",
+      "failed": "Creazione interrotta"
+    },
+    "text": {
+      "running": "Puoi restare qui o continuare: il resto si riempie da solo.",
+      "done": "Controlla la proposta: puoi cambiare tutto a mano o chiedere all'AI.",
+      "failed": "Una fase non è riuscita. Quello che è già stato fatto è salvato."
+    },
+    "steps": {
+      "strategy": "Individuo i mezzi migliori e dove dormire",
+      "places": "Trovo i luoghi più interessanti",
+      "days": "Pianifico le giornate",
+      "bookings": "Cerco le prenotazioni utili",
+      "budget": "Creo il budget",
+      "packing": "Preparo la valigia e i consigli",
+      "photos": "Cerco le foto dei luoghi"
+    },
+    "detail": {
+      "checkingPlaces": "Controllo i luoghi sulla mappa {{done}}/{{total}}",
+      "findingPhotos": "Foto {{done}}/{{total}}"
+    },
+    "count": {
+      "places_one": "1 luogo",
+      "places_other": "{{count}} luoghi",
+      "days_one": "1 giorno",
+      "days_other": "{{count}} giorni",
+      "bookings_one": "1 prenotazione",
+      "bookings_other": "{{count}} prenotazioni",
+      "items_one": "1 voce",
+      "items_other": "{{count}} voci",
+      "photos_one": "1 foto",
+      "photos_other": "{{count}} foto"
+    },
+    "retry": "Riprova da qui",
+    "failedStep": "Questa fase non è riuscita.",
+    "review": "Da controllare",
+    "warnings": {
+      "placeNotFound": "Non ho trovato «{{name}}» sulla mappa: controlla che esista.",
+      "placesToCheck_one": "1 luogo senza posizione sulla mappa.",
+      "placesToCheck_other": "{{count}} luoghi senza posizione sulla mappa.",
+      "placesUnused_one": "1 luogo proposto non è in nessun giorno.",
+      "placesUnused_other": "{{count}} luoghi proposti non sono in nessun giorno."
+    }
+  },
+  "wizard": {
+    "step": "Passo {{n}} di {{total}}",
+    "titles": {
+      "where": "Dove vai?",
+      "when": "Quando?",
+      "who": "Chi viaggia?",
+      "mode": "Come vuoi crearlo?",
+      "prefs": "Cosa desideri?",
+      "review": "Tutto pronto?"
+    },
+    "texts": {
+      "where": "Scegli la destinazione, da dove parti e, se vuoi, le tappe.",
+      "when": "Le date e le notti in ogni tappa.",
+      "who": "Servono per alloggi, auto e divisione delle spese.",
+      "mode": "Puoi partire da un viaggio vuoto o farti proporre un programma.",
+      "prefs": "Quello che scegli guida le proposte dell'AI. Puoi cambiare tutto dopo.",
+      "review": "Controlla e crea il viaggio. Toccando una riga la modifichi."
+    },
+    "main": "Destinazione principale",
+    "mainHint": "Scrivi un luogo e premi Invio, poi tocca il risultato giusto.",
+    "mainPlaceholder": "Sicilia, Lisbona, Scozia…",
+    "origin": "Parti da",
+    "originPlaceholder": "Città di partenza",
+    "differentReturn": "Rientro in un altro posto",
+    "returnTo": "Rientro a",
+    "change": "Cambia",
+    "stops": "Tappe (facoltative)",
+    "stopsHint": "Le metto nell'ordine che riduce gli spostamenti. Fino a 8.",
+    "addStop": "Aggiungi una tappa",
+    "stopPlaceholder": "Palermo, Roma…",
+    "maxStops": "Hai raggiunto il massimo di {{max}} tappe.",
+    "legFrom": "{{km}} dal punto precedente",
+    "moveUp": "Sposta su",
+    "moveDown": "Sposta giù",
+    "routeTotal": "Percorso: circa {{km}} in linea d'aria",
+    "autoOrder": "ordine consigliato",
+    "longerOrder": "Questo ordine allunga il percorso di circa {{km}}.",
+    "useBestOrder": "Usa quello consigliato",
+    "searchFailed": "Ricerca non riuscita, riprova tra poco.",
+    "noResults": "Nessun risultato: prova con un altro nome.",
+    "nights_one": "1 notte",
+    "nights_other": "{{count}} notti",
+    "days_one": "1 giorno",
+    "days_other": "{{count}} giorni",
+    "tooLong": "Il viaggio può durare al massimo {{max}} giorni.",
+    "nightsPerStop": "Notti per tappa",
+    "nightsLabel": "Notti",
+    "nightsAssigned": "Notti assegnate: {{assigned}} di {{total}}",
+    "splitEvenly": "Ripartisci in parti uguali",
+    "allInMain": "Tutto il viaggio a {{place}}.",
+    "adults": "Adulti",
+    "children": "Bambini",
+    "whoTravels_one": "Viaggia 1 persona",
+    "whoTravels_other": "Viaggiano {{count}} persone",
+    "whoHint": "Nomi ed email sono facoltativi: chi ha un'email riceve l'invito a unirsi al viaggio.",
+    "you": "tu",
+    "adult": "Adulto",
+    "child": "Bambino",
+    "name": "Nome",
+    "email": "Email",
+    "emailOptional": "Email (facoltativa)",
+    "age": "Età",
+    "years_one": "1 anno",
+    "years_other": "{{count}} anni",
+    "inviteFailed": "Invito non inviato a {{email}}.",
+    "modeAi": "Crea con l'AI",
+    "modeAiText": "L'AI propone luoghi, giornate, prenotazioni, budget e valigia in pochi passaggi che vedi avanzare.",
+    "modeEmpty": "Parto da vuoto",
+    "modeEmptyText": "Creo il viaggio senza proposte: aggiungo io luoghi e attività.",
+    "autoTitle": "Viaggio a {{place}}",
+    "tripName": "Nome del viaggio",
+    "reviewWhere": "Percorso",
+    "reviewWhen": "Date",
+    "reviewWho": "Persone",
+    "reviewMode": "Creazione",
+    "peopleSummary": "{{adults}} adulti, {{children}} bambini",
+    "aiNotice": "Dopo la creazione vedrai l'avanzamento: mezzi, luoghi, giornate, prenotazioni, budget e valigia. I prezzi sono stime e i luoghi da controllare sono segnalati.",
+    "create": "Crea viaggio",
+    "createAi": "Crea con l'AI",
+    "creating": "Creo il viaggio…",
+    "prefs": {
+      "types": "Tipo di viaggio",
+      "type": {
+        "relax": "Rilassante",
+        "culture": "Culturale",
+        "adventure": "Avventura",
+        "fun": "Divertimento",
+        "nature": "Natura",
+        "food": "Gastronomia",
+        "other": "Altro"
+      },
+      "intensity": "Intensità",
+      "intensities": {
+        "easy": "Tranquilla",
+        "normal": "Normale",
+        "intense": "Intensa"
+      },
+      "intensityHint": {
+        "easy": "2-3 tappe al giorno, con tempo libero.",
+        "normal": "4-5 tappe al giorno.",
+        "intense": "6-8 tappe al giorno, ritmo serrato."
+      },
+      "transport": "Mezzi preferiti",
+      "transports": {
+        "car": "Auto",
+        "train": "Treno",
+        "bus": "Autobus",
+        "plane": "Aereo",
+        "ferry": "Traghetto",
+        "walk_bike": "A piedi o in bici"
+      },
+      "experience": "Tipo di esperienza",
+      "experiences": {
+        "local": "Locale",
+        "alternative": "Alternativa",
+        "mainstream": "Classica"
+      },
+      "experienceHint": {
+        "local": "Autentica, poco turistica.",
+        "alternative": "Fuori dai percorsi più battuti.",
+        "mainstream": "I grandi classici."
+      },
+      "budget": "Budget",
+      "budgets": {
+        "low": "Economico",
+        "mid": "Medio",
+        "high": "Comodo"
+      },
+      "budgetHint": {
+        "low": "Alloggi semplici, pasti economici.",
+        "mid": "Un buon equilibrio.",
+        "high": "Più comfort e qualità."
+      },
+      "lodging": "Alloggio",
+      "lodgings": {
+        "any": "Come conviene",
+        "hotel": "Hotel",
+        "apartment": "Appartamento",
+        "bnb": "B&B",
+        "hostel": "Ostello",
+        "camping": "Campeggio"
+      },
+      "needs": "Esigenze",
+      "needsList": {
+        "reduced_mobility": "Mobilità ridotta",
+        "vegetarian": "Vegetariano o vegano",
+        "pets": "Animali",
+        "allergies": "Allergie"
+      },
+      "booked": "Hai già prenotato qualcosa?",
+      "bookedAdd": "Aggiungi cosa hai già prenotato",
+      "bookedPlaceholder": "Es. volo Roma-Palermo il 12 alle 9:30, hotel a Palermo dal 12 al 14…",
+      "notes": "Altro da tenere in considerazione",
+      "notesPlaceholder": "Es. amiamo i mercati, niente musei il primo giorno, una cena speciale a Roma…"
+    }
   }
 }

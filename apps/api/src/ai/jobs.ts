@@ -136,9 +136,8 @@ export async function runSpec(
   locale: Locale,
 ): Promise<SpecRun> {
   const messages: ChatMessage[] = [...spec.messages];
-  let value: unknown = null;
+  const out = { value: null as unknown, model: access.model as string | null };
   let citations: { url: string; title?: string }[] = [];
-  let model: string | null = access.model;
   let promptTokens = 0;
   let completionTokens = 0;
   let cost: number | null = null;
@@ -156,21 +155,28 @@ export async function runSpec(
       appName: deps.appName,
       fetchImpl: deps.httpFetch,
     });
-    model = res.model;
+    out.model = res.model;
     promptTokens += res.promptTokens ?? 0;
     completionTokens += res.completionTokens ?? 0;
     if (res.cost !== null) cost = (cost ?? 0) + res.cost;
     if (res.citations) citations = res.citations;
     const checked = checkResult(spec, res.content);
     if ('value' in checked) {
-      value = checked.value;
+      out.value = checked.value;
       break;
     }
     if (attempt >= spec.repairs) throw new AiJobError('AI_INVALID_RESPONSE');
     messages.push({ role: 'assistant', content: res.content });
     messages.push(buildRepairMessage(checked.issues, locale));
   }
-  return { value, citations, model, promptTokens, completionTokens, cost };
+  return {
+    value: out.value,
+    citations,
+    model: out.model,
+    promptTokens,
+    completionTokens,
+    cost,
+  };
 }
 
 /** Esegue un lavoro: chiama il modello, valida la risposta (con correzioni) e salva il risultato. */

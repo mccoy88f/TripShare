@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import { eq, sql } from 'drizzle-orm';
 import sharp from 'sharp';
 import { z } from 'zod';
@@ -311,10 +310,6 @@ async function ask(ctx: RunCtx, spec: TaskSpec) {
 }
 
 const norm = (s: string) => s.trim().toLowerCase();
-
-function issueList(issues: { path: (string | number)[]; message: string }[]): Issue[] {
-  return issues.map((i) => ({ path: i.path.join('.'), message: i.message }));
-}
 
 /** Controlla il documento intero (riferimenti, date…) dopo aver applicato una fase. */
 function validateDoc(doc: unknown): Issue[] | null {

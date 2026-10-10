@@ -1244,5 +1244,208 @@
     "downloadStarted": "Download started",
     "shareRetry": "Files ready: tap Share again.",
     "shareUnsupported": "This device cannot share files: use Download."
+  },
+  "generation": {
+    "title": {
+      "running": "Creating your trip",
+      "done": "Trip created",
+      "failed": "Creation stopped"
+    },
+    "text": {
+      "running": "You can stay here or carry on: the rest fills in by itself.",
+      "done": "Review the proposal: you can change anything by hand or ask the AI.",
+      "failed": "A step did not work. What was already done is saved."
+    },
+    "steps": {
+      "strategy": "Choosing the best transport and where to sleep",
+      "places": "Finding the most interesting places",
+      "days": "Planning the days",
+      "bookings": "Looking for useful bookings",
+      "budget": "Building the budget",
+      "packing": "Preparing the packing list and tips",
+      "photos": "Finding photos of the places"
+    },
+    "detail": {
+      "checkingPlaces": "Checking places on the map {{done}}/{{total}}",
+      "findingPhotos": "Photos {{done}}/{{total}}"
+    },
+    "count": {
+      "places_one": "1 place",
+      "places_other": "{{count}} places",
+      "days_one": "1 day",
+      "days_other": "{{count}} days",
+      "bookings_one": "1 booking",
+      "bookings_other": "{{count}} bookings",
+      "items_one": "1 item",
+      "items_other": "{{count}} items",
+      "photos_one": "1 photo",
+      "photos_other": "{{count}} photos"
+    },
+    "retry": "Retry from here",
+    "failedStep": "This step did not work.",
+    "review": "To check",
+    "warnings": {
+      "placeNotFound": "I could not find \"{{name}}\" on the map: check that it exists.",
+      "placesToCheck_one": "1 place has no position on the map.",
+      "placesToCheck_other": "{{count}} places have no position on the map.",
+      "placesUnused_one": "1 proposed place is not in any day.",
+      "placesUnused_other": "{{count}} proposed places are not in any day."
+    }
+  },
+  "wizard": {
+    "step": "Step {{n}} of {{total}}",
+    "titles": {
+      "where": "Where are you going?",
+      "when": "When?",
+      "who": "Who is travelling?",
+      "mode": "How do you want to create it?",
+      "prefs": "What do you wish for?",
+      "review": "All set?"
+    },
+    "texts": {
+      "where": "Choose the destination, where you leave from and, if you like, the stops.",
+      "when": "The dates and the nights at each stop.",
+      "who": "Needed for lodging, cars and splitting costs.",
+      "mode": "Start from an empty trip or get a proposed plan.",
+      "prefs": "What you choose guides the AI's proposals. You can change everything later.",
+      "review": "Check and create the trip. Tap a row to edit it."
+    },
+    "main": "Main destination",
+    "mainHint": "Type a place and press Enter, then tap the right result.",
+    "mainPlaceholder": "Sicily, Lisbon, Scotland…",
+    "origin": "Leaving from",
+    "originPlaceholder": "Departure city",
+    "differentReturn": "Return to a different place",
+    "returnTo": "Return to",
+    "change": "Change",
+    "stops": "Stops (optional)",
+    "stopsHint": "I put them in the order that cuts the travel. Up to 8.",
+    "addStop": "Add a stop",
+    "stopPlaceholder": "Palermo, Rome…",
+    "maxStops": "You reached the maximum of {{max}} stops.",
+    "legFrom": "{{km}} from the previous point",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "routeTotal": "Route: about {{km}} as the crow flies",
+    "autoOrder": "suggested order",
+    "longerOrder": "This order makes the route about {{km}} longer.",
+    "useBestOrder": "Use the suggested one",
+    "searchFailed": "Search failed, try again shortly.",
+    "noResults": "No results: try another name.",
+    "nights_one": "1 night",
+    "nights_other": "{{count}} nights",
+    "days_one": "1 day",
+    "days_other": "{{count}} days",
+    "tooLong": "A trip can last at most {{max}} days.",
+    "nightsPerStop": "Nights per stop",
+    "nightsLabel": "Nights",
+    "nightsAssigned": "Nights assigned: {{assigned}} of {{total}}",
+    "splitEvenly": "Split evenly",
+    "allInMain": "The whole trip in {{place}}.",
+    "adults": "Adults",
+    "children": "Children",
+    "whoTravels_one": "1 person travelling",
+    "whoTravels_other": "{{count}} people travelling",
+    "whoHint": "Names and emails are optional: anyone with an email gets an invitation to join the trip.",
+    "you": "you",
+    "adult": "Adult",
+    "child": "Child",
+    "name": "Name",
+    "email": "Email",
+    "emailOptional": "Email (optional)",
+    "age": "Age",
+    "years_one": "1 year",
+    "years_other": "{{count}} years",
+    "inviteFailed": "Invitation not sent to {{email}}.",
+    "modeAi": "Create with AI",
+    "modeAiText": "The AI proposes places, days, bookings, budget and packing in a few steps you can watch.",
+    "modeEmpty": "Start empty",
+    "modeEmptyText": "Create the trip without proposals: I add places and activities myself.",
+    "autoTitle": "Trip to {{place}}",
+    "tripName": "Trip name",
+    "reviewWhere": "Route",
+    "reviewWhen": "Dates",
+    "reviewWho": "People",
+    "reviewMode": "Creation",
+    "peopleSummary": "{{adults}} adults, {{children}} children",
+    "aiNotice": "After creating it you will see the progress: transport, places, days, bookings, budget and packing. Prices are estimates and places to check are flagged.",
+    "create": "Create trip",
+    "createAi": "Create with AI",
+    "creating": "Creating the trip…",
+    "prefs": {
+      "types": "Type of trip",
+      "type": {
+        "relax": "Relaxing",
+        "culture": "Cultural",
+        "adventure": "Adventure",
+        "fun": "Fun",
+        "nature": "Nature",
+        "food": "Food",
+        "other": "Other"
+      },
+      "intensity": "Intensity",
+      "intensities": {
+        "easy": "Easy",
+        "normal": "Normal",
+        "intense": "Intense"
+      },
+      "intensityHint": {
+        "easy": "2-3 stops a day, with free time.",
+        "normal": "4-5 stops a day.",
+        "intense": "6-8 stops a day, a packed pace."
+      },
+      "transport": "Preferred transport",
+      "transports": {
+        "car": "Car",
+        "train": "Train",
+        "bus": "Bus",
+        "plane": "Plane",
+        "ferry": "Ferry",
+        "walk_bike": "Walking or cycling"
+      },
+      "experience": "Type of experience",
+      "experiences": {
+        "local": "Local",
+        "alternative": "Alternative",
+        "mainstream": "Classic"
+      },
+      "experienceHint": {
+        "local": "Authentic, not touristy.",
+        "alternative": "Off the beaten path.",
+        "mainstream": "The great classics."
+      },
+      "budget": "Budget",
+      "budgets": {
+        "low": "Budget",
+        "mid": "Mid-range",
+        "high": "Comfortable"
+      },
+      "budgetHint": {
+        "low": "Simple lodging, cheap meals.",
+        "mid": "A good balance.",
+        "high": "More comfort and quality."
+      },
+      "lodging": "Lodging",
+      "lodgings": {
+        "any": "Whatever fits",
+        "hotel": "Hotel",
+        "apartment": "Apartment",
+        "bnb": "B&B",
+        "hostel": "Hostel",
+        "camping": "Camping"
+      },
+      "needs": "Needs",
+      "needsList": {
+        "reduced_mobility": "Reduced mobility",
+        "vegetarian": "Vegetarian or vegan",
+        "pets": "Pets",
+        "allergies": "Allergies"
+      },
+      "booked": "Already booked something?",
+      "bookedAdd": "Add what you already booked",
+      "bookedPlaceholder": "E.g. flight Rome-Palermo on the 12th at 9:30, hotel in Palermo from the 12th to the 14th…",
+      "notes": "Anything else to take into account",
+      "notesPlaceholder": "E.g. we love markets, no museums on day one, a special dinner in Rome…"
+    }
   }
 }
