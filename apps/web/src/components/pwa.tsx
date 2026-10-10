@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { Download, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -118,8 +118,10 @@ export function InstallBanner() {
         </p>
         {event && (
           <Button
-            size="sm"
-            className="h-8 px-3.5"
+            size="icon"
+            className="size-8 shrink-0"
+            title={t('app.install')}
+            aria-label={t('app.install')}
             onClick={async () => {
               await event.prompt();
               await event.userChoice;
@@ -127,7 +129,7 @@ export function InstallBanner() {
               setOpen(false);
             }}
           >
-            {t('app.install')}
+            <Download />
           </Button>
         )}
         <Button
