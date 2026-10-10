@@ -226,13 +226,16 @@ export function MemoriesView() {
         </div>
         {memories && memories.length > 0 && (
           <Button
-            variant={picked ? 'default' : 'ghost'}
+            variant={picked ? 'default' : 'outline'}
             size="sm"
-            className="ml-auto"
+            className="ml-auto max-sm:size-9 max-sm:p-0"
             onClick={() => setPicked(picked ? null : new Set())}
+            aria-pressed={picked !== null}
+            aria-label={t(picked ? 'common.cancel' : 'memories.select')}
+            title={t(picked ? 'common.cancel' : 'memories.select')}
           >
             <CheckSquare />
-            {t(picked ? 'common.cancel' : 'memories.select')}
+            <span className="max-sm:hidden">{t(picked ? 'common.cancel' : 'memories.select')}</span>
           </Button>
         )}
       </div>
