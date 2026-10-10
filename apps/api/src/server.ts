@@ -384,7 +384,7 @@ export async function buildServer(
           return field(name) !== undefined && Number.isFinite(v) ? v : null;
         };
         const sentAt = field('takenAt') ? new Date(field('takenAt')!) : null;
-        const takenAt = sentAt && !Number.isNaN(sentAt.getTime()) ? sentAt : meta.takenAt;
+        const takenAt = meta.takenAt ?? (sentAt && !Number.isNaN(sentAt.getTime()) ? sentAt : null);
         const lat = num('lat');
         const lon = num('lon');
         const hasPoint =
@@ -406,8 +406,9 @@ export async function buildServer(
             height: meta.height,
             durationSec: meta.durationSec,
             takenAt,
-            lat: hasPoint ? lat : (meta.lat ?? null),
-            lon: hasPoint ? lon : (meta.lon ?? null),
+            // Il file ha la precedenza; ciò che si manda vale come ripiego.
+            lat: meta.lat ?? (hasPoint ? lat : null),
+            lon: meta.lon ?? (hasPoint ? lon : null),
             caption: field('caption')?.slice(0, 1000) ?? null,
             shared,
             status: isVideo ? 'processing' : 'ready',

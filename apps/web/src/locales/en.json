@@ -35,7 +35,8 @@
     "profile": "Profile",
     "admin": "Admin",
     "privacy": "Privacy",
-    "terms": "Terms"
+    "terms": "Terms",
+    "memories": "Memories"
   },
   "landing": {
     "badge": "Group trips, no spreadsheets",
@@ -476,7 +477,8 @@
       "packing": "Packing",
       "tickets": "Tickets",
       "notes": "Notes",
-      "assistant": "Assistant"
+      "assistant": "Assistant",
+      "memories": "Memories"
     },
     "new": {
       "title": "New trip",
@@ -523,7 +525,8 @@
       "packing": "Add to packing",
       "notes": "Add note",
       "members": "Invite someone",
-      "noDays": "Create the trip days first (or generate them with AI)."
+      "noDays": "Create the trip days first (or generate them with AI).",
+      "memories": "Add memory"
     },
     "resetTitle": "Reset trip",
     "reset": "Reset trip",
@@ -1160,5 +1163,50 @@
     "enable": "Turn on",
     "promptTitle": "Want to get notifications?",
     "promptEnable": "Enable"
+  },
+  "memories": {
+    "title": "Memories",
+    "add": "Add memory",
+    "upload": "Upload",
+    "timeline": "Timeline",
+    "map": "Map",
+    "empty": "Your photos and videos live here, with date and place. Upload your first memory.",
+    "emptyTrip": "No memories for this trip yet. Upload photos and videos: date and place are read from the file.",
+    "uploading": "Uploading {{current}} of {{total}}…",
+    "uploaded_one": "1 memory uploaded",
+    "uploaded_other": "{{count}} memories uploaded",
+    "shareDefault": "Share with the group",
+    "private": "Private",
+    "shareWithGroup": "Shared with the trip group",
+    "noMapped": "No memories with a location. Add one by tapping a memory, then Edit.",
+    "noPlace_one": "No location (1)",
+    "noPlace_other": "No location ({{count}})",
+    "processing": "Video is being processed…",
+    "failed": "Video could not be processed",
+    "openMap": "Open on OpenStreetMap",
+    "editTitle": "Edit memory",
+    "caption": "Caption",
+    "date": "Date and time",
+    "place": "Location",
+    "placeHint": "Tap the map to choose the spot.",
+    "useMyPosition": "Use my location",
+    "removePlace": "Remove location",
+    "locationDenied": "Location unavailable: check your browser permissions.",
+    "trip": "Trip",
+    "noTrip": "No trip (just mine)",
+    "confirmDelete": "Delete this memory? The photo or video will be erased.",
+    "deleted": "Memory deleted",
+    "saved": "Memory saved",
+    "kind": {
+      "photo": "Photo",
+      "video": "Video"
+    },
+    "errors": {
+      "VIDEO_TOO_LONG": "the video is longer than 2 minutes",
+      "FILE_TOO_LARGE": "file too large",
+      "UNSUPPORTED_MEDIA": "unsupported format",
+      "VIDEO_UNREADABLE": "unreadable video",
+      "UPLOAD_FAILED": "upload failed"
+    }
   }
 }

@@ -19,6 +19,7 @@ import { LegalPage, NotFoundPage } from '@/routes/misc-pages';
 import { TripsPage } from '@/routes/trips';
 import { InvitePage } from '@/routes/trip/invite-page';
 import { NewTripPage } from '@/routes/trip/new-trip';
+import { MemoriesPage } from '@/routes/memories/memories-view';
 import { TripPage } from '@/routes/trip/trip-page';
 
 const rootRoute = createRootRoute({
@@ -144,6 +145,11 @@ const profileRoute = createRoute({
   path: '/profile',
   component: lazyRouteComponent(() => import('@/routes/profile'), 'ProfilePage'),
 });
+const memoriesRoute = createRoute({
+  getParentRoute: () => appLayout,
+  path: '/memories',
+  component: MemoriesPage,
+});
 const adminRoute = createRoute({
   getParentRoute: () => appLayout,
   path: '/admin',
@@ -153,7 +159,14 @@ const adminRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   publicLayout.addChildren([landingRoute, privacyRoute, termsRoute]),
   authLayout.addChildren([loginRoute, signupRoute, forgotRoute, resetRoute, inviteRoute]),
-  appLayout.addChildren([tripsRoute, newTripRoute, tripRoute, profileRoute, adminRoute]),
+  appLayout.addChildren([
+    tripsRoute,
+    newTripRoute,
+    tripRoute,
+    memoriesRoute,
+    profileRoute,
+    adminRoute,
+  ]),
 ]);
 
 export const router = createRouter({

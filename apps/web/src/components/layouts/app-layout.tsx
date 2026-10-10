@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
-import { LogOut, Plane, Plus, UserRound } from 'lucide-react';
+import { Images, LogOut, Plane, Plus, UserRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Logo } from '@/components/brand';
@@ -87,10 +87,11 @@ export function AppLayout() {
     applyTheme(me.theme as Theme);
   }, [me?.locale, me?.theme]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const items: NavItem[] = [
-    { to: '/app', label: t('nav.trips'), icon: Plane, exact: true },
-    { to: '/app/profile', label: t('nav.profile'), icon: UserRound },
-  ];
+  const trips: NavItem = { to: '/app', label: t('nav.trips'), icon: Plane, exact: true };
+  const memories: NavItem = { to: '/app/memories', label: t('nav.memories'), icon: Images };
+  const profile: NavItem = { to: '/app/profile', label: t('nav.profile'), icon: UserRound };
+  // Barra laterale (desktop): tutto; barra in basso (mobile): il profilo sta nel menu dell'avatar.
+  const items: NavItem[] = [trips, memories, profile];
   const fab = useCurrentFab();
   const keyboard = useKeyboard();
   const isActive = (item: NavItem) =>
@@ -159,11 +160,11 @@ export function AppLayout() {
           )}
         >
           <div className="mx-auto grid h-16 max-w-md grid-cols-3 items-center px-2">
-            <BottomLink item={items[0]!} active={isActive(items[0]!)} />
+            <BottomLink item={trips} active={isActive(trips)} />
             <div className="flex justify-center">
               <FabButton fab={fab} variant="bottom" />
             </div>
-            <BottomLink item={items[1]!} active={isActive(items[1]!)} />
+            <BottomLink item={memories} active={isActive(memories)} />
           </div>
         </nav>
       </div>

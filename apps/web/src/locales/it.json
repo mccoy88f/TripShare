@@ -35,7 +35,8 @@
     "profile": "Profilo",
     "admin": "Admin",
     "privacy": "Privacy",
-    "terms": "Termini"
+    "terms": "Termini",
+    "memories": "Ricordi"
   },
   "landing": {
     "badge": "Viaggi di gruppo, senza fogli di calcolo",
@@ -476,7 +477,8 @@
       "packing": "Bagagli",
       "tickets": "Biglietti",
       "notes": "Note",
-      "assistant": "Assistente"
+      "assistant": "Assistente",
+      "memories": "Ricordi"
     },
     "new": {
       "title": "Nuovo viaggio",
@@ -523,7 +525,8 @@
       "packing": "Aggiungi ai bagagli",
       "notes": "Aggiungi nota",
       "members": "Invita qualcuno",
-      "noDays": "Crea prima i giorni del viaggio (o generali con l'AI)."
+      "noDays": "Crea prima i giorni del viaggio (o generali con l'AI).",
+      "memories": "Aggiungi ricordo"
     },
     "resetTitle": "Azzera viaggio",
     "reset": "Azzera viaggio",
@@ -1160,5 +1163,50 @@
     "enable": "Attiva",
     "promptTitle": "Vuoi ricevere le notifiche?",
     "promptEnable": "Attiva"
+  },
+  "memories": {
+    "title": "Ricordi",
+    "add": "Aggiungi ricordo",
+    "upload": "Carica",
+    "timeline": "Timeline",
+    "map": "Mappa",
+    "empty": "Qui trovi le tue foto e i tuoi video, con data e posizione. Carica il primo ricordo.",
+    "emptyTrip": "Nessun ricordo di questo viaggio. Carica foto e video: data e posizione si leggono dal file.",
+    "uploading": "Caricamento {{current}} di {{total}}…",
+    "uploaded_one": "1 ricordo caricato",
+    "uploaded_other": "{{count}} ricordi caricati",
+    "shareDefault": "Condividi con il gruppo",
+    "private": "Privato",
+    "shareWithGroup": "Condiviso con il gruppo del viaggio",
+    "noMapped": "Nessun ricordo con una posizione. Aggiungila toccando un ricordo e poi Modifica.",
+    "noPlace_one": "Senza posizione (1)",
+    "noPlace_other": "Senza posizione ({{count}})",
+    "processing": "Video in elaborazione…",
+    "failed": "Video non elaborato",
+    "openMap": "Apri su OpenStreetMap",
+    "editTitle": "Modifica ricordo",
+    "caption": "Didascalia",
+    "date": "Data e ora",
+    "place": "Posizione",
+    "placeHint": "Tocca la mappa per scegliere il punto.",
+    "useMyPosition": "Usa la mia posizione",
+    "removePlace": "Rimuovi posizione",
+    "locationDenied": "Posizione non disponibile: controlla i permessi del browser.",
+    "trip": "Viaggio",
+    "noTrip": "Nessun viaggio (solo mio)",
+    "confirmDelete": "Eliminare questo ricordo? Foto o video verranno cancellati.",
+    "deleted": "Ricordo eliminato",
+    "saved": "Ricordo salvato",
+    "kind": {
+      "photo": "Foto",
+      "video": "Video"
+    },
+    "errors": {
+      "VIDEO_TOO_LONG": "il video supera i 2 minuti",
+      "FILE_TOO_LARGE": "file troppo grande",
+      "UNSUPPORTED_MEDIA": "formato non supportato",
+      "VIDEO_UNREADABLE": "video non leggibile",
+      "UPLOAD_FAILED": "caricamento non riuscito"
+    }
   }
 }
