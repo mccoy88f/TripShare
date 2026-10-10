@@ -1,4 +1,4 @@
-import { Download, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -109,32 +109,17 @@ export function InstallBanner() {
   return (
     <div
       role="status"
-      className="fixed inset-x-3 top-[calc(3.5rem+env(safe-area-inset-top)+0.5rem)] z-40 mx-auto max-w-md overflow-hidden rounded-2xl border bg-card shadow-lg lg:top-4 lg:right-4 lg:left-auto lg:mx-0"
+      className="fixed inset-x-3 top-[calc(3.5rem+env(safe-area-inset-top)+0.5rem)] z-40 mx-auto max-w-sm overflow-hidden rounded-full border bg-card/95 shadow-md backdrop-blur lg:top-4 lg:right-4 lg:left-auto lg:mx-0"
     >
-      <div className="grid grid-cols-1 gap-3 p-3.5">
-        <div className="flex items-center gap-3">
-          <img src="/favicon.svg" alt="" className="size-10 shrink-0 rounded-xl" />
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold">{t('app.installTitle')}</p>
-            <p className="text-sm text-muted-foreground">
-              {event ? t('app.installText') : t('app.installIos')}
-            </p>
-          </div>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="-mt-6 -mr-1 shrink-0 self-start"
-            onClick={() => {
-              hideFor(30);
-              setOpen(false);
-            }}
-            aria-label={t('common.close')}
-          >
-            <X />
-          </Button>
-        </div>
+      <div className="flex items-center gap-2.5 py-1.5 pr-1.5 pl-2.5">
+        <img src="/favicon.svg" alt="" className="size-7 shrink-0 rounded-lg" />
+        <p className="min-w-0 flex-1 truncate text-sm font-medium">
+          {event ? t('app.installTitle') : t('app.installIos')}
+        </p>
         {event && (
           <Button
+            size="sm"
+            className="h-8 px-3.5"
             onClick={async () => {
               await event.prompt();
               await event.userChoice;
@@ -142,10 +127,21 @@ export function InstallBanner() {
               setOpen(false);
             }}
           >
-            <Download />
             {t('app.install')}
           </Button>
         )}
+        <Button
+          size="icon"
+          variant="ghost"
+          className="size-8 shrink-0"
+          onClick={() => {
+            hideFor(30);
+            setOpen(false);
+          }}
+          aria-label={t('common.close')}
+        >
+          <X />
+        </Button>
       </div>
       <div className="h-0.5 bg-muted">
         <div className="install-progress h-full bg-primary" />

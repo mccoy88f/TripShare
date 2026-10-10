@@ -145,7 +145,7 @@
     "updateAvailable": "A new version is available.",
     "reload": "Update",
     "offlineReady": "TripShare is ready to work offline.",
-    "installIos": "On iPhone and iPad: tap Share, then “Add to Home Screen”."
+    "installIos": "Share › Add to Home Screen to install"
   },
   "profile": {
     "title": "Profile",
