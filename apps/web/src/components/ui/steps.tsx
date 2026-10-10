@@ -11,6 +11,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { DIALOG_FOOTER } from '@/components/dialog-footer';
 import { Button } from '@/components/ui/button';
+import { DialogClose } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
 interface StepProps {
@@ -150,18 +151,31 @@ export function StepForm({
       ))}
       <div className={DIALOG_FOOTER}>
         {leading}
+        {readOnly && (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={onEdit}
+            aria-label={t('common.edit')}
+            title={t('common.edit')}
+          >
+            <Pencil />
+          </Button>
+        )}
         <div className="flex-1" />
-        {index > 0 && !readOnly && (
+        {index > 0 && (
           <Button type="button" variant="ghost" onClick={() => go(index - 1)}>
             <ChevronLeft />
             {t('steps.back')}
           </Button>
         )}
-        {readOnly ? (
-          <Button key="edit" type="button" size="lg" onClick={onEdit} aria-label={t('common.edit')}>
-            <Pencil />
-            {t('common.edit')}
-          </Button>
+        {last && readOnly ? (
+          <DialogClose asChild>
+            <Button key="close" type="button" size="lg">
+              {t('common.close')}
+            </Button>
+          </DialogClose>
         ) : last ? (
           <Button key="save" type="submit" size="lg" disabled={pending || submitDisabled}>
             {pending && <Loader2 className="animate-spin" />}

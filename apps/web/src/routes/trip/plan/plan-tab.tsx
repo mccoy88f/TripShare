@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { DIALOG_FOOTER } from '@/components/dialog-footer';
-import { EditButton } from '@/components/edit-button';
+import { CloseButton, EditButton } from '@/components/edit-button';
 import { useDetailMode } from '@/lib/detail-mode';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Input, Select } from '@/components/ui/input';
@@ -757,9 +757,10 @@ function DayDialog({
             >
               {t('plan.deleteDay')}
             </Button>
+            {detail.readOnly && <EditButton onClick={detail.startEdit} />}
             <div className="flex-1" />
             {detail.readOnly ? (
-              <EditButton onClick={detail.startEdit} />
+              <CloseButton />
             ) : (
               <Button type="submit" disabled={pending || !title.trim()}>
                 {pending && <Loader2 className="animate-spin" />}
@@ -837,9 +838,10 @@ function TipDialog({
                 <span className="hidden sm:inline">{t('expense.delete')}</span>
               </Button>
             )}
+            {detail.readOnly && <EditButton onClick={detail.startEdit} />}
             <div className="flex-1" />
             {detail.readOnly ? (
-              <EditButton onClick={detail.startEdit} />
+              <CloseButton />
             ) : (
               <Button type="submit" size="lg" disabled={pending || !title.trim() || !text.trim()}>
                 {t('common.save')}

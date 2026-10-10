@@ -7,7 +7,7 @@ import { UserAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { DIALOG_FOOTER } from '@/components/dialog-footer';
-import { EditButton } from '@/components/edit-button';
+import { CloseButton, EditButton } from '@/components/edit-button';
 import { useDetailMode } from '@/lib/detail-mode';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Input, Select } from '@/components/ui/input';
@@ -426,9 +426,10 @@ function PackingDialog({
               <Trash2 />
               <span className="hidden sm:inline">{t('expense.delete')}</span>
             </Button>
+            {detail.readOnly && <EditButton onClick={detail.startEdit} />}
             <div className="flex-1" />
             {detail.readOnly ? (
-              <EditButton onClick={detail.startEdit} />
+              <CloseButton />
             ) : (
               <Button type="submit" size="lg" disabled={pending || !draft.item.trim()}>
                 {t('common.save')}
