@@ -179,6 +179,18 @@
         document.documentElement.classList.toggle('dark', dark);
       } catch (e) {}
     </script>
+    <!-- Travelpayouts (affiliazione per voli e hotel): verifica del sito. Si carica solo fuori dall'area
+         riservata (/app) e dagli inviti, per non farlo girare dove ci sono dati dei viaggi. -->
+    <script nowprocket data-noptimize="1" data-cfasync="false" data-wpfc-render="false" seraph-accel-crit="1" data-no-defer="1" data-cmp-ab="2">
+      (function () {
+        if (/^\/(app|invite)(\/|$)/.test(location.pathname)) return;
+        var script = document.createElement("script");
+        script.async = 1;
+        script.setAttribute("data-cmp-ab", "2");
+        script.src = 'https://tpembars.com/NTgzOTMy.js?t=583932';
+        document.head.appendChild(script);
+      })();
+    </script>
   </head>
   <body>
     <div id="root">
