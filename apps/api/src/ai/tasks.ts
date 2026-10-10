@@ -281,6 +281,15 @@ export const AiInputSchema = z.discriminatedUnion('kind', [
       .enum(['strategy', 'places', 'days', 'bookings', 'budget', 'packing', 'photos'])
       .optional(),
   }),
+  z.object({
+    kind: z.literal('refine'),
+    /** Elemento del programma da cambiare: id (o data, per un giorno). */
+    target: z.object({
+      type: z.enum(['activity', 'place', 'booking', 'day', 'budget', 'packing']),
+      id: z.string().min(1).max(64),
+    }),
+    instruction: z.string().trim().min(3).max(1000),
+  }),
   z.object({ kind: z.literal('verify'), placeId: z.string().max(64) }),
   z.object({
     kind: z.literal('placePhoto'),
@@ -300,11 +309,18 @@ export const AiInputSchema = z.discriminatedUnion('kind', [
 ]);
 export type AiInput = z.infer<typeof AiInputSchema>;
 
+export const RefineResultSchema = z.object({
+  summary: z.string().max(600),
+  actions: z.array(PlanOpSchema).max(30),
+});
+export type RefineResult = z.infer<typeof RefineResultSchema>;
+
 export const PURPOSE: Record<AiInput['kind'], AiPurpose> = {
   receipt: 'vision',
   booking: 'vision',
   generate: 'planner',
   generateTrip: 'planner',
+  refine: 'chat',
   chat: 'chat',
   verify: 'web',
   placePhoto: 'web',
@@ -524,6 +540,37 @@ JSON Schema: ${JSON.stringify(schemaOf(BookingResultSchema))}`,
             return [{ path: 'days', message: 'at least one day is required' }];
           return null;
         },
+      };
+    }
+    case 'refine': {
+      const extra = ctx.extra ?? {};
+      return {
+        schemaName: 'tripshare_refine',
+        schema: RefineResultSchema,
+        jsonSchema: schemaOf(RefineResultSchema),
+        repairs: 2,
+        validate: (value) =>
+          (value as RefineResult).actions.length === 0
+            ? [{ path: 'actions', message: 'propose at least one action' }]
+            : null,
+        messages: [
+          {
+            role: 'system',
+            content: `Sei l'assistente di viaggio di TripShare. L'utente vuole cambiare UN elemento del programma. Rispondi SOLO con JSON secondo lo schema, testi in ${L}. Oggi è ${today()}.
+Proponi le modifiche in "actions" con le operazioni dello schema e gli id esistenti; NON dire di averle applicate: l'utente le rivedrà prima. Regole:
+- Cambia solo ciò che l'istruzione richiede e ciò che deve restare coerente: se cambi il luogo di un'attività aggiorna anche titolo, luogo e, se serve, gli orari delle attività vicine; se cambi un alloggio o un trasporto aggiorna la voce di budget collegata; se riorganizzi una giornata usa solo luoghi e attività del programma o nuovi luoghi che crei.
+- Rispetta le preferenze del gruppo ("brief": tipo di viaggio, intensità, mezzi, esperienza, budget, esigenze, partecipanti) e le linee guida. Non superare il numero di visite al giorno scelto.
+- Un nuovo luogo si crea con "upsertPlace" e un id breve in kebab-case non già usato, messo PRIMA dell'attività che lo usa e richiamato in "placeIds". Le nuove attività non hanno "id". Le attività vanno in giorni esistenti.
+- Orari realistici (distanze, aperture, luce). I prezzi sono stime con "approximate": true; non inventare dettagli certi né codici di prenotazione.
+- "summary": una o due frasi che spiegano che cosa cambia e perché.
+JSON Schema: ${JSON.stringify(schemaOf(RefineResultSchema))}
+Programma: ${planContext(ctx.plan!, { group: extra.group })}
+Brief del gruppo: ${JSON.stringify(extra.brief ?? null)}
+Linee guida: ${JSON.stringify(extra.guidelines ?? [])}
+Elemento da cambiare: ${JSON.stringify(extra.target ?? null)}`,
+          },
+          { role: 'user', content: input.instruction },
+        ],
       };
     }
     case 'generateTrip':

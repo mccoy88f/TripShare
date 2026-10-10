@@ -457,3 +457,24 @@ export const memory = pgTable(
     index('memory_trip_idx').on(t.tripId, t.takenAt),
   ],
 );
+
+/**
+ * Copia del programma prima di una modifica proposta dall'AI, per poterla annullare. Si tiene
+ * solo ciò che serve: `planVersion` è la versione subito dopo la modifica, così l'annullamento
+ * vale finché nessun altro ha cambiato il programma.
+ */
+export const planSnapshot = pgTable(
+  'plan_snapshot',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    tripId: uuid()
+      .notNull()
+      .references(() => trip.id, { onDelete: 'cascade' }),
+    userId: text().references(() => user.id, { onDelete: 'set null' }),
+    planVersion: integer().notNull(),
+    plan: jsonb().notNull(),
+    label: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('plan_snapshot_trip_idx').on(t.tripId, t.createdAt)],
+);

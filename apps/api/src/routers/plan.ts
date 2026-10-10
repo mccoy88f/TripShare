@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { packingCheck, trip } from '@tripshare/db';
+import { packingCheck, planSnapshot, trip } from '@tripshare/db';
 import { applyPlanOps, parseTripDocument, PlanOpSchema } from '@tripshare/shared/trip-format';
 import {
   activeMemberCount,
@@ -100,7 +100,14 @@ export const planRouter = router({
 
   /** Applica una o più operazioni in modo atomico (riga bloccata durante la modifica). */
   applyOps: authedProcedure
-    .input(z.object({ tripId: z.uuid(), ops: z.array(PlanOpSchema).min(1).max(200) }))
+    .input(
+      z.object({
+        tripId: z.uuid(),
+        ops: z.array(PlanOpSchema).min(1).max(200),
+        /** Se presente, si conserva il programma precedente per poter annullare la modifica. */
+        snapshot: z.string().trim().max(80).optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
       const members = await activeMemberCount(ctx.db, input.tripId);
@@ -121,13 +128,77 @@ export const planRouter = router({
             .set({ plan: next, planVersion: sql`${trip.planVersion} + 1`, updatedAt: new Date() })
             .where(eq(trip.id, input.tripId))
             .returning({ version: trip.planVersion });
-          return { version: updated!.version };
+          let snapshotId: string | undefined;
+          if (input.snapshot) {
+            const [snap] = await tx
+              .insert(planSnapshot)
+              .values({
+                tripId: input.tripId,
+                userId: ctx.user.id,
+                planVersion: updated!.version,
+                plan: before,
+                label: input.snapshot,
+              })
+              .returning({ id: planSnapshot.id });
+            snapshotId = snap!.id;
+            // Si tengono solo le ultime copie del viaggio.
+            const old = await tx
+              .select({ id: planSnapshot.id })
+              .from(planSnapshot)
+              .where(eq(planSnapshot.tripId, input.tripId))
+              .orderBy(desc(planSnapshot.createdAt))
+              .offset(10);
+            for (const o of old) await tx.delete(planSnapshot).where(eq(planSnapshot.id, o.id));
+          }
+          return { version: updated!.version, snapshotId };
         });
         await removeOrphanPhotos(ctx.storage, before, after);
         if (before && after)
           for (const change of diffPlan(before, after))
             await notifyTrip(ctx.db, { tripId: input.tripId, actorUserId: ctx.user.id, ...change });
         return { ...result, photoFailures: failed };
+      } catch (err) {
+        planError(err);
+      }
+    }),
+
+  /**
+   * Annulla una modifica proposta dall'AI ripristinando il programma di prima. Vale solo finché
+   * nessun altro ha cambiato il programma dopo di essa.
+   */
+  undo: authedProcedure
+    .input(z.object({ tripId: z.uuid(), snapshotId: z.uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
+      const members = await activeMemberCount(ctx.db, input.tripId);
+      try {
+        let before: ReturnType<typeof readPlan> | undefined;
+        let after: ReturnType<typeof readPlan> | undefined;
+        await ctx.db.transaction(async (tx) => {
+          const [row] = await tx.select().from(trip).where(eq(trip.id, input.tripId)).for('update');
+          if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+          const [snap] = await tx
+            .select()
+            .from(planSnapshot)
+            .where(
+              and(eq(planSnapshot.id, input.snapshotId), eq(planSnapshot.tripId, input.tripId)),
+            );
+          if (!snap) throw new TRPCError({ code: 'NOT_FOUND', message: 'SNAPSHOT_NOT_FOUND' });
+          if (row.planVersion !== snap.planVersion)
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'PLAN_CHANGED' });
+          before = readPlan(row, members, localeOf(ctx.session?.user.locale));
+          after = prepareForStorage(snap.plan as never);
+          await tx
+            .update(trip)
+            .set({ plan: after, planVersion: sql`${trip.planVersion} + 1`, updatedAt: new Date() })
+            .where(eq(trip.id, input.tripId));
+          await tx.delete(planSnapshot).where(eq(planSnapshot.id, snap.id));
+        });
+        await removeOrphanPhotos(ctx.storage, before, after);
+        if (before && after)
+          for (const change of diffPlan(before, after))
+            await notifyTrip(ctx.db, { tripId: input.tripId, actorUserId: ctx.user.id, ...change });
+        return { ok: true };
       } catch (err) {
         planError(err);
       }

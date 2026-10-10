@@ -19,6 +19,7 @@ const MIN_ROLE = {
   booking: 'editor',
   generate: 'editor',
   generateTrip: 'owner',
+  refine: 'editor',
   verify: 'editor',
   placePhoto: 'editor',
   packing: 'editor',

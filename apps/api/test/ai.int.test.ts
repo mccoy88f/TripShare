@@ -357,6 +357,102 @@ run('AI jobs (integration)', () => {
     expect(denied.error).toBeDefined();
   });
 
+  it('proposes a change to one element, applies it with a snapshot and can undo it', async () => {
+    await t.settings.set('openrouter.apiKey', 'sk-or-central-key-123');
+    const { marco, tripId } = await setup();
+    await t.trpc('plan.applyOps', marco, {
+      tripId,
+      ops: [
+        { type: 'ensureDays', start: '2026-10-12', end: '2026-10-14' },
+        {
+          type: 'upsertActivity',
+          date: '2026-10-12',
+          activity: { id: 'castle', title: 'Castello', time: '10:00', type: 'visit' },
+        },
+      ],
+    });
+    const edit = {
+      type: 'upsertActivity',
+      date: '2026-10-12',
+      activity: { id: 'castle', title: 'Castello', time: '15:00', type: 'visit' },
+    };
+    replies.tripshare_refine = [{ summary: 'Lo sposto al pomeriggio.', actions: [edit] }];
+    const started = await t.trpc<{ id: string }>('ai.start', marco, {
+      tripId,
+      input: {
+        kind: 'refine',
+        target: { type: 'activity', id: 'castle' },
+        instruction: 'Spostalo al pomeriggio',
+      },
+    });
+    const job = await t.trpc<{
+      status: string;
+      result: { summary: string; actions: unknown[] };
+    }>('ai.job', marco, { id: started.data.id }, 'query');
+    expect(job.data.status).toBe('done');
+    expect(job.data.result.actions).toHaveLength(1);
+    // L'elemento da cambiare e l'istruzione arrivano al modello.
+    const sent = JSON.stringify(
+      calls.find((c) => JSON.stringify(c.body).includes('tripshare_refine'))!.body,
+    );
+    expect(sent).toContain('Elemento da cambiare');
+    expect(sent).toContain('Spostalo al pomeriggio');
+
+    const time = async () => {
+      const { data } = await t.trpc<{
+        plan: { days: { activities: { id: string; time?: string }[] }[] };
+      }>('plan.get', marco, { tripId }, 'query');
+      return data.plan.days[0]!.activities.find((a) => a.id === 'castle')!.time;
+    };
+    const applied = await t.trpc<{ snapshotId: string }>('plan.applyOps', marco, {
+      tripId,
+      ops: job.data.result.actions,
+      snapshot: "Chiedi all'AI",
+    });
+    expect(await time()).toBe('15:00');
+    expect(
+      (await t.trpc('plan.undo', marco, { tripId, snapshotId: applied.data.snapshotId })).status,
+    ).toBe(200);
+    expect(await time()).toBe('10:00');
+    // La copia si usa una volta sola.
+    expect(
+      (await t.trpc('plan.undo', marco, { tripId, snapshotId: applied.data.snapshotId })).error
+        ?.message,
+    ).toBe('SNAPSHOT_NOT_FOUND');
+
+    // Se nel frattempo qualcun cambia il programma, l'annullamento non sovrascrive.
+    const again = await t.trpc<{ snapshotId: string }>('plan.applyOps', marco, {
+      tripId,
+      ops: [edit],
+      snapshot: "Chiedi all'AI",
+    });
+    await t.trpc('plan.applyOps', marco, {
+      tripId,
+      ops: [{ type: 'upsertDay', day: { date: '2026-10-13', title: 'Cambiato' } }],
+    });
+    expect(
+      (await t.trpc('plan.undo', marco, { tripId, snapshotId: again.data.snapshotId })).error
+        ?.message,
+    ).toBe('PLAN_CHANGED');
+
+    // Un elemento che non esiste (più) non parte nemmeno.
+    const gone = await t.trpc<{ id: string }>('ai.start', marco, {
+      tripId,
+      input: {
+        kind: 'refine',
+        target: { type: 'activity', id: 'sparita' },
+        instruction: 'Cambialo',
+      },
+    });
+    const failed = await t.trpc<{ status: string; error: string }>(
+      'ai.job',
+      marco,
+      { id: gone.data.id },
+      'query',
+    );
+    expect(failed.data).toMatchObject({ status: 'error', error: 'TARGET_NOT_FOUND' });
+  });
+
   describe('phased trip generation', () => {
     const STRATEGY = {
       title: 'Sicilia e Roma',

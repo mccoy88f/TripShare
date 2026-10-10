@@ -22,6 +22,7 @@ import {
   type AiInput,
   type ChatResult,
   type PlacePhotoResult,
+  type RefineResult,
   type TaskContext,
   type VerifyResult,
 } from './tasks.js';
@@ -97,6 +98,57 @@ async function fileDataUrl(storage: FileStorage | undefined, name: string, mime:
   return `data:image/jpeg;base64,${jpeg.toString('base64')}`;
 }
 
+/** Dati dell'elemento che l'utente vuole cambiare, con il contesto che serve a capirlo. */
+function describeTarget(plan: TripDocument, target: { type: string; id: string }) {
+  const found = (v: unknown) => {
+    if (!v) throw new AiJobError('TARGET_NOT_FOUND');
+    return v;
+  };
+  switch (target.type) {
+    case 'activity': {
+      const day = plan.days.find((d) => d.activities.some((a) => a.id === target.id));
+      const activity = day?.activities.find((a) => a.id === target.id);
+      found(activity);
+      return {
+        type: 'activity',
+        date: day!.date,
+        activity,
+        sameDay: day!.activities.map((a) => ({ id: a.id, time: a.time, title: a.title })),
+      };
+    }
+    case 'place': {
+      const place = found(plan.places.find((p) => p.id === target.id));
+      return {
+        type: 'place',
+        place,
+        usedIn: plan.days.flatMap((d) =>
+          d.activities
+            .filter((a) => a.placeIds.includes(target.id))
+            .map((a) => ({ date: d.date, activityId: a.id, title: a.title })),
+        ),
+      };
+    }
+    case 'booking': {
+      const booking = found(plan.bookings.find((b) => b.id === target.id));
+      return {
+        type: 'booking',
+        booking,
+        budgetItems: plan.budget.filter((b) => b.bookingId === target.id).map((b) => b.id),
+        days: plan.days.filter((d) => d.stayBookingId === target.id).map((d) => d.date),
+      };
+    }
+    case 'day':
+      return { type: 'day', day: found(plan.days.find((d) => d.date === target.id)) };
+    case 'budget':
+      return { type: 'budget', item: found(plan.budget.find((b) => b.id === target.id)) };
+    default:
+      return {
+        type: 'packing',
+        item: found(plan.packing.find((p) => p.id === target.id || p.item === target.id)),
+      };
+  }
+}
+
 async function loadTripContext(db: Database, tripId: string, locale: Locale, userId: string) {
   const [row] = await db.select().from(trip).where(eq(trip.id, tripId));
   if (!row) throw new AiJobError('TRIP_NOT_FOUND');
@@ -114,6 +166,9 @@ async function loadTripContext(db: Database, tripId: string, locale: Locale, use
       group: active.map((m) => m.name),
       me: active.find((m) => m.userId === userId)?.name,
       spentSoFar: ledger ? { amountMinor: ledger.total, currency: row.currency } : undefined,
+      brief: row.brief ?? undefined,
+      guidelines: (row.generation as { strategy?: { guidelines?: string[] } } | null)?.strategy
+        ?.guidelines,
     },
   };
 }
@@ -211,6 +266,8 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
       plan = t.plan;
       ctx.plan = plan;
       ctx.extra = t.extra;
+      if (input.kind === 'refine')
+        ctx.extra = { ...t.extra, target: describeTarget(plan, input.target) };
     }
     if (input.kind === 'receipt' || input.kind === 'booking' || input.kind === 'document')
       ctx.fileDataUrl = await fileDataUrl(deps.storage, input.file, input.mime);
@@ -273,12 +330,15 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
     }
 
     const spec = buildTask(input, ctx);
-    if (input.kind === 'chat' && plan) {
+    if ((input.kind === 'chat' || input.kind === 'refine') && plan) {
       // Le modifiche proposte devono potersi applicare davvero al programma attuale.
       const base = plan;
+      const own = spec.validate;
       spec.validate = (value) => {
+        const issues = own?.(value);
+        if (issues?.length) return issues;
         try {
-          applyPlanOps(base, (value as ChatResult).actions);
+          applyPlanOps(base, (value as ChatResult | RefineResult).actions);
           return null;
         } catch (err) {
           return [

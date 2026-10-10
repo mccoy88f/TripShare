@@ -134,6 +134,13 @@
       "when": 1791659133883,
       "tag": "0018_trip_generation",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791660903296,
+      "tag": "0019_plan_snapshot",
+      "breakpoints": true
     }
   ]
 }
