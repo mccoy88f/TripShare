@@ -1,8 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Camera,
+  Check,
+  CheckCheck,
+  CheckSquare,
   ChevronLeft,
   ChevronRight,
+  Download,
   GalleryVerticalEnd,
   Loader2,
   LocateFixed,
@@ -14,6 +18,7 @@ import {
   Plane,
   Play,
   Search,
+  Share2,
   Trash2,
   Upload,
   Users,
@@ -43,11 +48,16 @@ import { Field, Select } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { useFabAction, useOnAdd } from '@/lib/fab';
 import {
+  canShareFiles,
+  downloadMemories,
   formatDuration,
   hasPoint,
   lastTrip,
   memoryDate,
+  MAX_ZIP,
   memoryUrl,
+  prepareFile,
+  shareMemories,
   uploadMemory,
   type Memory,
 } from '@/lib/memories';
@@ -103,6 +113,8 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Memory | null>(null);
   const [staged, setStaged] = useState<File[] | null>(null);
+  // Selezione multipla: null = spenta.
+  const [picked, setPicked] = useState<Set<string> | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const pick = () => input.current?.click();
   useOnAdd('memories', pick);
@@ -142,6 +154,24 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
     [mode, byTrip, ordered],
   );
   const open = openId ? nav.findIndex((m) => m.id === openId) : -1;
+  const toggle = (id: string) =>
+    setPicked((cur) => {
+      const next = new Set(cur ?? []);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  const pickedList = nav.filter((m) => picked?.has(m.id));
+  const tile = (m: Memory, showOwner: boolean) => (
+    <Tile
+      key={m.id}
+      memory={m}
+      showOwner={showOwner}
+      selecting={picked !== null}
+      selected={!!picked?.has(m.id)}
+      onTap={() => (picked ? toggle(m.id) : setOpenId(m.id))}
+      onLongPress={() => (picked ? toggle(m.id) : setPicked(new Set([m.id])))}
+    />
+  );
   const mapped = ordered.filter(hasPoint);
   const unmapped = ordered.filter((m) => !hasPoint(m));
   const dayLabel = (key: string) =>
@@ -195,6 +225,17 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
             </button>
           ))}
         </div>
+        {memories && memories.length > 0 && (
+          <Button
+            variant={picked ? 'default' : 'ghost'}
+            size="sm"
+            className="ml-auto"
+            onClick={() => setPicked(picked ? null : new Set())}
+          >
+            <CheckSquare />
+            {t(picked ? 'common.cancel' : 'memories.select')}
+          </Button>
+        )}
       </div>
 
       {!memories ? (
@@ -219,9 +260,7 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
                 <span className="text-xs font-normal text-muted-foreground">{g.items.length}</span>
               </h3>
               <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 md:grid-cols-5">
-                {g.items.map((m) => (
-                  <Tile key={m.id} memory={m} showOwner={false} onOpen={() => setOpenId(m.id)} />
-                ))}
+                {g.items.map((m) => tile(m, false))}
               </div>
             </section>
           ))}
@@ -235,9 +274,7 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
                 <span className="text-xs font-normal text-muted-foreground">{items.length}</span>
               </h3>
               <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 md:grid-cols-5">
-                {items.map((m) => (
-                  <Tile key={m.id} memory={m} showOwner={!!tripId} onOpen={() => setOpenId(m.id)} />
-                ))}
+                {items.map((m) => tile(m, !!tripId))}
               </div>
             </section>
           ))}
@@ -262,15 +299,21 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
                 {t('memories.noPlace', { count: unmapped.length })}
               </h3>
               <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6 md:grid-cols-8">
-                {unmapped.map((m) => (
-                  <Tile key={m.id} memory={m} showOwner={!!tripId} onOpen={() => setOpenId(m.id)} />
-                ))}
+                {unmapped.map((m) => tile(m, !!tripId))}
               </div>
             </section>
           )}
         </div>
       )}
 
+      {picked && (
+        <SelectionBar
+          selected={pickedList}
+          total={nav.length}
+          onSelectAll={() => setPicked(new Set(nav.map((m) => m.id)))}
+          onExit={() => setPicked(null)}
+        />
+      )}
       {staged && (
         <UploadDialog
           files={staged}
@@ -305,26 +348,82 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
 function Tile({
   memory: m,
   showOwner,
-  onOpen,
+  selecting,
+  selected,
+  onTap,
+  onLongPress,
 }: {
   memory: Memory;
   showOwner: boolean;
-  onOpen: () => void;
+  selecting: boolean;
+  selected: boolean;
+  onTap: () => void;
+  onLongPress: () => void;
 }) {
   const { t } = useTranslation();
+  // Pressione lunga = inizia la selezione; il tocco che segue il rilascio non deve aprire il ricordo.
+  const timer = useRef<number | undefined>(undefined);
+  const origin = useRef<{ x: number; y: number } | null>(null);
+  const fired = useRef(false);
+  const cancel = () => {
+    window.clearTimeout(timer.current);
+    origin.current = null;
+  };
   return (
     <button
       type="button"
-      onClick={onOpen}
-      className="group relative aspect-square overflow-hidden rounded-lg bg-muted"
+      onClick={() => {
+        if (fired.current) {
+          fired.current = false;
+          return;
+        }
+        onTap();
+      }}
+      onPointerDown={(e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        fired.current = false;
+        origin.current = { x: e.clientX, y: e.clientY };
+        timer.current = window.setTimeout(() => {
+          fired.current = true;
+          navigator.vibrate?.(15);
+          onLongPress();
+        }, 450);
+      }}
+      onPointerMove={(e) => {
+        const o = origin.current;
+        if (o && Math.hypot(e.clientX - o.x, e.clientY - o.y) > 10) cancel();
+      }}
+      onPointerUp={cancel}
+      onPointerCancel={cancel}
+      onPointerLeave={cancel}
+      onContextMenu={(e) => e.preventDefault()}
+      aria-pressed={selecting ? selected : undefined}
+      className={cn(
+        'group relative aspect-square select-none overflow-hidden rounded-lg bg-muted [-webkit-touch-callout:none]',
+        selected && 'ring-4 ring-primary ring-inset',
+      )}
       aria-label={m.caption ?? t(`memories.kind.${m.kind}`)}
     >
       <img
         src={memoryUrl(m.id, 'thumb')}
         alt=""
         loading="lazy"
-        className="size-full object-cover transition group-hover:scale-105"
+        draggable={false}
+        className={cn(
+          'size-full object-cover transition group-hover:scale-105',
+          selected && 'scale-90 rounded-md',
+        )}
       />
+      {selecting && (
+        <span
+          className={cn(
+            'absolute top-1.5 right-1.5 grid size-6 place-items-center rounded-full border-2 border-white shadow',
+            selected ? 'bg-primary text-primary-foreground' : 'bg-black/30',
+          )}
+        >
+          {selected && <Check className="size-3.5" />}
+        </span>
+      )}
       {m.kind === 'video' && (
         <span className="absolute right-1 bottom-1 flex items-center gap-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
           <Play className="size-3 fill-current" />
@@ -336,7 +435,7 @@ function Tile({
           <Loader2 className="size-5 animate-spin" />
         </span>
       )}
-      {m.mine && !m.shared && (
+      {m.mine && !m.shared && !selecting && (
         <span
           className="absolute top-1 left-1 rounded-full bg-black/55 p-1 text-white"
           title={t('memories.private')}
@@ -350,6 +449,98 @@ function Tile({
         </span>
       )}
     </button>
+  );
+}
+
+/** Barra delle azioni sui ricordi selezionati: scarica (uno solo o ZIP) e condividi dal sistema. */
+function SelectionBar({
+  selected,
+  total,
+  onSelectAll,
+  onExit,
+}: {
+  selected: Memory[];
+  total: number;
+  onSelectAll: () => void;
+  onExit: () => void;
+}) {
+  const { t } = useTranslation();
+  const [sharing, setSharing] = useState(false);
+  // I file si preparano subito: su iPhone il menu "Condividi" si apre solo dal tocco diretto.
+  useEffect(() => {
+    if (!canShareFiles()) return;
+    if (selected.reduce((sum, m) => sum + m.size, 0) > 80 * 1024 * 1024) return;
+    selected.forEach((m) => void prepareFile(m).catch(() => undefined));
+  }, [selected]);
+  const none = selected.length === 0;
+  const download = () => {
+    if (selected.length > MAX_ZIP) return toast.error(t('memories.tooMany', { max: MAX_ZIP }));
+    downloadMemories(selected);
+    toast.success(t(selected.length > 1 ? 'memories.zipStarted' : 'memories.downloadStarted'));
+  };
+  const share = async () => {
+    setSharing(true);
+    const result = await shareMemories(selected);
+    setSharing(false);
+    if (result === 'retry') toast.message(t('memories.shareRetry'));
+    else if (result === 'unsupported' || result === 'failed') {
+      toast.error(t('memories.shareUnsupported'));
+    }
+  };
+  const btn = 'size-10 rounded-full [&_svg]:size-5';
+  return (
+    <div
+      role="toolbar"
+      aria-label={t('memories.selection')}
+      className="fixed inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-md items-center gap-1 rounded-full border bg-card/95 py-1.5 pr-2 pl-1.5 shadow-lg backdrop-blur lg:bottom-6"
+    >
+      <Button
+        variant="ghost"
+        size="icon"
+        className={btn}
+        onClick={onExit}
+        aria-label={t('common.cancel')}
+      >
+        <X />
+      </Button>
+      <p className="min-w-0 flex-1 truncate text-sm font-semibold">
+        {t('memories.selected', { count: selected.length })}
+      </p>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={btn}
+        onClick={onSelectAll}
+        disabled={selected.length === total}
+        aria-label={t('memories.selectAll')}
+        title={t('memories.selectAll')}
+      >
+        <CheckCheck />
+      </Button>
+      {canShareFiles() && (
+        <Button
+          variant="outline"
+          size="icon"
+          className={btn}
+          onClick={() => void share()}
+          disabled={none || sharing}
+          aria-label={t('memories.share')}
+          title={t('memories.share')}
+        >
+          {sharing ? <Loader2 className="animate-spin" /> : <Share2 />}
+        </Button>
+      )}
+      <Button
+        size="icon"
+        className={btn}
+        onClick={download}
+        disabled={none}
+        aria-label={t('memories.download')}
+        title={t(selected.length > 1 ? 'memories.downloadZip' : 'memories.download')}
+      >
+        <Download />
+      </Button>
+    </div>
   );
 }
 
@@ -626,6 +817,10 @@ function Lightbox({
   const scroller = useRef<HTMLDivElement>(null);
   const [muted, setMuted] = useState(true);
   const m = memories[index]!;
+  // Il file da condividere si prepara in anticipo (su iPhone la condivisione parte dal tocco).
+  useEffect(() => {
+    if (canShareFiles() && m.size < 40 * 1024 * 1024) void prepareFile(m).catch(() => undefined);
+  }, [m]);
 
   const scrollTo = (i: number, behavior: ScrollBehavior = 'smooth') => {
     const el = scroller.current;
@@ -740,6 +935,30 @@ function Lightbox({
                 {muted ? <VolumeX /> : <Volume2 />}
               </button>
             )}
+            {canShareFiles() && (
+              <button
+                type="button"
+                onClick={async () => {
+                  const r = await shareMemories([m]);
+                  if (r === 'retry') toast.message(t('memories.shareRetry'));
+                  else if (r === 'unsupported' || r === 'failed') {
+                    toast.error(t('memories.shareUnsupported'));
+                  }
+                }}
+                aria-label={t('memories.share')}
+                className={cn(iconButton, 'pointer-events-auto')}
+              >
+                <Share2 />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => downloadMemories([m])}
+              aria-label={t('memories.download')}
+              className={cn(iconButton, 'pointer-events-auto')}
+            >
+              <Download />
+            </button>
             <button
               type="button"
               onClick={onClose}

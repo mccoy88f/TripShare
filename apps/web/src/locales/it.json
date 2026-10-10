@@ -1230,6 +1230,19 @@
     "useHereHint": "Utile se carichi subito dopo lo scatto. Il browser chiederà il permesso.",
     "captionAll": "Didascalia (uguale per tutti i file)",
     "trips": "Viaggi",
-    "noTripGroup": "Senza viaggio"
+    "noTripGroup": "Senza viaggio",
+    "select": "Seleziona",
+    "selection": "Selezione",
+    "selected_one": "1 selezionato",
+    "selected_other": "{{count}} selezionati",
+    "selectAll": "Seleziona tutti",
+    "download": "Scarica",
+    "downloadZip": "Scarica in un file ZIP",
+    "share": "Condividi",
+    "tooMany": "Puoi scaricare al massimo {{max}} ricordi alla volta.",
+    "zipStarted": "Preparo il file ZIP…",
+    "downloadStarted": "Download avviato",
+    "shareRetry": "File pronti: tocca di nuovo Condividi.",
+    "shareUnsupported": "Questo dispositivo non può condividere i file: usa Scarica."
   }
 }

@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { unzipSync } from 'fflate';
 import sharp from 'sharp';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createTestApp } from './helpers.js';
@@ -230,6 +231,50 @@ run('memories (integration)', () => {
       { name: 'x.txt', type: 'text/plain', data: Buffer.from('hi') },
     );
     expect(bad.statusCode).toBe(415);
+  });
+
+  it('downloads memories as JPEG files and as a ZIP, only the visible ones', async () => {
+    const owner = (await t.signUp('owner@example.com', 'Owner')).cookie;
+    const other = (await t.signUp('other@example.com', 'Other')).cookie;
+    const png = await sharp({ create: { width: 64, height: 48, channels: 3, background: '#c33' } })
+      .png()
+      .toBuffer();
+    const ids: string[] = [];
+    for (const name of ['a.png', 'b.png']) {
+      const r = await upload(owner, {}, { name, type: 'image/png', data: png });
+      ids.push((r.json() as { id: string }).id);
+    }
+    const jpg = await t.app.inject({
+      method: 'GET',
+      url: `/api/memories/${ids[0]}/file?v=jpg&download=1`,
+      headers: { cookie: owner },
+    });
+    expect(jpg.headers['content-type']).toBe('image/jpeg');
+    expect(String(jpg.headers['content-disposition'])).toMatch(
+      /^attachment; filename="ricordo-\d{8}-\d{4}-[0-9a-f]{6}\.jpg"$/,
+    );
+    expect((await sharp(jpg.rawPayload).metadata()).format).toBe('jpeg');
+
+    const zipRes = await t.app.inject({
+      method: 'GET',
+      url: `/api/memories/zip?ids=${ids.join(',')}`,
+      headers: { cookie: owner },
+    });
+    expect(zipRes.statusCode).toBe(200);
+    expect(zipRes.headers['content-type']).toBe('application/zip');
+    const files = unzipSync(new Uint8Array(zipRes.rawPayload));
+    expect(Object.keys(files)).toHaveLength(2);
+    expect(Object.keys(files)[0]).toMatch(/^001-ricordo-.*\.jpg$/);
+    // Chi non vede i ricordi non ne scarica nessuno.
+    const denied = await t.app.inject({
+      method: 'GET',
+      url: `/api/memories/zip?ids=${ids.join(',')}`,
+      headers: { cookie: other },
+    });
+    expect(denied.statusCode).toBe(404);
+    expect((await t.app.inject({ method: 'GET', url: '/api/memories/zip?ids=x' })).statusCode).toBe(
+      401,
+    );
   });
 
   it.skipIf(!hasFfmpeg)(

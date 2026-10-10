@@ -29,6 +29,7 @@ export const memoriesRouter = router({
           width: memory.width,
           height: memory.height,
           durationSec: memory.durationSec,
+          size: memory.size,
           takenAt: memory.takenAt,
           createdAt: memory.createdAt,
           lat: memory.lat,

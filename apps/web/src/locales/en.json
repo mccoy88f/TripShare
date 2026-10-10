@@ -1230,6 +1230,19 @@
     "useHereHint": "Handy right after taking them. The browser will ask for permission.",
     "captionAll": "Caption (same for all files)",
     "trips": "Trips",
-    "noTripGroup": "No trip"
+    "noTripGroup": "No trip",
+    "select": "Select",
+    "selection": "Selection",
+    "selected_one": "1 selected",
+    "selected_other": "{{count}} selected",
+    "selectAll": "Select all",
+    "download": "Download",
+    "downloadZip": "Download as a ZIP file",
+    "share": "Share",
+    "tooMany": "You can download at most {{max}} memories at once.",
+    "zipStarted": "Preparing the ZIP file…",
+    "downloadStarted": "Download started",
+    "shareRetry": "Files ready: tap Share again.",
+    "shareUnsupported": "This device cannot share files: use Download."
   }
 }

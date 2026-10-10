@@ -4,9 +4,13 @@ import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import { fastifyTRPCPlugin, type FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
 import Fastify, { type FastifyRequest } from 'fastify';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { createReadStream } from 'node:fs';
-import { stat } from 'node:fs/promises';
+import { once } from 'node:events';
+import { PassThrough } from 'node:stream';
+import { Zip, ZipPassThrough } from 'fflate';
+import sharp from 'sharp';
+import { readFile, stat } from 'node:fs/promises';
 import { bookingTicket, expense, memory, trip, tripMember, user } from '@tripshare/db';
 import { TICKET_CODE_FORMATS } from './routers/tickets.js';
 import { tripDocumentJsonSchema } from '@tripshare/shared/trip-format';
@@ -26,6 +30,17 @@ import { createRealtime, subscribeUser } from './services/realtime.js';
 import { requireMember } from './services/trips.js';
 import { appRouter, type AppRouter } from './routers/index.js';
 import type { AppServices, Context } from './trpc/init.js';
+
+/** Nome di un ricordo scaricato: data e ora (UTC) più un pezzo dell'identificativo. */
+function memoryFileName(
+  row: { id: string; kind: string; takenAt: Date | null; createdAt: Date },
+  photoAsJpeg: boolean,
+) {
+  const d = (row.takenAt ?? row.createdAt).toISOString();
+  const stamp = `${d.slice(0, 10).replaceAll('-', '')}-${d.slice(11, 16).replace(':', '')}`;
+  const ext = row.kind === 'video' ? 'mp4' : photoAsJpeg ? 'jpg' : 'webp';
+  return `ricordo-${stamp}-${row.id.slice(0, 6)}.${ext}`;
+}
 
 function toHeaders(req: FastifyRequest): Headers {
   const headers = new Headers();
@@ -447,8 +462,65 @@ export async function buildServer(
       }
     });
 
+    /** Più ricordi in un unico file ZIP (si scarica a pezzi, senza tenerli tutti in memoria). */
+    app.get<{ Querystring: { ids?: string } }>('/api/memories/zip', async (req, reply) => {
+      const session = await sessionOf(req);
+      if (!session) return reply.status(401).send({ error: 'UNAUTHORIZED' });
+      const ids = [
+        ...new Set((req.query.ids ?? '').split(',').filter((i) => /^[0-9a-f-]{36}$/.test(i))),
+      ].slice(0, 200);
+      if (ids.length === 0) return reply.status(400).send({ error: 'NO_IDS' });
+      const rows = await services.db
+        .select()
+        .from(memory)
+        .where(and(inArray(memory.id, ids), visibleTo(session.user.id)));
+      if (rows.length === 0) return reply.status(404).send({ error: 'NOT_FOUND' });
+      rows.sort(
+        (a, b) => (a.takenAt ?? a.createdAt).getTime() - (b.takenAt ?? b.createdAt).getTime(),
+      );
+
+      const out = new PassThrough();
+      const write = async (chunk: Uint8Array) => {
+        if (!out.write(chunk)) await once(out, 'drain');
+      };
+      const zip = new Zip((err, chunk, final) => {
+        if (err) return void out.destroy(err);
+        void write(chunk).then(() => final && out.end());
+      });
+      void (async () => {
+        try {
+          for (const [i, row] of rows.entries()) {
+            const path = storage.privatePath(row.storageName);
+            if (!path) continue;
+            const entry = new ZipPassThrough(
+              `${String(i + 1).padStart(3, '0')}-${memoryFileName(row, true)}`,
+            );
+            zip.add(entry);
+            if (row.kind === 'photo') {
+              entry.push(
+                await sharp(await readFile(path))
+                  .jpeg({ quality: 90 })
+                  .toBuffer(),
+                true,
+              );
+            } else {
+              for await (const chunk of createReadStream(path)) entry.push(chunk as Buffer);
+              entry.push(new Uint8Array(0), true);
+            }
+          }
+          zip.end();
+        } catch (err) {
+          out.destroy(err as Error);
+        }
+      })();
+      reply.header('content-type', 'application/zip');
+      reply.header('content-disposition', 'attachment; filename="ricordi.zip"');
+      reply.header('cache-control', 'no-store');
+      return reply.send(out);
+    });
+
     /** Legge il file (o l'anteprima) di un ricordo, a pezzi per i video (Range). */
-    app.get<{ Params: { id: string }; Querystring: { v?: string } }>(
+    app.get<{ Params: { id: string }; Querystring: { v?: string; download?: string } }>(
       '/api/memories/:id/file',
       async (req, reply) => {
         const session = await sessionOf(req);
@@ -465,6 +537,21 @@ export async function buildServer(
         const info = await stat(path).catch(() => null);
         if (!info) return reply.status(404).send({ error: 'NOT_FOUND' });
         const type = req.query.v === 'thumb' ? 'image/webp' : row.mimeType;
+        if (req.query.download === '1')
+          reply.header(
+            'content-disposition',
+            `attachment; filename="${memoryFileName(row, req.query.v === 'jpg')}"`,
+          );
+        // Foto in JPEG: la si apre ovunque (WebP non sempre si importa nella galleria).
+        if (req.query.v === 'jpg' && row.kind === 'photo') {
+          const jpg = await sharp(await readFile(path))
+            .jpeg({ quality: 90 })
+            .toBuffer();
+          reply.header('content-type', 'image/jpeg');
+          reply.header('cache-control', 'private, max-age=86400');
+          reply.header('x-content-type-options', 'nosniff');
+          return reply.send(jpg);
+        }
         reply.header('content-type', type);
         reply.header('accept-ranges', 'bytes');
         reply.header('cache-control', 'private, max-age=86400');

@@ -7,6 +7,7 @@ export interface Memory {
   width: number | null;
   height: number | null;
   durationSec: number | null;
+  size: number;
   takenAt: string | null;
   createdAt: string;
   lat: number | null;
@@ -84,5 +85,76 @@ export function lastTrip(): string | null {
     return localStorage.getItem(LAST_TRIP_KEY);
   } catch {
     return null;
+  }
+}
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/** Nome del file scaricato o condiviso: data e ora del ricordo più un pezzo dell'identificativo. */
+export function memoryFileName(m: Memory) {
+  const d = memoryDate(m);
+  const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+  return `ricordo-${stamp}-${m.id.slice(0, 6)}.${m.kind === 'video' ? 'mp4' : 'jpg'}`;
+}
+
+/** Fa partire il download di un indirizzo con il gestore di download del browser. */
+export function triggerDownload(href: string) {
+  const a = document.createElement('a');
+  a.href = href;
+  a.rel = 'noopener';
+  document.body.append(a);
+  a.click();
+  a.remove();
+}
+
+export const MAX_ZIP = 200;
+export const downloadMemories = (list: Memory[]) =>
+  triggerDownload(
+    list.length === 1
+      ? `/api/memories/${list[0]!.id}/file?v=jpg&download=1`
+      : `/api/memories/zip?ids=${list.map((m) => m.id).join(',')}`,
+  );
+
+/** Il browser sa condividere file con il menu del sistema (Android, iOS, alcuni computer). */
+export const canShareFiles = () =>
+  typeof navigator !== 'undefined' &&
+  typeof navigator.share === 'function' &&
+  typeof navigator.canShare === 'function';
+
+// I file si scaricano in anticipo: su iPhone la condivisione deve partire subito dal tocco.
+const files = new Map<string, Promise<File>>();
+export function prepareFile(m: Memory): Promise<File> {
+  let p = files.get(m.id);
+  if (!p) {
+    p = fetch(`/api/memories/${m.id}/file?v=jpg`, { credentials: 'same-origin' })
+      .then(async (res) => {
+        if (!res.ok) throw new Error('FETCH_FAILED');
+        const blob = await res.blob();
+        return new File([blob], memoryFileName(m), { type: blob.type });
+      })
+      .catch((err) => {
+        files.delete(m.id);
+        throw err;
+      });
+    files.set(m.id, p);
+  }
+  return p;
+}
+
+export type ShareResult = 'shared' | 'cancelled' | 'retry' | 'unsupported' | 'failed';
+
+/** Apre il menu "Condividi" del sistema con i file dei ricordi. */
+export async function shareMemories(list: Memory[]): Promise<ShareResult> {
+  try {
+    const picked = await Promise.all(list.map(prepareFile));
+    if (!navigator.canShare?.({ files: picked })) return 'unsupported';
+    await navigator.share({ files: picked });
+    return 'shared';
+  } catch (err) {
+    const name = err instanceof DOMException ? err.name : '';
+    if (name === 'AbortError') return 'cancelled';
+    // Il tocco è "scaduto" durante il caricamento dei file: ora sono pronti, basta riprovare.
+    if (name === 'NotAllowedError') return 'retry';
+    return 'failed';
   }
 }
