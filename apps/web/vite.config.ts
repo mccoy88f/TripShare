@@ -56,8 +56,9 @@ export default defineConfig({
         scope: '/',
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#f8fafc',
-        theme_color: '#0d9488',
+        // Colori della schermata di avvio (Android): lo stesso blu notte della schermata iniziale.
+        background_color: '#0b1220',
+        theme_color: '#0b1220',
         categories: ['travel', 'finance', 'lifestyle'],
         icons: [
           { src: '/pwa-192.png', sizes: '192x192', type: 'image/png' },
@@ -73,6 +74,8 @@ export default defineConfig({
       workbox: {
         // Il modulo dei codici a barre (wasm) è precaricato: i biglietti si mostrano anche offline.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,wasm}'],
+        // Le immagini di avvio per iOS le scarica solo iOS, non servono nella cache.
+        globIgnores: ['splash/**'],
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,

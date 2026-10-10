@@ -117,3 +117,7 @@ packages/
   db/        schema Drizzle e migrazioni
 docker/      Caddyfile
 ```
+
+**Schermata di avvio.** È definita in `apps/web/index.html` (blocco `boot-css` e `.boot`) e colori e
+sfondo del manifest sono in `apps/web/vite.config.ts`. Le immagini di avvio per iOS in
+`apps/web/public/splash` si rigenerano con `node scripts/generate-splash.mjs` (serve Playwright).
