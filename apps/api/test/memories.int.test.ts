@@ -266,3 +266,89 @@ run('memories (integration)', () => {
     60_000,
   );
 });
+
+run('memory places (integration)', () => {
+  let t: Awaited<ReturnType<typeof createTestApp>>;
+  const calls: string[] = [];
+  const fakeFetch = (async (input: string | URL | Request) => {
+    const url = String(input);
+    calls.push(url);
+    if (url.includes('/reverse'))
+      return Response.json({
+        name: '',
+        display_name: 'Via Roma, Torino, Italia',
+        address: { city: 'Torino', country: 'Italia' },
+      });
+    return Response.json([
+      {
+        name: 'Edinburgh Castle',
+        display_name: 'Edinburgh Castle, Castlehill, Edimburgo, Scozia, Regno Unito',
+        lat: '55.9486',
+        lon: '-3.1999',
+        address: { city: 'Edimburgo', country: 'Regno Unito' },
+      },
+    ]);
+  }) as typeof fetch;
+  beforeAll(async () => {
+    t = await createTestApp(
+      DATABASE_URL!,
+      await mkdtemp(join(tmpdir(), 'tripshare-places-')),
+      fakeFetch,
+    );
+  });
+  beforeEach(async () => t.reset());
+  afterAll(async () => t?.close());
+
+  it('searches places by name, resolves a point to a name and saves it with the memory', async () => {
+    const owner = (await t.signUp('owner@example.com', 'Owner')).cookie;
+    const hits = await t.trpc<{ label: string; lat: number; lon: number }[]>(
+      'memories.searchPlace',
+      owner,
+      { query: 'Edinburgh Castle' },
+      'query',
+    );
+    expect(hits.data[0]).toMatchObject({
+      label: 'Edinburgh Castle, Edimburgo',
+      lat: 55.9486,
+      lon: -3.1999,
+    });
+    const named = await t.trpc<{ label: string | null }>(
+      'memories.reverse',
+      owner,
+      { lat: 45.07, lon: 7.686 },
+      'query',
+    );
+    expect(named.data.label).toBe('Torino, Italia');
+    // Stessa ricerca: risposta dalla cache, senza nuove richieste al servizio.
+    const before = calls.length;
+    await t.trpc('memories.searchPlace', owner, { query: 'edinburgh castle' }, 'query');
+    expect(calls.length).toBe(before);
+    expect((await t.trpc('memories.searchPlace', owner, { query: 'x' }, 'query')).status).toBe(400);
+
+    const plain = await sharp({
+      create: { width: 50, height: 50, channels: 3, background: '#fff' },
+    })
+      .png()
+      .toBuffer();
+    const body = multipart({}, { name: 'a.png', type: 'image/png', data: plain });
+    const up = await t.app.inject({
+      method: 'POST',
+      url: '/api/memories',
+      headers: { cookie: owner, origin: 'http://localhost:5173', 'content-type': body.contentType },
+      payload: body.payload,
+    });
+    const { id } = up.json() as { id: string };
+    await t.trpc('memories.update', owner, {
+      id,
+      lat: hits.data[0]!.lat,
+      lon: hits.data[0]!.lon,
+      placeName: hits.data[0]!.label,
+    });
+    const list = await t.trpc<{ placeName: string | null }[]>('memories.list', owner, {}, 'query');
+    expect(list.data[0]!.placeName).toBe('Edinburgh Castle, Edimburgo');
+    // Togliendo la posizione sparisce anche il nome.
+    await t.trpc('memories.update', owner, { id, lat: null, lon: null });
+    const after = await t.trpc<{ placeName: string | null }[]>('memories.list', owner, {}, 'query');
+    expect(after.data[0]!.placeName).toBeNull();
+  });
+});

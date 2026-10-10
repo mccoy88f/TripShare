@@ -12,6 +12,7 @@ import {
   MapPinOff,
   Pencil,
   Play,
+  Search,
   Trash2,
   Upload,
   Users,
@@ -695,13 +696,13 @@ function Lightbox({
               {m.caption && <p className="whitespace-pre-wrap">{m.caption}</p>}
               {hasPoint(m) && (
                 <a
-                  className="mt-1 inline-flex items-center gap-1 text-xs text-white/80 underline"
+                  className="mt-1 flex items-center gap-1 text-xs text-white/80 underline"
                   href={`https://www.openstreetmap.org/?mlat=${m.lat}&mlon=${m.lon}#map=16/${m.lat}/${m.lon}`}
                   target="_blank"
                   rel="noreferrer"
                 >
                   <MapPin className="size-3" />
-                  {t('memories.openMap')}
+                  {m.placeName ?? t('memories.openMap')}
                 </a>
               )}
             </div>
@@ -746,6 +747,7 @@ function EditDialog({
   const [point, setPoint] = useState<{ lat: number; lon: number } | null>(
     hasPoint(m) ? { lat: m.lat, lon: m.lon } : null,
   );
+  const [placeName, setPlaceName] = useState<string | null>(m.placeName);
   const [tripId, setTripId] = useState(m.tripId ?? '');
   const [shared, setShared] = useState(m.shared);
   const update = useMutation(trpc.memories.update.mutationOptions());
@@ -760,6 +762,7 @@ function EditDialog({
         takenAt: takenAt ? new Date(takenAt).toISOString() : null,
         lat: point?.lat ?? null,
         lon: point?.lon ?? null,
+        placeName: point ? placeName : null,
         tripId: tripId || null,
         shared: tripId ? shared : false,
       });
@@ -799,35 +802,15 @@ function EditDialog({
               className="flex h-11 w-full rounded-xl border bg-background px-3 text-base"
             />
           </Field>
-          <Field label={t('memories.place')} hint={t('memories.placeHint')}>
-            <div className="grid grid-cols-1 gap-2">
-              <Suspense fallback={<div className="h-56 animate-pulse rounded-xl bg-muted" />}>
-                <PlacePicker value={point} onChange={setPoint} />
-              </Suspense>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    navigator.geolocation?.getCurrentPosition(
-                      (p) => setPoint({ lat: p.coords.latitude, lon: p.coords.longitude }),
-                      () => toast.error(t('memories.locationDenied')),
-                    )
-                  }
-                >
-                  <LocateFixed />
-                  {t('memories.useMyPosition')}
-                </Button>
-                {point && (
-                  <Button type="button" variant="ghost" size="sm" onClick={() => setPoint(null)}>
-                    <MapPinOff />
-                    {t('memories.removePlace')}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </Field>
+          <PlaceField
+            point={point}
+            name={placeName}
+            tripId={tripId}
+            onChange={(p, n) => {
+              setPoint(p);
+              setPlaceName(n);
+            }}
+          />
           <Field label={t('memories.trip')} htmlFor="mem-trip">
             <Select
               id="mem-trip"
@@ -876,6 +859,197 @@ function EditDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+type Point = { lat: number; lon: number };
+
+/**
+ * Dove è stato fatto un ricordo: si cerca un luogo per nome (OpenStreetMap), si sceglie uno dei
+ * luoghi salvati nel viaggio, si usa la posizione attuale o si tocca la mappa. Il punto prende
+ * subito il nome del luogo (reverse lookup).
+ */
+function PlaceField({
+  point,
+  name,
+  tripId,
+  onChange,
+}: {
+  point: Point | null;
+  name: string | null;
+  tripId: string;
+  onChange: (point: Point | null, name: string | null) => void;
+}) {
+  const { t } = useTranslation();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const [query, setQuery] = useState('');
+  const [submitted, setSubmitted] = useState('');
+  const [resolving, setResolving] = useState(false);
+  const search = useQuery({
+    ...trpc.memories.searchPlace.queryOptions({ query: submitted }),
+    enabled: submitted.length >= 2,
+    retry: false,
+  });
+  const { data: plan } = useQuery({
+    ...trpc.plan.get.queryOptions({ tripId }),
+    enabled: !!tripId,
+  });
+  const places = plan?.plan?.places ?? [];
+  const latest = useRef<Point | null>(point);
+  latest.current = point;
+
+  /** Sceglie un punto; se il nome non si conosce lo chiede a OpenStreetMap. */
+  const choose = async (next: Point, known: string | null = null) => {
+    latest.current = next;
+    onChange(next, known);
+    if (known) return;
+    setResolving(true);
+    try {
+      const { label } = await queryClient.fetchQuery(trpc.memories.reverse.queryOptions(next));
+      // Se nel frattempo si è scelto un altro punto, il nome non vale più.
+      if (latest.current === next) onChange(next, label);
+    } finally {
+      setResolving(false);
+    }
+  };
+  // Un ricordo con la posizione letta dal file ma senza nome: si completa all'apertura.
+  useEffect(() => {
+    if (point && !name) void choose(point);
+    // solo al montaggio
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const submit = () => setSubmitted(query.trim());
+  const pickSaved = async (id: string) => {
+    const place = places.find((p) => p.id === id);
+    if (!place) return;
+    if (place.location)
+      return choose({ lat: place.location.lat, lon: place.location.lng }, place.name);
+    setResolving(true);
+    try {
+      const hits = await queryClient.fetchQuery(
+        trpc.memories.searchPlace.queryOptions({
+          query: [place.name, place.address].filter(Boolean).join(', '),
+        }),
+      );
+      const hit = hits[0];
+      if (hit) await choose({ lat: hit.lat, lon: hit.lon }, place.name);
+      else toast.error(t('memories.placeNotFound'));
+    } catch {
+      toast.error(t('memories.searchFailed'));
+    } finally {
+      setResolving(false);
+    }
+  };
+
+  return (
+    <div className="grid grid-cols-1 gap-2">
+      <span className="text-sm font-medium">{t('memories.place')}</span>
+      <div className="flex gap-2">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          placeholder={t('memories.searchPlace')}
+          aria-label={t('memories.searchPlace')}
+          className="flex h-11 min-w-0 flex-1 rounded-xl border bg-background px-3 text-base"
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="size-11"
+          onClick={submit}
+          disabled={query.trim().length < 2}
+          aria-label={t('common.search')}
+        >
+          {search.isFetching ? <Loader2 className="animate-spin" /> : <Search />}
+        </Button>
+      </div>
+      {submitted.length >= 2 && !search.isFetching && (
+        <div className="grid grid-cols-1 overflow-hidden rounded-xl border">
+          {search.isError ? (
+            <p className="p-3 text-sm text-destructive">{t('memories.searchFailed')}</p>
+          ) : (search.data ?? []).length === 0 ? (
+            <p className="p-3 text-sm text-muted-foreground">{t('memories.placeNotFound')}</p>
+          ) : (
+            search.data!.map((hit) => (
+              <button
+                key={`${hit.lat},${hit.lon}`}
+                type="button"
+                onClick={() => {
+                  void choose({ lat: hit.lat, lon: hit.lon }, hit.label);
+                  setSubmitted('');
+                  setQuery('');
+                }}
+                className="border-b px-3 py-2 text-left last:border-b-0 hover:bg-muted"
+              >
+                <span className="block text-sm font-medium">{hit.label}</span>
+                <span className="block truncate text-xs text-muted-foreground">{hit.detail}</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+      {places.length > 0 && (
+        <Select
+          value=""
+          onChange={(e) => void pickSaved(e.target.value)}
+          aria-label={t('memories.savedPlaces')}
+        >
+          <option value="">{t('memories.savedPlaces')}</option>
+          {places.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </Select>
+      )}
+      <Suspense fallback={<div className="h-56 animate-pulse rounded-xl bg-muted" />}>
+        <PlacePicker value={point} onChange={(p) => void choose(p)} />
+      </Suspense>
+      <p className="flex min-h-5 items-center gap-1.5 text-sm">
+        {resolving ? (
+          <Loader2 className="size-4 animate-spin text-muted-foreground" />
+        ) : (
+          <MapPin className="size-4 text-primary" />
+        )}
+        {point ? (
+          <span className="min-w-0 truncate">
+            {name ?? `${point.lat.toFixed(4)}, ${point.lon.toFixed(4)}`}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">{t('memories.placeHint')}</span>
+        )}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            navigator.geolocation?.getCurrentPosition(
+              (p) => void choose({ lat: p.coords.latitude, lon: p.coords.longitude }),
+              () => toast.error(t('memories.locationDenied')),
+            )
+          }
+        >
+          <LocateFixed />
+          {t('memories.useMyPosition')}
+        </Button>
+        {point && (
+          <Button type="button" variant="ghost" size="sm" onClick={() => onChange(null, null)}>
+            <MapPinOff />
+            {t('memories.removePlace')}
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }
 

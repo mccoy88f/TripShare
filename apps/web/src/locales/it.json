@@ -22,7 +22,8 @@
     "typeToConfirm": "Scrivi «{{text}}» per confermare",
     "close": "Chiudi",
     "edit": "Modifica",
-    "detail": "Dettaglio"
+    "detail": "Dettaglio",
+    "search": "Cerca"
   },
   "nav": {
     "signIn": "Accedi",
@@ -1188,7 +1189,7 @@
     "caption": "Didascalia",
     "date": "Data e ora",
     "place": "Posizione",
-    "placeHint": "Tocca la mappa per scegliere il punto.",
+    "placeHint": "Cerca un luogo o tocca la mappa per scegliere il punto.",
     "useMyPosition": "Usa la mia posizione",
     "removePlace": "Rimuovi posizione",
     "locationDenied": "Posizione non disponibile: controlla i permessi del browser.",
@@ -1220,6 +1221,10 @@
       "sharedHint": "Lo vedono i partecipanti del viaggio",
       "private": "Privato",
       "privateHint": "Solo tu"
-    }
+    },
+    "searchPlace": "Cerca un luogo (es. Edinburgh Castle)",
+    "savedPlaces": "Scegli tra i luoghi del viaggio",
+    "placeNotFound": "Nessun luogo trovato.",
+    "searchFailed": "Ricerca non riuscita, riprova tra poco."
   }
 }

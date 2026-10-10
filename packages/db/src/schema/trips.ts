@@ -440,6 +440,8 @@ export const memory = pgTable(
     takenAt: timestamp({ withTimezone: true }),
     lat: doublePrecision(),
     lon: doublePrecision(),
+    /** Nome del luogo (da ricerca o reverse lookup su OpenStreetMap), se noto. */
+    placeName: text(),
     caption: text(),
     shared: boolean().notNull().default(true),
     /** "ready", "processing" (video in ricodifica) o "failed". */

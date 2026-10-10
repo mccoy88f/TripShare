@@ -11,6 +11,7 @@ export interface Memory {
   createdAt: string;
   lat: number | null;
   lon: number | null;
+  placeName: string | null;
   caption: string | null;
   shared: boolean;
   status: string;

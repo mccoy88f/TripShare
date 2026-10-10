@@ -22,7 +22,8 @@
     "typeToConfirm": "Type “{{text}}” to confirm",
     "close": "Close",
     "edit": "Edit",
-    "detail": "Details"
+    "detail": "Details",
+    "search": "Search"
   },
   "nav": {
     "signIn": "Sign in",
@@ -1188,7 +1189,7 @@
     "caption": "Caption",
     "date": "Date and time",
     "place": "Location",
-    "placeHint": "Tap the map to choose the spot.",
+    "placeHint": "Search a place or tap the map to choose the spot.",
     "useMyPosition": "Use my location",
     "removePlace": "Remove location",
     "locationDenied": "Location unavailable: check your browser permissions.",
@@ -1220,6 +1221,10 @@
       "sharedHint": "Trip members can see it",
       "private": "Private",
       "privateHint": "Only you"
-    }
+    },
+    "searchPlace": "Search a place (e.g. Edinburgh Castle)",
+    "savedPlaces": "Pick from the trip places",
+    "placeNotFound": "No place found.",
+    "searchFailed": "Search failed, try again shortly."
   }
 }
