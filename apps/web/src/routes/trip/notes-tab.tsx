@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import { UserAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { EditButton } from '@/components/edit-button';
+import { useDetailMode } from '@/lib/detail-mode';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useOnAdd } from '@/lib/fab';
@@ -159,6 +161,7 @@ function NoteDialog({
   const trpc = useTRPC();
   const refresh = useRefreshNotes(trip.id);
   const [draft, setDraft] = useState(initial);
+  const detail = useDetailMode(!!initial.id, initial.id);
   useEffect(() => {
     setDraft(initial);
   }, [initial]);
@@ -184,54 +187,60 @@ function NoteDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent title={draft.id ? t('notes.editTitle') : t('notes.add')}>
+      <DialogContent
+        title={
+          detail.readOnly ? t('common.detail') : draft.id ? t('notes.editTitle') : t('notes.add')
+        }
+      >
         <form onSubmit={submit} className="grid grid-cols-1 gap-3 pt-2">
-          <Input
-            placeholder={t('notes.titlePlaceholder')}
-            maxLength={160}
-            value={draft.title}
-            onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-            aria-label={t('notes.title')}
-          />
-          <textarea
-            id="note-new"
-            autoFocus
-            className={cn(textareaClass, 'min-h-36')}
-            placeholder={t('notes.placeholder')}
-            required
-            maxLength={10000}
-            value={draft.content}
-            onChange={(e) => setDraft({ ...draft, content: e.target.value })}
-            aria-label={t('notes.content')}
-          />
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="inline-flex rounded-full bg-muted p-1">
-              {(['public', 'private'] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  aria-pressed={draft.visibility === v}
-                  onClick={() => setDraft({ ...draft, visibility: v })}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition [&_svg]:size-4',
-                    draft.visibility === v ? 'bg-card shadow-sm' : 'text-muted-foreground',
-                  )}
-                >
-                  {v === 'public' ? <Globe /> : <Lock />}
-                  {t(`notes.${v}`)}
-                </button>
-              ))}
+          <fieldset disabled={detail.readOnly} className="contents">
+            <Input
+              placeholder={t('notes.titlePlaceholder')}
+              maxLength={160}
+              value={draft.title}
+              onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+              aria-label={t('notes.title')}
+            />
+            <textarea
+              id="note-new"
+              autoFocus={!draft.id}
+              className={cn(textareaClass, 'min-h-36')}
+              placeholder={t('notes.placeholder')}
+              required
+              maxLength={10000}
+              value={draft.content}
+              onChange={(e) => setDraft({ ...draft, content: e.target.value })}
+              aria-label={t('notes.content')}
+            />
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="inline-flex rounded-full bg-muted p-1">
+                {(['public', 'private'] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    aria-pressed={draft.visibility === v}
+                    onClick={() => setDraft({ ...draft, visibility: v })}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition [&_svg]:size-4',
+                      draft.visibility === v ? 'bg-card shadow-sm' : 'text-muted-foreground',
+                    )}
+                  >
+                    {v === 'public' ? <Globe /> : <Lock />}
+                    {t(`notes.${v}`)}
+                  </button>
+                ))}
+              </div>
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="accent-[var(--primary)]"
+                  checked={draft.pinned}
+                  onChange={(e) => setDraft({ ...draft, pinned: e.target.checked })}
+                />
+                {t('notes.pin')}
+              </label>
             </div>
-            <label className="inline-flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="accent-[var(--primary)]"
-                checked={draft.pinned}
-                onChange={(e) => setDraft({ ...draft, pinned: e.target.checked })}
-              />
-              {t('notes.pin')}
-            </label>
-          </div>
+          </fieldset>
           <div className="mt-2 flex items-center gap-2">
             {draft.id && (
               <Button
@@ -251,10 +260,14 @@ function NoteDialog({
               </Button>
             )}
             <div className="flex-1" />
-            <Button type="submit" size="lg" disabled={pending || !draft.content.trim()}>
-              {pending && <Loader2 className="animate-spin" />}
-              {draft.id ? t('common.save') : t('notes.add')}
-            </Button>
+            {detail.readOnly ? (
+              <EditButton onClick={detail.startEdit} />
+            ) : (
+              <Button type="submit" size="lg" disabled={pending || !draft.content.trim()}>
+                {pending && <Loader2 className="animate-spin" />}
+                {draft.id ? t('common.save') : t('notes.add')}
+              </Button>
+            )}
           </div>
         </form>
       </DialogContent>

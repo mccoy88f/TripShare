@@ -9,6 +9,7 @@ import {
   type TripDocument,
 } from '@tripshare/shared/trip-format';
 import { Button } from '@/components/ui/button';
+import { useDetailMode } from '@/lib/detail-mode';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Step, StepForm } from '@/components/ui/steps';
 import { EmojiPicker } from '@/components/ui/emoji-picker';
@@ -95,6 +96,7 @@ export function ActivityDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { t } = useTranslation();
+  const detail = useDetailMode(!!activity, `${open}${activity?.id}`);
   const currency = isCurrencyCode(plan.trip.currency) ? plan.trip.currency : 'EUR';
   const [d, setD] = useState(() => toDraft(activity, date, currency));
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -178,10 +180,18 @@ export function ActivityDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        title={activity ? t('plan.activity.editTitle') : t('plan.activity.newTitle')}
+        title={
+          detail.readOnly
+            ? t('common.detail')
+            : activity
+              ? t('plan.activity.editTitle')
+              : t('plan.activity.newTitle')
+        }
         description={longDate(date)}
       >
         <StepForm
+          readOnly={detail.readOnly}
+          onEdit={detail.startEdit}
           onSubmit={submit}
           freeNavigation={!!activity}
           pending={pending}

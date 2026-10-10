@@ -6,6 +6,8 @@ import type { PackingItem } from '@tripshare/shared/trip-format';
 import { UserAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { EditButton } from '@/components/edit-button';
+import { useDetailMode } from '@/lib/detail-mode';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Input, Select } from '@/components/ui/input';
 import { confirmDialog } from '@/components/confirm';
@@ -351,10 +353,11 @@ function PackingDialog({
   onDelete: () => Promise<void>;
 }) {
   const { t } = useTranslation();
+  const detail = useDetailMode(true, item.id);
   const [draft, setDraft] = useState(item);
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent title={t('packing.editTitle')}>
+      <DialogContent title={detail.readOnly ? t('common.detail') : t('packing.editTitle')}>
         <form
           className="grid grid-cols-1 gap-4 pt-2"
           onSubmit={(e) => {
@@ -366,48 +369,50 @@ function PackingDialog({
             });
           }}
         >
-          <Field label={t('packing.item')} htmlFor="packing-item">
-            <Input
-              id="packing-item"
-              required
-              maxLength={160}
-              value={draft.item}
-              onChange={(e) => setDraft({ ...draft, item: e.target.value })}
-            />
-          </Field>
-          <Field label={t('packing.group')} htmlFor="packing-group">
-            <Select
-              id="packing-group"
-              value={draft.group}
-              onChange={(e) =>
-                setDraft({ ...draft, group: e.target.value as PackingItem['group'] })
-              }
-            >
-              {GROUPS.map((g) => (
-                <option key={g} value={g}>
-                  {GROUP_EMOJI[g]} {t(`packing.groups.${g}`)}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label={t('packing.reason')} htmlFor="packing-reason">
-            <textarea
-              id="packing-reason"
-              maxLength={300}
-              className={textareaClass}
-              value={draft.reason ?? ''}
-              onChange={(e) => setDraft({ ...draft, reason: e.target.value })}
-            />
-          </Field>
-          <label className="inline-flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="accent-[var(--primary)]"
-              checked={draft.perPerson}
-              onChange={(e) => setDraft({ ...draft, perPerson: e.target.checked })}
-            />
-            {t('packing.perPerson')}
-          </label>
+          <fieldset disabled={detail.readOnly} className="contents">
+            <Field label={t('packing.item')} htmlFor="packing-item">
+              <Input
+                id="packing-item"
+                required
+                maxLength={160}
+                value={draft.item}
+                onChange={(e) => setDraft({ ...draft, item: e.target.value })}
+              />
+            </Field>
+            <Field label={t('packing.group')} htmlFor="packing-group">
+              <Select
+                id="packing-group"
+                value={draft.group}
+                onChange={(e) =>
+                  setDraft({ ...draft, group: e.target.value as PackingItem['group'] })
+                }
+              >
+                {GROUPS.map((g) => (
+                  <option key={g} value={g}>
+                    {GROUP_EMOJI[g]} {t(`packing.groups.${g}`)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label={t('packing.reason')} htmlFor="packing-reason">
+              <textarea
+                id="packing-reason"
+                maxLength={300}
+                className={textareaClass}
+                value={draft.reason ?? ''}
+                onChange={(e) => setDraft({ ...draft, reason: e.target.value })}
+              />
+            </Field>
+            <label className="inline-flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="accent-[var(--primary)]"
+                checked={draft.perPerson}
+                onChange={(e) => setDraft({ ...draft, perPerson: e.target.checked })}
+              />
+              {t('packing.perPerson')}
+            </label>
+          </fieldset>
           <div className="mt-2 flex items-center gap-2">
             <Button
               type="button"
@@ -421,9 +426,13 @@ function PackingDialog({
               <span className="hidden sm:inline">{t('expense.delete')}</span>
             </Button>
             <div className="flex-1" />
-            <Button type="submit" size="lg" disabled={pending || !draft.item.trim()}>
-              {t('common.save')}
-            </Button>
+            {detail.readOnly ? (
+              <EditButton onClick={detail.startEdit} />
+            ) : (
+              <Button type="submit" size="lg" disabled={pending || !draft.item.trim()}>
+                {t('common.save')}
+              </Button>
+            )}
           </div>
         </form>
       </DialogContent>

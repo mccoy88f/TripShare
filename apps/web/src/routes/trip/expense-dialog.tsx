@@ -21,6 +21,7 @@ import {
 } from '@tripshare/shared';
 import { UserAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { useDetailMode } from '@/lib/detail-mode';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Step, StepForm } from '@/components/ui/steps';
 import { EmojiPicker } from '@/components/ui/emoji-picker';
@@ -192,6 +193,7 @@ export function ExpenseDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { t, i18n } = useTranslation();
+  const detail = useDetailMode(!!expense, `${open}${expense?.id}`);
   const locale = (i18n.resolvedLanguage ?? 'it') as Locale;
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -373,8 +375,18 @@ export function ExpenseDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent title={expense ? t('expense.editTitle') : t('expense.newTitle')}>
+      <DialogContent
+        title={
+          detail.readOnly
+            ? t('common.detail')
+            : expense
+              ? t('expense.editTitle')
+              : t('expense.newTitle')
+        }
+      >
         <StepForm
+          readOnly={detail.readOnly}
+          onEdit={detail.startEdit}
           onSubmit={submit}
           freeNavigation={!!expense}
           pending={pending}

@@ -20,7 +20,9 @@
     "confirm": "Conferma",
     "delete": "Elimina",
     "typeToConfirm": "Scrivi «{{text}}» per confermare",
-    "close": "Chiudi"
+    "close": "Chiudi",
+    "edit": "Modifica",
+    "detail": "Dettaglio"
   },
   "nav": {
     "signIn": "Accedi",

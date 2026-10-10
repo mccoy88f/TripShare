@@ -8,6 +8,7 @@ import { moneyToTripMinor } from '@tripshare/shared/trip-format/budget';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useDetailMode } from '@/lib/detail-mode';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Step, StepForm } from '@/components/ui/steps';
 import { Field, Input, Select } from '@/components/ui/input';
@@ -290,6 +291,7 @@ function BookingDialog({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const detail = useDetailMode(!!booking, booking?.id);
   const { apply, pending } = usePlanOps(tripId);
   const currency = (
     isCurrencyCode(plan.trip.currency) ? plan.trip.currency : 'EUR'
@@ -358,8 +360,18 @@ function BookingDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent title={booking ? t('plan.booking.editTitle') : t('plan.booking.add')}>
+      <DialogContent
+        title={
+          detail.readOnly
+            ? t('common.detail')
+            : booking
+              ? t('plan.booking.editTitle')
+              : t('plan.booking.add')
+        }
+      >
         <StepForm
+          readOnly={detail.readOnly}
+          onEdit={detail.startEdit}
           onSubmit={submit}
           freeNavigation={!!booking}
           pending={pending}

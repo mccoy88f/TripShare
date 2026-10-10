@@ -21,6 +21,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useDetailMode } from '@/lib/detail-mode';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Step, StepForm } from '@/components/ui/steps';
 import { Field, Input, Select } from '@/components/ui/input';
@@ -260,6 +261,7 @@ function PlaceDialog({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const detail = useDetailMode(!!place, place?.id);
   const { apply, pending } = usePlanOps(tripId);
   const currency = isCurrencyCode(plan.trip.currency) ? plan.trip.currency : 'EUR';
   const init = () => ({
@@ -339,8 +341,18 @@ function PlaceDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent title={place ? t('plan.place.editTitle') : t('plan.place.add')}>
+      <DialogContent
+        title={
+          detail.readOnly
+            ? t('common.detail')
+            : place
+              ? t('plan.place.editTitle')
+              : t('plan.place.add')
+        }
+      >
         <StepForm
+          readOnly={detail.readOnly}
+          onEdit={detail.startEdit}
           onSubmit={submit}
           freeNavigation={!!place}
           pending={pending}

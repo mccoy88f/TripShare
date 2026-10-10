@@ -19,6 +19,8 @@ import type { Activity, Day, TripDocument } from '@tripshare/shared/trip-format'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { EditButton } from '@/components/edit-button';
+import { useDetailMode } from '@/lib/detail-mode';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Input, Select } from '@/components/ui/input';
 import { longDate, money, shortDate, todayIso } from '@/lib/format';
@@ -661,6 +663,7 @@ function DayDialog({
   onOpenChange: (o: boolean) => void;
 }) {
   const { t } = useTranslation();
+  const detail = useDetailMode(true, `${open}${day.date}`);
   const { apply, pending } = usePlanOps(tripId);
   const [title, setTitle] = useState(day.title);
   const [route, setRoute] = useState(day.route.join(', '));
@@ -696,44 +699,49 @@ function DayDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent title={t('plan.editDay')} description={longDate(day.date)}>
+      <DialogContent
+        title={detail.readOnly ? t('common.detail') : t('plan.editDay')}
+        description={longDate(day.date)}
+      >
         <form onSubmit={submit} className="grid grid-cols-1 gap-4 pt-2">
-          <Field label={t('plan.dayTitle')} htmlFor="day-title">
-            <Input
-              id="day-title"
-              required
-              maxLength={160}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </Field>
-          <Field label={t('plan.route')} htmlFor="day-route" hint={t('plan.routeHint')}>
-            <Input id="day-route" value={route} onChange={(e) => setRoute(e.target.value)} />
-          </Field>
-          <Field label={t('plan.summary')} htmlFor="day-summary">
-            <textarea
-              id="day-summary"
-              rows={2}
-              maxLength={600}
-              className={textareaClass}
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-            />
-          </Field>
-          {plan.bookings.some((b) => b.type === 'lodging') && (
-            <Field label={t('plan.night')} htmlFor="day-stay">
-              <Select id="day-stay" value={stay} onChange={(e) => setStay(e.target.value)}>
-                <option value="">—</option>
-                {plan.bookings
-                  .filter((b) => b.type === 'lodging')
-                  .map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.title}
-                    </option>
-                  ))}
-              </Select>
+          <fieldset disabled={detail.readOnly} className="contents">
+            <Field label={t('plan.dayTitle')} htmlFor="day-title">
+              <Input
+                id="day-title"
+                required
+                maxLength={160}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
             </Field>
-          )}
+            <Field label={t('plan.route')} htmlFor="day-route" hint={t('plan.routeHint')}>
+              <Input id="day-route" value={route} onChange={(e) => setRoute(e.target.value)} />
+            </Field>
+            <Field label={t('plan.summary')} htmlFor="day-summary">
+              <textarea
+                id="day-summary"
+                rows={2}
+                maxLength={600}
+                className={textareaClass}
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+              />
+            </Field>
+            {plan.bookings.some((b) => b.type === 'lodging') && (
+              <Field label={t('plan.night')} htmlFor="day-stay">
+                <Select id="day-stay" value={stay} onChange={(e) => setStay(e.target.value)}>
+                  <option value="">—</option>
+                  {plan.bookings
+                    .filter((b) => b.type === 'lodging')
+                    .map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.title}
+                      </option>
+                    ))}
+                </Select>
+              </Field>
+            )}
+          </fieldset>
           <div className="flex items-center gap-3">
             <Button
               type="button"
@@ -749,10 +757,14 @@ function DayDialog({
               {t('plan.deleteDay')}
             </Button>
             <div className="flex-1" />
-            <Button type="submit" disabled={pending || !title.trim()}>
-              {pending && <Loader2 className="animate-spin" />}
-              {t('common.save')}
-            </Button>
+            {detail.readOnly ? (
+              <EditButton onClick={detail.startEdit} />
+            ) : (
+              <Button type="submit" disabled={pending || !title.trim()}>
+                {pending && <Loader2 className="animate-spin" />}
+                {t('common.save')}
+              </Button>
+            )}
           </div>
         </form>
       </DialogContent>
@@ -774,11 +786,14 @@ function TipDialog({
   onDelete?: () => Promise<void>;
 }) {
   const { t } = useTranslation();
+  const detail = useDetailMode(!!tip, tip?.title);
   const [title, setTitle] = useState(tip?.title ?? '');
   const [text, setText] = useState(tip?.text ?? '');
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent title={tip ? t('plan.tip.edit') : t('plan.tip.add')}>
+      <DialogContent
+        title={detail.readOnly ? t('common.detail') : tip ? t('plan.tip.edit') : t('plan.tip.add')}
+      >
         <form
           className="grid grid-cols-1 gap-4 pt-2"
           onSubmit={(e) => {
@@ -786,25 +801,27 @@ function TipDialog({
             void onSave({ title: title.trim(), text: text.trim() });
           }}
         >
-          <Field label={t('plan.tip.title')} htmlFor="tip-title">
-            <Input
-              id="tip-title"
-              required
-              maxLength={120}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </Field>
-          <Field label={t('plan.tip.text')} htmlFor="tip-text">
-            <textarea
-              id="tip-text"
-              required
-              maxLength={600}
-              className={textareaClass}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-            />
-          </Field>
+          <fieldset disabled={detail.readOnly} className="contents">
+            <Field label={t('plan.tip.title')} htmlFor="tip-title">
+              <Input
+                id="tip-title"
+                required
+                maxLength={120}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </Field>
+            <Field label={t('plan.tip.text')} htmlFor="tip-text">
+              <textarea
+                id="tip-text"
+                required
+                maxLength={600}
+                className={textareaClass}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+              />
+            </Field>
+          </fieldset>
           <div className="mt-2 flex items-center gap-2">
             {onDelete && (
               <Button
@@ -820,9 +837,13 @@ function TipDialog({
               </Button>
             )}
             <div className="flex-1" />
-            <Button type="submit" size="lg" disabled={pending || !title.trim() || !text.trim()}>
-              {t('common.save')}
-            </Button>
+            {detail.readOnly ? (
+              <EditButton onClick={detail.startEdit} />
+            ) : (
+              <Button type="submit" size="lg" disabled={pending || !title.trim() || !text.trim()}>
+                {t('common.save')}
+              </Button>
+            )}
           </div>
         </form>
       </DialogContent>

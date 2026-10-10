@@ -20,7 +20,9 @@
     "confirm": "Confirm",
     "delete": "Delete",
     "typeToConfirm": "Type “{{text}}” to confirm",
-    "close": "Close"
+    "close": "Close",
+    "edit": "Edit",
+    "detail": "Details"
   },
   "nav": {
     "signIn": "Sign in",

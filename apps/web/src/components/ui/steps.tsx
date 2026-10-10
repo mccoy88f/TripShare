@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Pencil } from 'lucide-react';
 import {
   Children,
   isValidElement,
@@ -34,6 +34,8 @@ export function StepForm({
   pending,
   leading,
   freeNavigation = false,
+  readOnly = false,
+  onEdit,
   className,
   children,
 }: {
@@ -44,6 +46,9 @@ export function StepForm({
   /** Azioni a sinistra del piè di pagina (es. elimina). */
   leading?: ReactNode;
   freeNavigation?: boolean;
+  /** Modalità "dettaglio": campi non modificabili e matita al posto di "Salva". */
+  readOnly?: boolean;
+  onEdit?: () => void;
   className?: string;
   children: ReactNode;
 }) {
@@ -66,7 +71,7 @@ export function StepForm({
     return !field;
   };
   const go = (next: number) => {
-    if (next > index && !valid()) return;
+    if (next > index && !readOnly && !valid()) return;
     setIndex(next);
     refs.current[next]?.closest('.overflow-y-auto')?.scrollTo({ top: 0 });
   };
@@ -78,6 +83,10 @@ export function StepForm({
         if (!last) {
           e.preventDefault();
           go(index + 1);
+          return;
+        }
+        if (readOnly) {
+          e.preventDefault();
           return;
         }
         // Controllo di tutti i passaggi: si torna al primo con un campo da correggere.
@@ -132,9 +141,10 @@ export function StepForm({
             refs.current[i] = el;
           }}
           hidden={i !== index}
-          className="grid grid-cols-1 gap-5"
         >
-          {s}
+          <fieldset disabled={readOnly} className="m-0 grid min-w-0 grid-cols-1 gap-5 border-0 p-0">
+            {s}
+          </fieldset>
         </div>
       ))}
       <div className="flex items-center gap-2">
@@ -146,7 +156,12 @@ export function StepForm({
             {t('steps.back')}
           </Button>
         )}
-        {last ? (
+        {last && readOnly ? (
+          <Button type="button" size="lg" onClick={onEdit} aria-label={t('common.edit')}>
+            <Pencil />
+            <span className="hidden sm:inline">{t('common.edit')}</span>
+          </Button>
+        ) : last ? (
           <Button type="submit" size="lg" disabled={pending || submitDisabled}>
             {pending && <Loader2 className="animate-spin" />}
             {submitLabel}

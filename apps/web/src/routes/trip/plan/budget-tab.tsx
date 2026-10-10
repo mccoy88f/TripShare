@@ -16,6 +16,7 @@ import { budgetContext, summarizeBudget } from '@tripshare/shared/trip-format/bu
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useDetailMode } from '@/lib/detail-mode';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Step, StepForm } from '@/components/ui/steps';
 import { Field, Input, Select } from '@/components/ui/input';
@@ -230,6 +231,7 @@ function BudgetDialog({
   item?: BudgetItem;
   onClose: () => void;
 }) {
+  const detail = useDetailMode(!!item, item?.id);
   const { t, i18n } = useTranslation();
   const locale = (i18n.resolvedLanguage ?? 'it') as Locale;
   const { apply, pending } = usePlanOps(tripId);
@@ -276,8 +278,14 @@ function BudgetDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent title={item ? t('budget.editTitle') : t('budget.add')}>
+      <DialogContent
+        title={
+          detail.readOnly ? t('common.detail') : item ? t('budget.editTitle') : t('budget.add')
+        }
+      >
         <StepForm
+          readOnly={detail.readOnly}
+          onEdit={detail.startEdit}
           onSubmit={submit}
           freeNavigation={!!item}
           pending={pending}
