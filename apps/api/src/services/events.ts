@@ -4,6 +4,7 @@ import {
   notificationPref,
   tripEvent,
   tripMember,
+  user,
   type Database,
 } from '@tripshare/db';
 import { eventCategory } from '@tripshare/shared';
@@ -57,6 +58,13 @@ export type EventData = Record<string, string | number | boolean | null | undefi
 /** Finestra entro cui modifiche simili dello stesso autore si fondono. */
 export const COALESCE_MS = 5 * 60 * 1000;
 
+export interface ActorProfile {
+  name: string;
+  image: string | null;
+  avatarEmoji: string | null;
+  avatarColor: string | null;
+}
+
 export interface RecordedEvent {
   eventId: string;
   tripId: string;
@@ -67,6 +75,8 @@ export interface RecordedEvent {
   count: number;
   actorUserId: string;
   actorName: string | null;
+  /** Profilo di chi ha fatto la modifica (nome, foto o emoji dell'avatar). */
+  actor: ActorProfile | null;
   /** Utenti a cui è stata creata o riattivata la notifica. */
   recipients: string[];
   /** Tutti i membri con un account, autore compreso: servono per aggiornare le schermate. */
@@ -103,6 +113,18 @@ export async function recordEvent(db: Database, input: EventInput): Promise<Reco
     .from(tripMember)
     .where(and(eq(tripMember.tripId, input.tripId), isNull(tripMember.removedAt)));
   const actor = members.find((m) => m.userId === input.actorUserId);
+  // Nel messaggio compare il nome del profilo, non quello (a volte diverso) scritto nel viaggio.
+  const [profile] = await db
+    .select({
+      name: user.name,
+      image: user.image,
+      avatarEmoji: user.avatarEmoji,
+      avatarColor: user.avatarColor,
+    })
+    .from(user)
+    .where(eq(user.id, input.actorUserId));
+  const actorProfile: ActorProfile | null = profile ?? null;
+  const actorName = profile?.name ?? actor?.name ?? null;
   const memberUsers = members.filter((m) => m.userId).map((m) => m.userId!);
   // Chi non è l'autore, non ha silenziato il viaggio e non ha disattivato questa categoria.
   const candidates = members.filter((m) => m.userId && m.userId !== input.actorUserId && !m.muted);
@@ -130,7 +152,8 @@ export async function recordEvent(db: Database, input: EventInput): Promise<Reco
       data: (input.data ?? {}) as EventData,
       count: 1,
       actorUserId: input.actorUserId,
-      actorName: actor?.name ?? null,
+      actorName,
+      actor: actorProfile,
       recipients: [],
       members: memberUsers,
       created: false,
@@ -209,7 +232,8 @@ export async function recordEvent(db: Database, input: EventInput): Promise<Reco
     data: (input.data ?? {}) as EventData,
     count,
     actorUserId: input.actorUserId,
-    actorName: actor?.name ?? null,
+    actorName,
+    actor: actorProfile,
     recipients,
     members: memberUsers,
     created,
@@ -249,6 +273,7 @@ export async function broadcastChange(
       count: 1,
       actorUserId,
       actorName: null,
+      actor: null,
       recipients: [],
       members: members.filter((m) => m.userId).map((m) => m.userId!),
       created: false,

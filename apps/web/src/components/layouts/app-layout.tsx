@@ -1,16 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { LogOut, Plane, Plus, UserRound } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Logo } from '@/components/brand';
 import { NotificationBell } from '@/components/notifications';
 import { InstallBanner } from '@/components/pwa';
 import { PushPrompt } from '@/components/push-prompt';
 import { LanguageSwitcher, ThemeToggle } from '@/components/preferences';
-import { UserAvatar } from '@/components/ui/avatar';
+import { UserAvatar, type AvatarUser } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { signOut } from '@/lib/auth-client';
 import { useCurrentFab } from '@/lib/fab';
 import { useRealtime } from '@/lib/realtime';
@@ -24,6 +25,51 @@ type NavItem = { to: string; label: string; icon: typeof Plane; soon?: boolean; 
 export function useMe() {
   const trpc = useTRPC();
   return useQuery(trpc.me.get.queryOptions());
+}
+
+/** Avatar in alto a destra su mobile: apre il menu con profilo ed esci. */
+function UserMenu({ me, onLogout }: { me: AvatarUser & { email: string }; onLogout: () => void }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="ml-1 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={me.name}
+        >
+          <UserAvatar user={me} size="sm" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-60 p-1.5">
+        <div className="px-3 py-2">
+          <p className="truncate text-sm font-semibold">{me.name}</p>
+          <p className="truncate text-xs text-muted-foreground">{me.email}</p>
+        </div>
+        <div className="my-1 h-px bg-border" />
+        <Link
+          to="/app/profile"
+          onClick={() => setOpen(false)}
+          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-muted"
+        >
+          <UserRound className="size-4" />
+          {t('nav.profile')}
+        </Link>
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(false);
+            onLogout();
+          }}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium hover:bg-muted"
+        >
+          <LogOut className="size-4" />
+          {t('nav.signOut')}
+        </button>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 export function AppLayout() {
@@ -95,9 +141,7 @@ export function AppLayout() {
           <div className="flex-1" />
           <NotificationBell />
           <ThemeToggle />
-          <Button variant="ghost" size="icon" onClick={logout} title={t('nav.signOut')}>
-            <LogOut />
-          </Button>
+          {me && <UserMenu me={me} onLogout={logout} />}
         </header>
 
         <InstallBanner />

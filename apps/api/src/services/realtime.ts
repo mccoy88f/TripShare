@@ -16,6 +16,7 @@ export interface RealtimeMessage {
   count?: number;
   actorUserId: string;
   actorName?: string | null;
+  actor?: RecordedEvent['actor'];
   /** Membri a cui recapitare il messaggio. */
   users: string[];
   /** Tra questi, chi riceve anche la notifica (non l'autore, né chi la silenzia). */
@@ -80,6 +81,7 @@ export function createRealtime(redis?: Redis): Realtime {
       count: e.count,
       actorUserId: e.actorUserId,
       actorName: e.actorName,
+      actor: e.actor,
       users: e.members,
       notify: e.recipients,
     });

@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import webpush from 'web-push';
 import {
   notification,
@@ -109,11 +109,12 @@ export async function sendEventPush(deps: PushDeps, eventId: string): Promise<nu
       count: tripEvent.count,
       tripTitle: trip.title,
       tripEmoji: trip.emoji,
-      actorName: tripMember.name,
+      actorName: sql<string | null>`coalesce(${user.name}, ${tripMember.name})`,
     })
     .from(tripEvent)
     .innerJoin(trip, eq(trip.id, tripEvent.tripId))
     .leftJoin(tripMember, eq(tripMember.id, tripEvent.actorMemberId))
+    .leftJoin(user, eq(user.id, tripMember.userId))
     .where(eq(tripEvent.id, eventId));
   if (!event) return 0;
   const rows = await deps.db

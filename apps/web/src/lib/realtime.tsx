@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { UserAvatar, type AvatarUser } from '@/components/ui/avatar';
 import { describeNotification, notificationTarget } from './notifications';
 import { focusItem } from './search-focus';
 import { useTRPC } from './trpc';
@@ -14,6 +15,7 @@ interface ChangeMessage {
   data?: Record<string, unknown>;
   count?: number;
   actorName?: string | null;
+  actor?: AvatarUser | null;
   notify: boolean;
 }
 
@@ -59,6 +61,7 @@ export function useRealtime(enabled: boolean) {
       const target = notificationTarget(msg.kind, msg.entityId ?? null, msg.data ?? {});
       toast(text, {
         duration: 6000,
+        icon: msg.actor ? <UserAvatar user={msg.actor} size="sm" /> : undefined,
         action: {
           label: t('notifications.open'),
           onClick: () => {
