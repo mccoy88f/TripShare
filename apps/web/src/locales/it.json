@@ -1154,6 +1154,8 @@
     "devices_one": "{{count}} dispositivo con le notifiche attive",
     "devices_other": "{{count}} dispositivi con le notifiche attive",
     "enablePrompt": "Attiva le notifiche sul telefono",
-    "enable": "Attiva"
+    "enable": "Attiva",
+    "promptTitle": "Vuoi ricevere le notifiche?",
+    "promptEnable": "Attiva"
   }
 }

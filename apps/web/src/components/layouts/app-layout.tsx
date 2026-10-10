@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Logo } from '@/components/brand';
 import { NotificationBell } from '@/components/notifications';
 import { InstallBanner } from '@/components/pwa';
+import { PushPrompt } from '@/components/push-prompt';
 import { LanguageSwitcher, ThemeToggle } from '@/components/preferences';
 import { UserAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -100,6 +101,7 @@ export function AppLayout() {
         </header>
 
         <InstallBanner />
+        <PushPrompt />
         <main className="mx-auto w-full max-w-4xl flex-1 px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:px-8 lg:pt-10 lg:pb-12">
           <Outlet />
         </main>

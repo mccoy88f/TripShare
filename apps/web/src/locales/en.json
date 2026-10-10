@@ -1154,6 +1154,8 @@
     "devices_one": "{{count}} device with notifications on",
     "devices_other": "{{count}} devices with notifications on",
     "enablePrompt": "Turn on notifications on your phone",
-    "enable": "Turn on"
+    "enable": "Turn on",
+    "promptTitle": "Want to get notifications?",
+    "promptEnable": "Enable"
   }
 }
