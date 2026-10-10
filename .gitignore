@@ -8,3 +8,4 @@ coverage/
 .DS_Store
 dev-dist/
 data/
+dump.rdb
