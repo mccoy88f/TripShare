@@ -19,10 +19,33 @@ export function DialogContent({
   // Con la tastiera aperta (iOS e alcuni Android la sovrappongono alla pagina) il foglio
   // segue l'area davvero visibile, così i pulsanti in fondo non finiscono sotto la tastiera.
   useEffect(() => {
-    const vv = window.visualViewport;
     const el = ref.current;
-    if (!vv || !el) return;
+    if (!el) return;
+    const vv = window.visualViewport;
+    const editable = (t: EventTarget | null): t is HTMLElement =>
+      t instanceof HTMLElement &&
+      (t.matches('textarea, [contenteditable="true"]') ||
+        (t instanceof HTMLInputElement &&
+          !['checkbox', 'radio', 'file', 'button', 'submit', 'range', 'color'].includes(t.type)));
+    // Il campo toccato si porta al centro dell'area visibile, sopra la tastiera.
+    let timers: number[] = [];
+    const reveal = (target: HTMLElement) => {
+      timers.forEach((id) => window.clearTimeout(id));
+      // La tastiera impiega un attimo ad aprirsi: si ripete quando ha finito.
+      timers = [60, 350].map((ms) =>
+        window.setTimeout(() => {
+          if (target.isConnected && document.activeElement === target)
+            target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }, ms),
+      );
+    };
+    const onFocusIn = (e: FocusEvent) => editable(e.target) && reveal(e.target);
+    el.addEventListener('focusin', onFocusIn);
+
+    // Con la tastiera aperta (iOS e alcuni Android la sovrappongono alla pagina) il foglio
+    // segue l'area davvero visibile, così i pulsanti in fondo non finiscono sotto la tastiera.
     const fit = () => {
+      if (!vv) return;
       if (window.innerWidth >= 640) {
         el.style.bottom = '';
         el.style.maxHeight = '';
@@ -31,13 +54,17 @@ export function DialogContent({
       const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
       el.style.bottom = `${covered}px`;
       el.style.maxHeight = `${Math.round(vv.height * 0.94)}px`;
+      const active = document.activeElement;
+      if (editable(active) && el.contains(active)) reveal(active);
     };
     fit();
-    vv.addEventListener('resize', fit);
-    vv.addEventListener('scroll', fit);
+    vv?.addEventListener('resize', fit);
+    vv?.addEventListener('scroll', fit);
     return () => {
-      vv.removeEventListener('resize', fit);
-      vv.removeEventListener('scroll', fit);
+      timers.forEach((id) => window.clearTimeout(id));
+      el.removeEventListener('focusin', onFocusIn);
+      vv?.removeEventListener('resize', fit);
+      vv?.removeEventListener('scroll', fit);
     };
   }, []);
   return (
