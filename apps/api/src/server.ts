@@ -336,7 +336,9 @@ export async function buildServer(
         const f = file.fields[name] as { value?: unknown } | undefined;
         return typeof f?.value === 'string' && f.value.trim() ? f.value.trim() : undefined;
       };
-      let tripId = field('tripId') ?? null;
+      // "none": ricordo solo personale, senza collegamento automatico a un viaggio.
+      const noTrip = field('tripId') === 'none';
+      let tripId = noTrip ? null : (field('tripId') ?? null);
       if (tripId) {
         try {
           await requireMember(services.db, tripId, userId);
@@ -389,7 +391,7 @@ export async function buildServer(
         const lon = num('lon');
         const hasPoint =
           lat !== null && lon !== null && Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
-        if (!tripId && takenAt) tripId = await tripForDate(services.db, userId, takenAt);
+        if (!tripId && !noTrip && takenAt) tripId = await tripForDate(services.db, userId, takenAt);
         const shared = field('shared') === 'false' ? false : !!tripId;
 
         const [row] = await services.db

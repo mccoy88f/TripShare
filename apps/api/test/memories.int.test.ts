@@ -179,6 +179,20 @@ run('memories (integration)', () => {
     expect(
       (await t.trpc<unknown[]>('memories.list', friend, { tripId: trip.id }, 'query')).data,
     ).toHaveLength(0);
+    // "none": resta personale anche se la data cade in un viaggio.
+    const solo = await upload(
+      owner,
+      { tripId: 'none' },
+      { name: 'b.jpg', type: 'image/jpeg', data: await photoWithExif() },
+    );
+    const soloId = (solo.json() as { id: string }).id;
+    const all = await t.trpc<{ id: string; tripId: string | null; shared: boolean }[]>(
+      'memories.list',
+      owner,
+      {},
+      'query',
+    );
+    expect(all.data.find((m) => m.id === soloId)).toMatchObject({ tripId: null, shared: false });
     // Solo l'autore modifica o elimina.
     expect((await t.trpc('memories.delete', friend, { id })).status).toBe(404);
     expect((await t.trpc('memories.delete', owner, { id })).status).toBe(200);

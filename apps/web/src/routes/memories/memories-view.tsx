@@ -3,20 +3,34 @@ import {
   Camera,
   ChevronLeft,
   ChevronRight,
-  ExternalLink,
   GalleryVerticalEnd,
   Loader2,
   LocateFixed,
   Lock,
   Map as MapIcon,
+  MapPin,
   MapPinOff,
   Pencil,
   Play,
   Trash2,
   Upload,
+  Users,
+  Volume2,
+  VolumeX,
+  X,
 } from 'lucide-react';
-import { lazy, Suspense, useMemo, useRef, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useTranslation } from 'react-i18next';
+import { Dialog as DialogPrimitive } from 'radix-ui';
 import { toast } from 'sonner';
 import { confirmDialog } from '@/components/confirm';
 import { DIALOG_FOOTER } from '@/components/dialog-footer';
@@ -82,45 +96,14 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
   const [mode, setMode] = useState<ViewMode>(() =>
     readPref(VIEW_KEY, 'timeline') === 'map' ? 'map' : 'timeline',
   );
-  const [shareDefault, setShareDefault] = useState(() => readPref(SHARE_KEY, 'true') !== 'false');
   const [openId, setOpenId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Memory | null>(null);
-  const [progress, setProgress] = useState<{
-    index: number;
-    total: number;
-    fraction: number;
-  } | null>(null);
+  const [staged, setStaged] = useState<File[] | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const pick = () => input.current?.click();
   useOnAdd('memories', pick);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: trpc.memories.list.queryKey() });
-
-  const upload = async (files: File[]) => {
-    let done = 0;
-    for (const [index, file] of files.entries()) {
-      setProgress({ index, total: files.length, fraction: 0 });
-      try {
-        await uploadMemory(
-          file,
-          {
-            ...(tripId ? { tripId, shared: String(shareDefault) } : {}),
-            takenAt: new Date(file.lastModified).toISOString(),
-          },
-          (fraction) => setProgress({ index, total: files.length, fraction }),
-        );
-        done++;
-        await refresh();
-      } catch (err) {
-        const code = err instanceof Error ? err.message : 'UPLOAD_FAILED';
-        toast.error(
-          `${file.name}: ${t(`memories.errors.${code}`, { defaultValue: t('memories.errors.UPLOAD_FAILED') })}`,
-        );
-      }
-    }
-    setProgress(null);
-    if (done > 0) toast.success(t('memories.uploaded', { count: done }));
-  };
 
   const ordered = useMemo(() => {
     const list: Memory[] = [...(memories ?? [])];
@@ -161,7 +144,7 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
         onChange={(e) => {
           const files = [...(e.target.files ?? [])];
           e.target.value = '';
-          if (files.length > 0) void upload(files);
+          if (files.length > 0) setStaged(files);
         }}
       />
 
@@ -191,38 +174,11 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
           ))}
         </div>
         <div className="flex-1" />
-        {tripId && (
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            {t('memories.shareDefault')}
-            <Switch
-              checked={shareDefault}
-              onCheckedChange={(v) => {
-                setShareDefault(v);
-                writePref(SHARE_KEY, String(v));
-              }}
-              aria-label={t('memories.shareDefault')}
-            />
-          </label>
-        )}
-        <Button onClick={pick} disabled={!!progress}>
+        <Button onClick={pick}>
           <Upload />
           {t('memories.upload')}
         </Button>
       </div>
-
-      {progress && (
-        <div className="rounded-xl border bg-card p-3 text-sm">
-          <p className="font-medium">
-            {t('memories.uploading', { current: progress.index + 1, total: progress.total })}
-          </p>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary transition-[width]"
-              style={{ width: `${Math.round(progress.fraction * 100)}%` }}
-            />
-          </div>
-        </div>
-      )}
 
       {!memories ? (
         <Loader2 className="mx-auto mt-6 animate-spin text-muted-foreground" />
@@ -282,6 +238,14 @@ export function MemoriesView({ tripId }: { tripId?: string }) {
         </div>
       )}
 
+      {staged && (
+        <UploadDialog
+          files={staged}
+          tripId={tripId}
+          onClose={() => setStaged(null)}
+          onDone={() => void refresh()}
+        />
+      )}
       {open >= 0 && (
         <Lightbox
           memories={ordered}
@@ -356,6 +320,206 @@ function Tile({
   );
 }
 
+/** Anteprima di un file scelto (foto o primo fotogramma del video), letta dal dispositivo. */
+function Preview({ file }: { file: File }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    // L'indirizzo si crea e si libera qui: così regge anche il doppio montaggio di React.
+    const u = URL.createObjectURL(file);
+    setUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [file]);
+  if (!url) return null;
+  if (file.type.startsWith('video/'))
+    return (
+      <>
+        <video
+          src={`${url}#t=0.1`}
+          muted
+          playsInline
+          preload="metadata"
+          className="size-full object-cover"
+        />
+        <span className="absolute right-1 bottom-1 rounded-full bg-black/60 p-1 text-white">
+          <Play className="size-3 fill-current" />
+        </span>
+      </>
+    );
+  return <img src={url} alt="" className="size-full object-cover" />;
+}
+
+/**
+ * Anteprima dei file scelti, prima del caricamento: si possono togliere e si decide se
+ * condividerli con il gruppo del viaggio o tenerli privati.
+ */
+function UploadDialog({
+  files,
+  tripId,
+  onClose,
+  onDone,
+}: {
+  files: File[];
+  tripId?: string;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const { t } = useTranslation();
+  const trpc = useTRPC();
+  const { data: trips } = useQuery({ ...trpc.trips.list.queryOptions(), enabled: !tripId });
+  const [items, setItems] = useState(() => files.map((file, id) => ({ id, file })));
+  const [shared, setShared] = useState(() => readPref(SHARE_KEY, 'true') !== 'false');
+  // Dalla pagina Ricordi: collegamento automatico (dal giorno dello scatto), nessuno o un viaggio.
+  const [target, setTarget] = useState('auto');
+  const [progress, setProgress] = useState<{ index: number; fraction: number } | null>(null);
+  const uploading = progress !== null;
+  const noTrip = !tripId && target === 'none';
+
+  const upload = async () => {
+    writePref(SHARE_KEY, String(shared));
+    const failed: typeof items = [];
+    const total = items.length;
+    for (const [index, item] of items.entries()) {
+      setProgress({ index, fraction: 0 });
+      try {
+        await uploadMemory(
+          item.file,
+          {
+            ...((tripId ?? (target === 'auto' ? '' : target)) ? { tripId: tripId ?? target } : {}),
+            shared: String(shared && !noTrip),
+            takenAt: new Date(item.file.lastModified).toISOString(),
+          },
+          (fraction) => setProgress({ index, fraction }),
+        );
+      } catch (err) {
+        failed.push(item);
+        const code = err instanceof Error ? err.message : 'UPLOAD_FAILED';
+        toast.error(
+          `${item.file.name}: ${t(`memories.errors.${code}`, { defaultValue: t('memories.errors.UPLOAD_FAILED') })}`,
+        );
+      }
+    }
+    setProgress(null);
+    const done = total - failed.length;
+    if (done > 0) {
+      toast.success(t('memories.uploaded', { count: done }));
+      onDone();
+    }
+    if (failed.length === 0) onClose();
+    else setItems(failed);
+  };
+
+  const option = (value: boolean, icon: ReactNode, label: string, hint: string) => (
+    <button
+      type="button"
+      disabled={uploading || noTrip}
+      onClick={() => setShared(value)}
+      aria-pressed={shared === value}
+      className={cn(
+        'flex items-start gap-3 rounded-xl border p-3 text-left transition disabled:opacity-50',
+        shared === value ? 'border-primary bg-primary/10' : 'hover:bg-muted',
+      )}
+    >
+      <span className="mt-0.5 text-primary">{icon}</span>
+      <span>
+        <span className="block text-sm font-semibold">{label}</span>
+        <span className="block text-xs text-muted-foreground">{hint}</span>
+      </span>
+    </button>
+  );
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && !uploading && onClose()}>
+      <DialogContent title={t('memories.newTitle', { count: items.length })}>
+        <div className="grid grid-cols-1 gap-4 pt-2">
+          <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
+            {items.map((item) => (
+              <div
+                key={item.id}
+                className="relative aspect-square overflow-hidden rounded-lg bg-muted"
+              >
+                <Preview file={item.file} />
+                {!uploading && (
+                  <button
+                    type="button"
+                    aria-label={t('common.delete')}
+                    onClick={() => setItems((all) => all.filter((x) => x !== item))}
+                    className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          {!tripId && (
+            <Field label={t('memories.trip')} htmlFor="up-trip">
+              <Select
+                id="up-trip"
+                value={target}
+                disabled={uploading}
+                onChange={(e) => setTarget(e.target.value)}
+              >
+                <option value="auto">{t('memories.tripAuto')}</option>
+                <option value="none">{t('memories.noTrip')}</option>
+                {(trips ?? []).map((tr) => (
+                  <option key={tr.id} value={tr.id}>
+                    {tr.title}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {option(
+              true,
+              <Users className="size-5" />,
+              t('memories.visibility.shared'),
+              t('memories.visibility.sharedHint'),
+            )}
+            {option(
+              false,
+              <Lock className="size-5" />,
+              t('memories.visibility.private'),
+              t('memories.visibility.privateHint'),
+            )}
+          </div>
+          {uploading && (
+            <div>
+              <p className="text-sm font-medium">
+                {t('memories.uploading', { current: progress.index + 1, total: items.length })}
+              </p>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-[width]"
+                  style={{ width: `${Math.round(progress.fraction * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+          <div className={DIALOG_FOOTER}>
+            <div className="flex-1" />
+            <Button type="button" variant="ghost" disabled={uploading} onClick={onClose}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              size="lg"
+              disabled={uploading || items.length === 0}
+              onClick={() => void upload()}
+            >
+              {uploading ? <Loader2 className="animate-spin" /> : <Upload />}
+              {t('memories.uploadCount', { count: items.length })}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * Ricordo a schermo intero: si scorre di lato tra i ricordi e il video visibile parte da solo,
+ * senza audio e in ripetizione (il pulsante in alto attiva il suono).
+ */
 function Lightbox({
   memories,
   index,
@@ -370,11 +534,37 @@ function Lightbox({
   onEdit: (m: Memory) => void;
 }) {
   const { t, i18n } = useTranslation();
+  const scroller = useRef<HTMLDivElement>(null);
+  const [muted, setMuted] = useState(true);
   const m = memories[index]!;
+
+  const scrollTo = (i: number, behavior: ScrollBehavior = 'smooth') => {
+    const el = scroller.current;
+    if (el) el.scrollTo({ left: i * el.clientWidth, behavior });
+  };
+  // All'apertura si parte dal ricordo scelto.
+  useLayoutEffect(() => {
+    scrollTo(index, 'instant');
+    // solo al montaggio
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const go = (delta: number) => {
     const next = index + delta;
-    if (next >= 0 && next < memories.length) onIndex(next);
+    if (next >= 0 && next < memories.length) {
+      onIndex(next);
+      scrollTo(next);
+    }
   };
+  const settle = useRef<number | undefined>(undefined);
+  const onScroll = () => {
+    window.clearTimeout(settle.current);
+    settle.current = window.setTimeout(() => {
+      const el = scroller.current;
+      if (!el || el.clientWidth === 0) return;
+      const i = Math.round(el.scrollLeft / el.clientWidth);
+      if (i !== index && i >= 0 && i < memories.length) onIndex(i);
+    }, 80);
+  };
+
   const when = memoryDate(m).toLocaleString(i18n.resolvedLanguage, {
     weekday: 'short',
     day: 'numeric',
@@ -383,106 +573,152 @@ function Lightbox({
     hour: m.takenAt ? '2-digit' : undefined,
     minute: m.takenAt ? '2-digit' : undefined,
   });
+  const iconButton =
+    'rounded-full bg-black/50 p-2.5 text-white backdrop-blur hover:bg-black/70 [&_svg]:size-5';
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent
-        title={when}
-        description={m.owner.name}
-        className="sm:max-w-3xl"
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowLeft') go(-1);
-          if (e.key === 'ArrowRight') go(1);
-        }}
-      >
-        <div className="grid grid-cols-1 gap-3 pt-2">
-          <div className="relative overflow-hidden rounded-xl bg-black">
-            {m.kind === 'video' && m.status === 'ready' ? (
-              <video
-                key={m.id}
-                src={memoryUrl(m.id)}
-                poster={memoryUrl(m.id, 'thumb')}
-                controls
-                playsInline
-                preload="metadata"
-                className="max-h-[62dvh] w-full"
-              />
-            ) : (
-              <img
-                key={m.id}
-                src={memoryUrl(m.id, m.kind === 'video' ? 'thumb' : undefined)}
-                alt={m.caption ?? ''}
-                className="mx-auto max-h-[62dvh] w-auto max-w-full object-contain"
-              />
-            )}
-            {m.status !== 'ready' && (
-              <p className="absolute inset-x-0 bottom-0 bg-black/60 px-3 py-2 text-center text-sm text-white">
-                {t(m.status === 'processing' ? 'memories.processing' : 'memories.failed')}
-              </p>
-            )}
-            {index > 0 && (
-              <button
-                type="button"
-                onClick={() => go(-1)}
-                aria-label={t('common.back')}
-                className="absolute top-1/2 left-2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+    <DialogPrimitive.Root open onOpenChange={(o) => !o && onClose()}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Content
+          className="fixed inset-0 z-50 bg-black text-white outline-none"
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowLeft') go(-1);
+            if (e.key === 'ArrowRight') go(1);
+          }}
+        >
+          <DialogPrimitive.Title className="sr-only">{when}</DialogPrimitive.Title>
+          <DialogPrimitive.Description className="sr-only">
+            {m.owner.name}
+          </DialogPrimitive.Description>
+          <div
+            ref={scroller}
+            onScroll={onScroll}
+            className="flex h-dvh snap-x snap-mandatory overflow-x-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {memories.map((mem, i) => (
+              <div
+                key={mem.id}
+                className="flex h-full w-full shrink-0 snap-center snap-always items-center justify-center"
               >
-                <ChevronLeft className="size-5" />
-              </button>
-            )}
-            {index < memories.length - 1 && (
-              <button
-                type="button"
-                onClick={() => go(1)}
-                aria-label={t('steps.next')}
-                className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
-              >
-                <ChevronRight className="size-5" />
-              </button>
-            )}
+                {Math.abs(i - index) <= 1 &&
+                  (mem.kind === 'video' && mem.status === 'ready' ? (
+                    <video
+                      src={memoryUrl(mem.id)}
+                      poster={memoryUrl(mem.id, 'thumb')}
+                      autoPlay={i === index}
+                      loop
+                      muted={muted}
+                      playsInline
+                      controls={i === index}
+                      preload={i === index ? 'auto' : 'metadata'}
+                      ref={(el) => {
+                        // Solo il video visibile va; gli altri si fermano.
+                        if (!el) return;
+                        if (i === index) void el.play().catch(() => undefined);
+                        else el.pause();
+                      }}
+                      className="max-h-full max-w-full"
+                    />
+                  ) : (
+                    <img
+                      src={memoryUrl(mem.id, mem.kind === 'video' ? 'thumb' : undefined)}
+                      alt={mem.caption ?? ''}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  ))}
+              </div>
+            ))}
           </div>
-          {m.caption && <p className="text-sm whitespace-pre-wrap">{m.caption}</p>}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            {!m.mine && (
-              <span className="flex items-center gap-1.5">
-                <UserAvatar user={m.owner} size="sm" className="size-5 text-[9px]" />
+
+          <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-3 bg-gradient-to-b from-black/70 to-transparent p-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
+            <div className="pointer-events-auto min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">{when}</p>
+              <p className="flex items-center gap-1.5 truncate text-xs text-white/75">
                 {m.owner.name}
-              </span>
-            )}
-            {m.tripTitle && <span>{m.tripTitle}</span>}
-            {hasPoint(m) && (
-              <a
-                className="inline-flex items-center gap-1 text-primary hover:underline"
-                href={`https://www.openstreetmap.org/?mlat=${m.lat}&mlon=${m.lon}#map=16/${m.lat}/${m.lon}`}
-                target="_blank"
-                rel="noreferrer"
+                {m.tripTitle && <span>· {m.tripTitle}</span>}
+                {m.mine && !m.shared && <Lock className="size-3" />}
+                <span className="ml-1">
+                  {index + 1} / {memories.length}
+                </span>
+              </p>
+            </div>
+            {m.kind === 'video' && (
+              <button
+                type="button"
+                onClick={() => setMuted((v) => !v)}
+                aria-label={t(muted ? 'memories.soundOn' : 'memories.soundOff')}
+                className={cn(iconButton, 'pointer-events-auto')}
               >
-                <ExternalLink className="size-3" />
-                {t('memories.openMap')}
-              </a>
+                {muted ? <VolumeX /> : <Volume2 />}
+              </button>
             )}
-            {m.mine && !m.shared && (
-              <span className="inline-flex items-center gap-1">
-                <Lock className="size-3" />
-                {t('memories.private')}
-              </span>
-            )}
-            <span className="ml-auto">
-              {index + 1} / {memories.length}
-            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t('common.close')}
+              className={cn(iconButton, 'pointer-events-auto')}
+            >
+              <X />
+            </button>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex-1" />
+
+          {index > 0 && (
+            <button
+              type="button"
+              onClick={() => go(-1)}
+              aria-label={t('common.back')}
+              className={cn(iconButton, 'absolute top-1/2 left-3 hidden -translate-y-1/2 sm:block')}
+            >
+              <ChevronLeft />
+            </button>
+          )}
+          {index < memories.length - 1 && (
+            <button
+              type="button"
+              onClick={() => go(1)}
+              aria-label={t('steps.next')}
+              className={cn(
+                iconButton,
+                'absolute top-1/2 right-3 hidden -translate-y-1/2 sm:block',
+              )}
+            >
+              <ChevronRight />
+            </button>
+          )}
+
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end gap-3 bg-gradient-to-t from-black/75 to-transparent p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            <div className="pointer-events-auto min-w-0 flex-1 text-sm">
+              {m.status !== 'ready' && (
+                <p className="mb-1 text-amber-300">
+                  {t(m.status === 'processing' ? 'memories.processing' : 'memories.failed')}
+                </p>
+              )}
+              {m.caption && <p className="whitespace-pre-wrap">{m.caption}</p>}
+              {hasPoint(m) && (
+                <a
+                  className="mt-1 inline-flex items-center gap-1 text-xs text-white/80 underline"
+                  href={`https://www.openstreetmap.org/?mlat=${m.lat}&mlon=${m.lon}#map=16/${m.lat}/${m.lon}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <MapPin className="size-3" />
+                  {t('memories.openMap')}
+                </a>
+              )}
+            </div>
             {m.mine && (
-              <Button variant="outline" onClick={() => onEdit(m)}>
+              <button
+                type="button"
+                onClick={() => onEdit(m)}
+                aria-label={t('common.edit')}
+                className={cn(iconButton, 'pointer-events-auto')}
+              >
                 <Pencil />
-                {t('common.edit')}
-              </Button>
+              </button>
             )}
-            <Button onClick={onClose}>{t('common.close')}</Button>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }
 

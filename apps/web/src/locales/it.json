@@ -1207,6 +1207,19 @@
       "UNSUPPORTED_MEDIA": "formato non supportato",
       "VIDEO_UNREADABLE": "video non leggibile",
       "UPLOAD_FAILED": "caricamento non riuscito"
+    },
+    "newTitle_one": "Nuovo ricordo",
+    "newTitle_other": "{{count}} nuovi ricordi",
+    "tripAuto": "Automatico (dal giorno dello scatto)",
+    "uploadCount_one": "Carica 1 ricordo",
+    "uploadCount_other": "Carica {{count}} ricordi",
+    "soundOn": "Attiva l'audio",
+    "soundOff": "Disattiva l'audio",
+    "visibility": {
+      "shared": "Condiviso con il gruppo",
+      "sharedHint": "Lo vedono i partecipanti del viaggio",
+      "private": "Privato",
+      "privateHint": "Solo tu"
     }
   }
 }

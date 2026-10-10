@@ -1207,6 +1207,19 @@
       "UNSUPPORTED_MEDIA": "unsupported format",
       "VIDEO_UNREADABLE": "unreadable video",
       "UPLOAD_FAILED": "upload failed"
+    },
+    "newTitle_one": "New memory",
+    "newTitle_other": "{{count}} new memories",
+    "tripAuto": "Automatic (from the day it was taken)",
+    "uploadCount_one": "Upload 1 memory",
+    "uploadCount_other": "Upload {{count}} memories",
+    "soundOn": "Turn sound on",
+    "soundOff": "Turn sound off",
+    "visibility": {
+      "shared": "Shared with the group",
+      "sharedHint": "Trip members can see it",
+      "private": "Private",
+      "privateHint": "Only you"
     }
   }
 }
