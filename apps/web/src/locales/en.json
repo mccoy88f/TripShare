@@ -19,7 +19,8 @@
     "or": "or",
     "confirm": "Confirm",
     "delete": "Delete",
-    "typeToConfirm": "Type “{{text}}” to confirm"
+    "typeToConfirm": "Type “{{text}}” to confirm",
+    "close": "Close"
   },
   "nav": {
     "signIn": "Sign in",
@@ -139,11 +140,12 @@
     "noTripsText": "Create your first trip, invite the group and start logging expenses.",
     "newTrip": "New trip",
     "installTitle": "Install TripShare",
-    "installText": "Add it to your home screen to use it like an app, even offline.",
+    "installText": "Use it like an app, even offline.",
     "install": "Install",
     "updateAvailable": "A new version is available.",
     "reload": "Update",
-    "offlineReady": "TripShare is ready to work offline."
+    "offlineReady": "TripShare is ready to work offline.",
+    "installIos": "On iPhone and iPad: tap Share, then “Add to Home Screen”."
   },
   "profile": {
     "title": "Profile",

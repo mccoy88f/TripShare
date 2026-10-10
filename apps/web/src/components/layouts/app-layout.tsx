@@ -93,10 +93,8 @@ export function AppLayout() {
           </Button>
         </header>
 
+        <InstallBanner />
         <main className="mx-auto w-full max-w-4xl flex-1 px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:px-8 lg:pt-10 lg:pb-12">
-          <div className="mb-6 empty:hidden">
-            <InstallBanner />
-          </div>
           <Outlet />
         </main>
 

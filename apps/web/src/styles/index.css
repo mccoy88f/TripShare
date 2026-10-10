@@ -138,3 +138,16 @@
 .photo-card :is(button, [class*='bg-']) {
   text-shadow: none;
 }
+
+/* Barra che si svuota in 10 secondi sotto l'invito a installare l'app. */
+@keyframes install-progress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0;
+  }
+}
+.install-progress {
+  animation: install-progress 10s linear forwards;
+}

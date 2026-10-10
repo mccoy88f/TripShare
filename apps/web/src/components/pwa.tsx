@@ -41,17 +41,46 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-/** Banner "Installa l'app" sui browser che supportano beforeinstallprompt. */
+const HIDE_KEY = 'tripshare-install-hidden-until';
+const VISIBLE_MS = 10_000;
+const DAY = 86_400_000;
+
+const hiddenNow = () => {
+  try {
+    return Number(localStorage.getItem(HIDE_KEY) ?? 0) > Date.now();
+  } catch {
+    return false;
+  }
+};
+const hideFor = (days: number) => {
+  try {
+    localStorage.setItem(HIDE_KEY, String(Date.now() + days * DAY));
+  } catch {
+    // ignorato
+  }
+};
+
+/** iPhone e iPad (anche iPadOS che si presenta come Mac) in Safari, non ancora installata. */
+const isIosBrowser = () => {
+  const ua = navigator.userAgent;
+  const ios =
+    /iPhone|iPad|iPod/.test(ua) || (ua.includes('Macintosh') && navigator.maxTouchPoints > 1);
+  const standalone =
+    (navigator as Navigator & { standalone?: boolean }).standalone === true ||
+    matchMedia('(display-mode: standalone)').matches;
+  return ios && !standalone;
+};
+
+/**
+ * Invito a installare l'app, fluttuante in alto sotto l'intestazione e che sparisce da solo
+ * dopo 10 secondi. Android e computer (Chrome, Edge) offrono l'installazione con un pulsante;
+ * su iOS non esiste, quindi si spiega come fare dal menu Condividi di Safari.
+ */
 export function InstallBanner() {
   const { t } = useTranslation();
   const [event, setEvent] = useState<BeforeInstallPromptEvent | null>(null);
-  const [dismissed, setDismissed] = useState(() => {
-    try {
-      return localStorage.getItem('tripshare-install-dismissed') === '1';
-    } catch {
-      return false;
-    }
-  });
+  const [ios] = useState(isIosBrowser);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -62,36 +91,65 @@ export function InstallBanner() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  if (!event || dismissed) return null;
-  const dismiss = () => {
-    setDismissed(true);
-    try {
-      localStorage.setItem('tripshare-install-dismissed', '1');
-    } catch {
-      // ignorato
-    }
-  };
+  const available = (!!event || ios) && !hiddenNow();
+  useEffect(() => {
+    if (available) setOpen(true);
+  }, [available]);
+  useEffect(() => {
+    if (!open) return;
+    // Sparita da sola: non si ripropone per qualche giorno.
+    const timer = window.setTimeout(() => {
+      hideFor(3);
+      setOpen(false);
+    }, VISIBLE_MS);
+    return () => window.clearTimeout(timer);
+  }, [open]);
+
+  if (!open) return null;
   return (
-    <div className="flex items-center gap-3 rounded-xl border bg-card p-4 shadow-sm">
-      <img src="/favicon.svg" alt="" className="size-10 rounded-xl" />
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold">{t('app.installTitle')}</p>
-        <p className="text-sm text-muted-foreground">{t('app.installText')}</p>
+    <div
+      role="status"
+      className="fixed inset-x-3 top-[calc(3.5rem+env(safe-area-inset-top)+0.5rem)] z-40 mx-auto max-w-md overflow-hidden rounded-2xl border bg-card shadow-lg lg:top-4 lg:right-4 lg:left-auto lg:mx-0"
+    >
+      <div className="grid grid-cols-1 gap-3 p-3.5">
+        <div className="flex items-center gap-3">
+          <img src="/favicon.svg" alt="" className="size-10 shrink-0 rounded-xl" />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">{t('app.installTitle')}</p>
+            <p className="text-sm text-muted-foreground">
+              {event ? t('app.installText') : t('app.installIos')}
+            </p>
+          </div>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="-mt-6 -mr-1 shrink-0 self-start"
+            onClick={() => {
+              hideFor(30);
+              setOpen(false);
+            }}
+            aria-label={t('common.close')}
+          >
+            <X />
+          </Button>
+        </div>
+        {event && (
+          <Button
+            onClick={async () => {
+              await event.prompt();
+              await event.userChoice;
+              setEvent(null);
+              setOpen(false);
+            }}
+          >
+            <Download />
+            {t('app.install')}
+          </Button>
+        )}
       </div>
-      <Button
-        size="sm"
-        onClick={async () => {
-          await event.prompt();
-          await event.userChoice;
-          setEvent(null);
-        }}
-      >
-        <Download />
-        {t('app.install')}
-      </Button>
-      <Button size="icon" variant="ghost" onClick={dismiss} aria-label={t('common.cancel')}>
-        <X />
-      </Button>
+      <div className="h-0.5 bg-muted">
+        <div className="install-progress h-full bg-primary" />
+      </div>
     </div>
   );
 }
