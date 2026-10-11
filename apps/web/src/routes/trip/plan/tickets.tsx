@@ -661,7 +661,10 @@ function TicketViewerBody({
             {canEdit && (
               <Button
                 variant="ghost"
+                size="icon"
                 className="text-destructive hover:text-destructive"
+                aria-label={t('expense.delete')}
+                title={t('expense.delete')}
                 disabled={remove.isPending}
                 onClick={async () =>
                   (await confirmDialog(t('tickets.confirmDelete'))) &&
@@ -669,7 +672,6 @@ function TicketViewerBody({
                 }
               >
                 {remove.isPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
-                {t('expense.delete')}
               </Button>
             )}
             <div className="flex-1" />

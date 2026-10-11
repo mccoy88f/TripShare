@@ -6,7 +6,7 @@ import { confirmDialog } from '@/components/confirm';
 import { DIALOG_FOOTER } from '@/components/dialog-footer';
 import { CloseButton, EditButton } from '@/components/edit-button';
 
-/** Cestino delle schede di dettaglio: chiede conferma (se `confirm` è dato) e poi esegue `onDelete`. */
+/** Cestino (solo icona) delle schede di dettaglio: chiede conferma (se `confirm` è dato) e poi esegue `onDelete`. */
 export function DeleteButton({
   confirm,
   onDelete,
@@ -24,8 +24,10 @@ export function DeleteButton({
     <Button
       type="button"
       variant="ghost"
+      size="icon"
       className="text-destructive"
       aria-label={text}
+      title={text}
       disabled={disabled}
       onClick={async () => {
         if (confirm && !(await confirmDialog(confirm))) return;
@@ -33,7 +35,6 @@ export function DeleteButton({
       }}
     >
       <Trash2 />
-      <span className="hidden sm:inline">{text}</span>
     </Button>
   );
 }

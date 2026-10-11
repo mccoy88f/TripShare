@@ -1,3 +1,4 @@
+import { DeleteButton } from '@/components/detail-footer';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Camera,
@@ -19,7 +20,6 @@ import {
   Play,
   Search,
   Share2,
-  Trash2,
   Upload,
   Users,
   Volume2,
@@ -40,7 +40,6 @@ import { useTranslation } from 'react-i18next';
 import { ZoomImage } from '@/components/zoom-image';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 import { toast } from 'sonner';
-import { confirmDialog } from '@/components/confirm';
 import { DIALOG_FOOTER } from '@/components/dialog-footer';
 import { UserAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -1138,23 +1137,16 @@ function EditDialog({
             <Switch checked={!!tripId && shared} disabled={!tripId} onCheckedChange={setShared} />
           </label>
           <div className={DIALOG_FOOTER}>
-            <Button
-              type="button"
-              variant="ghost"
-              className="text-destructive"
+            <DeleteButton
               disabled={pending}
-              aria-label={t('expense.delete')}
-              onClick={async () => {
-                if (!(await confirmDialog(t('memories.confirmDelete')))) return;
+              confirm={t('memories.confirmDelete')}
+              onDelete={async () => {
                 await remove.mutateAsync({ id: m.id });
                 toast.success(t('memories.deleted'));
                 onSaved();
                 onClose();
               }}
-            >
-              <Trash2 />
-              <span className="hidden sm:inline">{t('expense.delete')}</span>
-            </Button>
+            />
             <div className="flex-1" />
             <Button size="lg" disabled={pending} onClick={() => void save()}>
               {update.isPending && <Loader2 className="animate-spin" />}
