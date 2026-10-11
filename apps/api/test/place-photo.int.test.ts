@@ -117,7 +117,13 @@ run('place photos (integration)', () => {
       url: 'https://93.184.216.34/castello.jpg',
     });
     expect(saved.data.url).toMatch(/^\/api\/files\/place-[a-f0-9]{32}\.webp$/);
-    const served = await t.app.inject({ method: 'GET', url: saved.data.url });
+    const anonymous = await t.app.inject({ method: 'GET', url: saved.data.url });
+    expect(anonymous.statusCode).toBe(401);
+    const served = await t.app.inject({
+      method: 'GET',
+      url: saved.data.url,
+      headers: { cookie: owner },
+    });
     expect(served.statusCode).toBe(200);
 
     await t.trpc('plan.applyOps', owner, {
@@ -194,7 +200,11 @@ run('place photos (integration)', () => {
       tripId,
       ops: [{ type: 'deletePlace', id: 'castello' }],
     });
-    const gone = await t.app.inject({ method: 'GET', url: saved.data.url });
+    const gone = await t.app.inject({
+      method: 'GET',
+      url: saved.data.url,
+      headers: { cookie: owner },
+    });
     expect(gone.statusCode).toBe(404);
   });
 });

@@ -186,10 +186,14 @@ export async function buildServer(
       '/api/files/:name',
       { logLevel: 'warn' },
       async (req, reply) => {
+        // Avatar, copertine e foto dei luoghi: solo per chi ha effettuato l'accesso.
+        const session = await sessionOf(req);
+        if (!session) return reply.status(401).send({ error: 'UNAUTHORIZED' });
         const data = await storage.read(req.params.name);
         if (!data) return reply.status(404).send({ error: 'NOT_FOUND' });
         reply.header('content-type', 'image/webp');
-        reply.header('cache-control', 'public, max-age=31536000, immutable');
+        reply.header('cache-control', 'private, max-age=31536000, immutable');
+        reply.header('x-content-type-options', 'nosniff');
         return reply.send(data);
       },
     );

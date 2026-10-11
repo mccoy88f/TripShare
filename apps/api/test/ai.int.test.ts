@@ -1530,7 +1530,10 @@ run('AI jobs (integration)', () => {
     for (const c of job.data.result.candidates) {
       expect(c.photo).toMatch(/^\/api\/files\/place-[a-f0-9]{32}\.webp$/);
       expect(c.credit).toBe('93.184.216.34');
-      expect((await t.app.inject({ method: 'GET', url: c.photo })).statusCode).toBe(200);
+      expect(
+        (await t.app.inject({ method: 'GET', url: c.photo, headers: { cookie: marco } }))
+          .statusCode,
+      ).toBe(200);
     }
 
     // Le foto non scelte si eliminano; quella usata nel programma resta.
@@ -1549,8 +1552,12 @@ run('AI jobs (integration)', () => {
       urls: [chosen, ...others],
     });
     expect(discarded.status).toBe(200);
-    expect((await t.app.inject({ method: 'GET', url: chosen! })).statusCode).toBe(200);
+    expect(
+      (await t.app.inject({ method: 'GET', url: chosen!, headers: { cookie: marco } })).statusCode,
+    ).toBe(200);
     for (const url of others)
-      expect((await t.app.inject({ method: 'GET', url })).statusCode).toBe(404);
+      expect(
+        (await t.app.inject({ method: 'GET', url, headers: { cookie: marco } })).statusCode,
+      ).toBe(404);
   });
 });

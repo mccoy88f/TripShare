@@ -493,7 +493,7 @@ run('trips, invitations, expenses and balances (integration)', () => {
     });
     expect(res.statusCode).toBe(200);
     const { url } = res.json();
-    const file = await t.app.inject({ method: 'GET', url });
+    const file = await t.app.inject({ method: 'GET', url, headers: { cookie: marco } });
     expect(file.headers['content-type']).toBe('image/webp');
     const meta = await sharp(file.rawPayload).metadata();
     expect(meta).toMatchObject({ format: 'webp', width: 1600, height: 900 });

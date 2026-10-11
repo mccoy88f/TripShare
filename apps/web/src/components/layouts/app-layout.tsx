@@ -122,6 +122,16 @@ export function AppLayout() {
 
   const logout = async () => {
     await signOut();
+    // Foto e biglietti salvati per l'uso offline non restano sul dispositivo dopo l'uscita.
+    try {
+      await Promise.all(
+        (await caches.keys())
+          .filter((k) => k === 'images' || k === 'tickets')
+          .map((k) => caches.delete(k)),
+      );
+    } catch {
+      /* cache non disponibili */
+    }
     await navigate({ to: '/' });
   };
 
