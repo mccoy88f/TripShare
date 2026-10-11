@@ -23,6 +23,7 @@ import {
   buildTask,
   checkResult,
   PURPOSE,
+  DocumentResultSchema,
   ReceiptResultSchema,
   type AiInput,
   type ChatResult,
@@ -68,7 +69,7 @@ export async function startAiJob(
     await resolveAiAccess(deps, userId, PURPOSE[parsed.kind]);
   } catch (err) {
     const ocrCanServe =
-      parsed.kind === 'receipt' &&
+      (parsed.kind === 'receipt' || parsed.kind === 'document') &&
       parsed.engine !== 'ai' &&
       parsed.mime !== 'application/pdf' &&
       (await deps.settings.get('ocr.receipts'));
@@ -252,9 +253,45 @@ export async function runSpec(
   };
 }
 
-/** Chiude un lavoro "scontrino" con il risultato dell'OCR: nessuna richiesta all'AI, nessuna quota. */
-async function finishWithOcr(db: Database, jobId: string, receipt: ParsedReceipt) {
-  const result = ReceiptResultSchema.parse(receipt);
+/**
+ * Parole di un documento che non è un semplice scontrino (conferme di voli, hotel, biglietti):
+ * lì serve capire che cos'è e che cosa creare, quindi si passa all'AI.
+ */
+const BOOKING_HINT =
+  /\b(?:volo|voli|flight|boarding|imbarco|check[- ]?in|check[- ]?out|pnr|prenotazion[ei]|booking|reservation|e-?ticket|passeggero|passenger|andata|ritorno|partenza|arrivo|soggiorno|pernottamento|noleggio|itinerario|itinerary)\b/i;
+
+/** Lo scontrino letto dall'OCR nella forma che l'app si aspetta per quel tipo di lavoro. */
+function ocrResult(kind: 'receipt' | 'document', receipt: ParsedReceipt) {
+  if (kind === 'receipt') return ReceiptResultSchema.parse(receipt);
+  return DocumentResultSchema.parse({
+    documentType: 'receipt',
+    summary: `Scontrino${receipt.merchant ? ` · ${receipt.merchant}` : ''}`.slice(0, 300),
+    expense: {
+      title: receipt.title,
+      ...(receipt.merchant ? { merchant: receipt.merchant } : {}),
+      ...(receipt.date ? { date: receipt.date } : {}),
+      total: receipt.total,
+      currency: receipt.currency,
+      category: receipt.category,
+      emoji: receipt.emoji,
+      status: 'paid',
+      items: receipt.items.map(({ name, amount }) => ({ name, amount })),
+    },
+    bookings: [],
+    places: [],
+    confidence: receipt.confidence,
+    ...(receipt.notes ? { notes: receipt.notes.slice(0, 400) } : {}),
+  });
+}
+
+/** Chiude un lavoro "scontrino" o "documento" con il risultato dell'OCR: niente AI, niente quota. */
+async function finishWithOcr(
+  db: Database,
+  jobId: string,
+  kind: 'receipt' | 'document',
+  receipt: ParsedReceipt,
+) {
+  const result = ocrResult(kind, receipt);
   await db
     .update(aiJob)
     .set({
@@ -331,7 +368,7 @@ async function runAiJob(deps: AiDeps, jobId: string) {
     // altrimenti si passa all'AI e, se non c'è, si offre comunque la lettura incerta.
     let ocrPartial: ParsedReceipt | null = null;
     if (
-      input.kind === 'receipt' &&
+      (input.kind === 'receipt' || input.kind === 'document') &&
       input.engine !== 'ai' &&
       input.mime !== 'application/pdf' &&
       (await deps.settings.get('ocr.receipts'))
@@ -340,11 +377,14 @@ async function runAiJob(deps: AiDeps, jobId: string) {
       if (data) {
         try {
           const read = await ocrReceipt(data, { currency: input.tripCurrency });
-          if (read && read.receipt.confidence === 'high') {
-            await finishWithOcr(db, jobId, read.receipt);
+          // Un "documento" può essere una conferma di volo o di hotel: se il testo lo fa pensare
+          // non è uno scontrino semplice e lo legge l'AI.
+          const plainReceipt = input.kind === 'receipt' || !(read && BOOKING_HINT.test(read.text));
+          if (read && plainReceipt && read.receipt.confidence === 'high') {
+            await finishWithOcr(db, jobId, input.kind, read.receipt);
             return;
           }
-          ocrPartial = read?.receipt ?? null;
+          ocrPartial = read && plainReceipt ? read.receipt : null;
         } catch (err) {
           deps.log?.(`[ocr] lavoro ${jobId}: ${String(err)}`);
         }
@@ -355,7 +395,7 @@ async function runAiJob(deps: AiDeps, jobId: string) {
       access = await resolveAiAccess(deps, job.userId, PURPOSE[input.kind]);
     } catch (err) {
       if (ocrPartial && err instanceof AiAccessError) {
-        await finishWithOcr(db, jobId, ocrPartial);
+        await finishWithOcr(db, jobId, input.kind as 'receipt' | 'document', ocrPartial);
         return;
       }
       throw err;
@@ -466,7 +506,10 @@ async function runAiJob(deps: AiDeps, jobId: string) {
       if (v.sources.length === 0 && citations.length)
         v.sources = citations.slice(0, 5).map((c) => ({ title: c.title ?? c.url, url: c.url }));
     }
-    let result: unknown = input.kind === 'receipt' ? { ...(value as object), source: 'ai' } : value;
+    let result: unknown =
+      input.kind === 'receipt' || input.kind === 'document'
+        ? { ...(value as object), source: 'ai' }
+        : value;
     if (input.kind === 'placePhoto')
       result = {
         candidates: await fetchPlacePhotos(deps, input.name, value as PlacePhotoResult),

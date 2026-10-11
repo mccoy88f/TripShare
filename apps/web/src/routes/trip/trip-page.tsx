@@ -118,7 +118,7 @@ export function TripPage() {
       ? {
           label: t(`trip.fab.${fabTarget}`),
           run: () =>
-            captureTab && trip.role !== 'viewer' && ai.data?.available
+            captureTab && trip.role !== 'viewer' && (ai.data?.available || ai.data?.ocr)
               ? setCapturing(true)
               : manualAdd(),
         }

@@ -319,6 +319,8 @@ export const AiInputSchema = z.discriminatedUnion('kind', [
     mime: z.string(),
     tripCurrency: z.enum(CURRENCY_CODES),
     year: z.number().int(),
+    /** "ai" salta la lettura con l'OCR e usa subito l'AI (per rileggere un documento). */
+    engine: z.enum(['auto', 'ai']).optional(),
   }),
 ]);
 export type AiInput = z.infer<typeof AiInputSchema>;

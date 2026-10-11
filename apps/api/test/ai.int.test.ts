@@ -373,6 +373,72 @@ run('AI jobs (integration)', () => {
     expect(job3.data).toMatchObject({ provider: 'openrouter', result: { source: 'ai' } });
   });
 
+  it('reads a receipt sent as a document (the central + button) with the OCR first', async () => {
+    const { marco, tripId } = await setup();
+    const file = await uploadReceipt(marco, tripId, await receiptPhoto(TRATTORIA));
+    const input = {
+      kind: 'document',
+      file: file.file,
+      mime: file.mime,
+      tripCurrency: 'EUR',
+      year: 2026,
+    };
+    const started = await t.trpc<{ id: string }>('ai.start', marco, { tripId, input });
+    expect(started.status).toBe(200);
+    const job = await t.trpc<{
+      status: string;
+      provider: string;
+      result: {
+        documentType: string;
+        source: string;
+        bookings: unknown[];
+        expense: { total: number; title: string; status: string; items: unknown[] };
+      };
+    }>('ai.job', marco, { id: started.data.id }, 'query');
+    expect(job.data).toMatchObject({ status: 'done', provider: 'ocr' });
+    expect(job.data.result).toMatchObject({
+      documentType: 'receipt',
+      source: 'ocr',
+      bookings: [],
+      expense: { total: 25, title: 'Trattoria Da Mario', status: 'paid' },
+    });
+    expect(job.data.result.expense.items).toHaveLength(4);
+    expect(calls.filter((c) => c.url.endsWith('/chat/completions'))).toHaveLength(0);
+  });
+
+  it('sends booking confirmations to the AI even if the OCR finds an amount', async () => {
+    const { marco, tripId } = await setup();
+    const confirmation = await uploadReceipt(
+      marco,
+      tripId,
+      await receiptPhoto([
+        'HOTEL AURORA',
+        'Conferma di prenotazione',
+        'Check-in 12/10/2026',
+        'Soggiorno 3 notti',
+        'Totale 450,00',
+        'Pagamento elettronico 450,00',
+      ]),
+    );
+    const input = {
+      kind: 'document',
+      file: confirmation.file,
+      mime: confirmation.mime,
+      tripCurrency: 'EUR',
+      year: 2026,
+    };
+    // Senza AI non si ricava una prenotazione: errore, come prima.
+    const none = await t.trpc('ai.start', marco, { tripId, input });
+    expect(none.status).toBe(200);
+    const noneJob = await t.trpc<{ status: string; error: string | null }>(
+      'ai.job',
+      marco,
+      { id: (none.data as { id: string }).id },
+      'query',
+    );
+    expect(noneJob.data.status).toBe('error');
+  });
+
   it('offers the uncertain OCR reading when the AI is not available', async () => {
     const { marco, tripId } = await setup();
     const unsure = await uploadReceipt(

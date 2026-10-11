@@ -1098,7 +1098,8 @@
       "notes": "note",
       "links_one": "{{count}} link",
       "links_other": "{{count}} link"
-    }
+    },
+    "withoutAi": "senza AI"
   },
   "search": {
     "button": "Cerca",

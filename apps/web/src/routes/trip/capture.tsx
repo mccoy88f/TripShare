@@ -26,7 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Select } from '@/components/ui/input';
-import { uploadAiFile, useAiTask } from '@/lib/ai';
+import { uploadAiFile, useAiStatus, useAiTask } from '@/lib/ai';
 import { decodeImage, type DecodedCode } from '@/lib/barcode';
 import { money, shortDate, todayIso } from '@/lib/format';
 import { BOOKING_EMOJI, PLACE_KIND_EMOJI, usePlan, usePlanOps } from '@/lib/plan';
@@ -56,6 +56,8 @@ interface DocumentResult {
   ticket?: { bookingRef: string; label?: string; passenger?: string };
   confidence: 'high' | 'medium' | 'low';
   notes?: string;
+  /** Come è stato letto: "ocr" sul server, senza AI, oppure "ai". */
+  source?: 'ocr' | 'ai';
 }
 
 interface Scanned {
@@ -90,6 +92,19 @@ export function CaptureSheet({
   const gallery = useRef<HTMLInputElement>(null);
   const [reading, setReading] = useState<string | null>(null);
   const [scanned, setScanned] = useState<Scanned | null>(null);
+
+  /** Rilegge con l'AI un documento letto dall'OCR (che non torna). */
+  const rereadWithAi = async (current: Scanned) => {
+    const result = await run<DocumentResult>(trip.id, {
+      kind: 'document',
+      file: current.file,
+      mime: current.preview ? 'image/jpeg' : 'application/pdf',
+      tripCurrency: trip.currency as CurrencyCode,
+      year: Number((trip.startDate ?? todayIso()).slice(0, 4)),
+      engine: 'ai',
+    });
+    if (result) setScanned({ ...current, result });
+  };
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
@@ -193,7 +208,16 @@ export function CaptureSheet({
         </Dialog>
       )}
 
-      {scanned && <ReviewDialog trip={trip} scanned={scanned} onClose={() => setScanned(null)} />}
+      {scanned && (
+        <ReviewDialog
+          // Una nuova lettura riparte da capo (le spunte dipendono da ciò che è stato letto).
+          key={`${scanned.file}-${scanned.result.source}`}
+          trip={trip}
+          scanned={scanned}
+          onClose={() => setScanned(null)}
+          onReread={() => rereadWithAi(scanned)}
+        />
+      )}
     </>
   );
 }
@@ -256,10 +280,12 @@ function ReviewDialog({
   trip,
   scanned,
   onClose,
+  onReread,
 }: {
   trip: TripDetail;
   scanned: Scanned;
   onClose: () => void;
+  onReread: () => Promise<void>;
 }) {
   const { t } = useTranslation();
   const trpc = useTRPC();
@@ -283,6 +309,7 @@ function ReviewDialog({
       expenses={expenses}
       tickets={tickets}
       onClose={onClose}
+      onReread={onReread}
     />
   );
 }
@@ -294,6 +321,7 @@ function Review({
   expenses,
   tickets,
   onClose,
+  onReread,
 }: {
   trip: TripDetail;
   scanned: Scanned;
@@ -301,6 +329,7 @@ function Review({
   expenses: ExpenseT[];
   tickets: { bookingId: string; codeValue: string | null }[];
   onClose: () => void;
+  onReread: () => Promise<void>;
 }) {
   const { t } = useTranslation();
   const trpc = useTRPC();
@@ -310,6 +339,8 @@ function Review({
   const integrateExpense = useMutation(trpc.expenses.integrate.mutationOptions());
   const createTicket = useMutation(trpc.tickets.fromAiFile.mutationOptions());
   const { result, file, code } = scanned;
+  const ai = useAiStatus();
+  const [rereading, setRereading] = useState(false);
   const active = trip.members.filter((m) => !m.removed);
 
   // ── Riconciliazione con ciò che c'è già ───────────────────────────────────
@@ -757,10 +788,32 @@ function Review({
             )}
           {result.notes && <p className="px-1 text-sm text-muted-foreground">{result.notes}</p>}
 
+          {result.source === 'ocr' && ai.data?.available && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="justify-self-start"
+              disabled={rereading}
+              onClick={async () => {
+                setRereading(true);
+                try {
+                  await onReread();
+                } finally {
+                  setRereading(false);
+                }
+              }}
+            >
+              {rereading ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              {t('ai.receipt.rereadAi')}
+            </Button>
+          )}
+
           <div className="mt-1 flex items-center gap-2">
             <Badge variant="outline">
               <Sparkles className="size-3.5" />
               {t(`capture.types.${result.documentType}`, { defaultValue: result.documentType })}
+              {result.source === 'ocr' && ` · ${t('capture.withoutAi')}`}
             </Badge>
             <div className="flex-1" />
             <Button size="lg" disabled={saving || nothing} onClick={save}>
