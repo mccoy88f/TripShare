@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { Place } from '@tripshare/shared/trip-format';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { AskAiButton } from '../ask-ai';
 import { ImageViewer } from '@/components/image-viewer';
 import { usePlanOps } from '@/lib/plan';
 import { useTRPC } from '@/lib/trpc';
@@ -34,7 +36,7 @@ export function PlaceGallery({
   onClose,
 }: {
   tripId: string;
-  place: Pick<Place, 'id' | 'name' | 'kind' | 'photo' | 'photoCredit'>;
+  place: Pick<Place, 'id' | 'name' | 'kind' | 'photo' | 'photoCredit' | 'description'>;
   destination?: string;
   canEdit?: boolean;
   onClose: () => void;
@@ -58,6 +60,7 @@ export function PlaceGallery({
       : [],
   );
   const [index, setIndex] = useState(0);
+  const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const page = useRef(0);
@@ -141,22 +144,56 @@ export function PlaceGallery({
       loadingMore={loading}
       hasMore={!done}
       footer={
-        <div className="flex flex-wrap items-center gap-3">
-          {current && !current.current && (
-            <span className="rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium">
-              {t('placePhoto.gallery.auto')}
-            </span>
+        <div className="grid grid-cols-1 gap-3">
+          {place.description ? (
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              aria-expanded={expanded}
+              className="max-h-[45dvh] overflow-y-auto text-left outline-none"
+            >
+              <p className={cn('whitespace-pre-wrap text-white/90', !expanded && 'line-clamp-3')}>
+                {place.description}
+              </p>
+              {place.description.length > 140 && (
+                <span className="mt-0.5 block text-xs font-medium text-white/70 underline">
+                  {expanded ? t('placePhoto.gallery.less') : t('placePhoto.gallery.more')}
+                </span>
+              )}
+            </button>
+          ) : (
+            canEdit && (
+              <div>
+                <AskAiButton
+                  tripId={tripId}
+                  target={{ type: 'place', id: place.id }}
+                  name={place.name}
+                  quick={{
+                    label: t('placePhoto.gallery.tellMore'),
+                    instruction: t('placePhoto.gallery.tellMoreAsk', { name: place.name }),
+                  }}
+                  onDone={onClose}
+                />
+              </div>
+            )
           )}
-          {slides.length === 0 && !loading && (
-            <span className="text-white/80">{t('placePhoto.gallery.none')}</span>
-          )}
-          <span className="flex-1" />
-          {canEdit && current && !current.current && (
-            <Button type="button" disabled={download.isPending} onClick={() => use(current)}>
-              {download.isPending ? <Loader2 className="animate-spin" /> : <Check />}
-              {t('placePhoto.gallery.use')}
-            </Button>
-          )}
+          <div className="flex flex-wrap items-center gap-3">
+            {current && !current.current && (
+              <span className="rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium">
+                {t('placePhoto.gallery.auto')}
+              </span>
+            )}
+            {slides.length === 0 && !loading && (
+              <span className="text-white/80">{t('placePhoto.gallery.none')}</span>
+            )}
+            <span className="flex-1" />
+            {canEdit && current && !current.current && (
+              <Button type="button" disabled={download.isPending} onClick={() => use(current)}>
+                {download.isPending ? <Loader2 className="animate-spin" /> : <Check />}
+                {t('placePhoto.gallery.use')}
+              </Button>
+            )}
+          </div>
         </div>
       }
     />

@@ -1102,7 +1102,11 @@
       "none": "No photos found for this place.",
       "prev": "Previous photo",
       "next": "Next photo",
-      "auto": "Automatic search · unverified"
+      "auto": "Automatic search · unverified",
+      "more": "Show all",
+      "less": "Show less",
+      "tellMore": "Tell me more",
+      "tellMoreAsk": "Write a description of “{{name}}”: what to see or do, why it is worth visiting and how long it takes. A few lines."
     },
     "none": "No photo",
     "upload": "Upload",

@@ -1102,7 +1102,11 @@
       "none": "Nessuna foto trovata per questo luogo.",
       "prev": "Foto precedente",
       "next": "Foto successiva",
-      "auto": "Ricerca automatica · non verificata"
+      "auto": "Ricerca automatica · non verificata",
+      "more": "Mostra tutto",
+      "less": "Riduci",
+      "tellMore": "Dimmi di più",
+      "tellMoreAsk": "Scrivi una descrizione di «{{name}}»: cosa vedere o fare, perché vale la visita e quanto tempo serve. Poche righe."
     },
     "none": "Nessuna foto",
     "upload": "Carica",
