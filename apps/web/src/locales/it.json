@@ -182,8 +182,7 @@
       "getKey": "Come ottenere una chiave",
       "inUse": "In uso",
       "use": "Usa questa"
-    },
-    "goAdmin": "Vai all'area admin"
+    }
   },
   "admin": {
     "title": "Amministrazione",
@@ -861,8 +860,6 @@
     "confirmDelete": "Eliminare questo biglietto?",
     "codesFound_one": "Letto {{count}} codice dalle immagini.",
     "codesFound_other": "Letti {{count}} codici dalle immagini.",
-    "appleWallet": "Aggiungi a Apple Wallet",
-    "googleWallet": "Salva su Google Wallet",
     "openFile": "Apri file",
     "errors": {
       "UNSUPPORTED_FILE": "formato non supportato",
@@ -881,7 +878,14 @@
     "reference": "Numero di prenotazione",
     "copyReference": "Tocca per copiare",
     "referenceCopied": "Numero copiato",
-    "addToWallet": "Aggiungi al Wallet"
+    "download": "Scarica",
+    "holder": "Intestato a",
+    "detail": "Dettaglio",
+    "trip": "Viaggio",
+    "provider": "Fornitore",
+    "imageFooter": "Mostra questo codice al controllo",
+    "imageSaved": "Immagine del biglietto salvata",
+    "imageFailed": "Non sono riuscito a creare l'immagine"
   },
   "notes": {
     "title": "Titolo",

@@ -182,8 +182,7 @@
       "getKey": "How to get a key",
       "inUse": "In use",
       "use": "Use this one"
-    },
-    "goAdmin": "Go to the admin area"
+    }
   },
   "admin": {
     "title": "Administration",
@@ -861,8 +860,6 @@
     "confirmDelete": "Delete this ticket?",
     "codesFound_one": "Read {{count}} code from the images.",
     "codesFound_other": "Read {{count}} codes from the images.",
-    "appleWallet": "Add to Apple Wallet",
-    "googleWallet": "Save to Google Wallet",
     "openFile": "Open file",
     "errors": {
       "UNSUPPORTED_FILE": "unsupported format",
@@ -881,7 +878,14 @@
     "reference": "Booking reference",
     "copyReference": "Tap to copy",
     "referenceCopied": "Reference copied",
-    "addToWallet": "Add to Wallet"
+    "download": "Download",
+    "holder": "Name",
+    "detail": "Details",
+    "trip": "Trip",
+    "provider": "Provider",
+    "imageFooter": "Show this code at the check",
+    "imageSaved": "Ticket image saved",
+    "imageFailed": "Could not create the image"
   },
   "notes": {
     "title": "Title",

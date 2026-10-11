@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ChevronLeft,
   ChevronRight,
+  Download,
   ExternalLink,
   FileText,
   Loader2,
@@ -14,6 +15,7 @@ import {
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import type { Locale } from '@tripshare/shared';
 import type { Booking } from '@tripshare/shared/trip-format';
 import { UserAvatar } from '@/components/ui/avatar';
 import { ZoomImage } from '@/components/zoom-image';
@@ -28,7 +30,9 @@ import {
   renderCodeSvg,
   type CodeFormat,
 } from '@/lib/barcode';
+import { dateRange } from '@/lib/format';
 import { BOOKING_EMOJI } from '@/lib/plan';
+import { renderTicketImage, saveTicketImage } from '@/lib/ticket-image';
 import { useTRPC } from '@/lib/trpc';
 import type { TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -433,11 +437,12 @@ function TicketViewerBody({
   onClose: () => void;
   onDeleted: (id: string) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [i, setI] = useState(index);
   const [svg, setSvg] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const canEdit = trip.role !== 'viewer';
   const remove = useMutation(
     trpc.tickets.delete.mutationOptions({
@@ -480,10 +485,71 @@ function TicketViewerBody({
     return () => void lock?.release();
   }, []);
 
-  // Un solo pulsante "Aggiungi al Wallet", senza riconoscere il dispositivo: apre il file .pkpass
-  // (il telefono lo passa al suo Wallet); se il biglietto ha solo il link di Google Wallet, apre quello.
-  const walletHref = ticket.fileUrl && isPkpass(ticket) ? ticket.fileUrl : ticket.walletUrl;
-  const walletIsLink = !(ticket.fileUrl && isPkpass(ticket));
+  /** Salva un'immagine del biglietto con il codice e le informazioni. */
+  const download = async () => {
+    setSaving(true);
+    try {
+      const locale = (i18n.resolvedLanguage ?? 'it') as Locale;
+      const long = (iso: string) =>
+        new Intl.DateTimeFormat(locale, {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }).format(new Date(`${iso}T12:00:00`));
+      const start = booking?.start;
+      const end = booking?.end?.date && booking.end.date !== start?.date ? booking.end.date : null;
+      const subtitle = start
+        ? end
+          ? `${dateRange(start.date, end, locale)} ${end.slice(0, 4)}`
+          : `${long(start.date)}${start.time ? ` · ${start.time}` : ''}`
+        : undefined;
+      const title = booking?.title ?? ticket.label ?? t('tickets.ticket');
+      const photo =
+        !ticket.codeValue && ticket.fileUrl && isImage(ticket)
+          ? await fetch(ticket.fileUrl, { credentials: 'include' })
+              .then((r) => (r.ok ? r.blob() : undefined))
+              .catch(() => undefined)
+          : undefined;
+      const blob = await renderTicketImage({
+        emoji: booking ? (BOOKING_EMOJI[booking.type] ?? '🎫') : '🎫',
+        title,
+        subtitle,
+        rows: [
+          [t('tickets.holder'), member?.name ?? ''],
+          [t('tickets.detail'), booking ? (ticket.label ?? '') : ''],
+          [t('tickets.trip'), `${trip.emoji ? `${trip.emoji} ` : ''}${trip.title}`],
+          [t('tickets.provider'), booking?.provider ?? ''],
+        ],
+        code:
+          ticket.codeValue && ticket.codeFormat && svg
+            ? {
+                svg,
+                text: ticket.codeValue,
+                wide: !['QRCode', 'AztecCode', 'DataMatrix'].includes(ticket.codeFormat),
+              }
+            : undefined,
+        photo,
+        reference,
+        referenceLabel: t('tickets.reference'),
+        footerLeft: 'TripShare',
+        footerRight: t('tickets.imageFooter'),
+      });
+      const slug = title
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 40);
+      const result = await saveTicketImage(blob, `biglietto-${slug || 'tripshare'}.png`);
+      if (result === 'downloaded') toast.success(t('tickets.imageSaved'));
+    } catch {
+      toast.error(t('tickets.imageFailed'));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -607,17 +673,10 @@ function TicketViewerBody({
               </Button>
             )}
             <div className="flex-1" />
-            {walletHref && (
-              <Button asChild className="bg-black text-white hover:bg-black/85">
-                <a
-                  href={walletHref}
-                  {...(walletIsLink ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                >
-                  <Wallet />
-                  {t('tickets.addToWallet')}
-                </a>
-              </Button>
-            )}
+            <Button disabled={saving} onClick={() => void download()}>
+              {saving ? <Loader2 className="animate-spin" /> : <Download />}
+              {t('tickets.download')}
+            </Button>
             {ticket.fileUrl && !isPkpass(ticket) && (
               <Button asChild variant="outline">
                 <a href={ticket.fileUrl} target="_blank" rel="noopener noreferrer">

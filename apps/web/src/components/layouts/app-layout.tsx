@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
-import { Images, LogOut, Plane, Plus, UserRound } from 'lucide-react';
+import { Images, LogOut, Plane, Plus, Shield, UserRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Logo } from '@/components/brand';
@@ -28,7 +28,15 @@ export function useMe() {
 }
 
 /** Avatar in alto a destra su mobile: apre il menu con profilo ed esci. */
-function UserMenu({ me, onLogout }: { me: AvatarUser & { email: string }; onLogout: () => void }) {
+function UserMenu({
+  me,
+  isAdmin,
+  onLogout,
+}: {
+  me: AvatarUser & { email: string };
+  isAdmin: boolean;
+  onLogout: () => void;
+}) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   return (
@@ -56,6 +64,16 @@ function UserMenu({ me, onLogout }: { me: AvatarUser & { email: string }; onLogo
           <UserRound className="size-4" />
           {t('nav.profile')}
         </Link>
+        {isAdmin && (
+          <Link
+            to="/app/admin"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-muted"
+          >
+            <Shield className="size-4" />
+            {t('nav.admin')}
+          </Link>
+        )}
         <button
           type="button"
           onClick={() => {
@@ -90,8 +108,11 @@ export function AppLayout() {
   const trips: NavItem = { to: '/app', label: t('nav.trips'), icon: Plane, exact: true };
   const memories: NavItem = { to: '/app/memories', label: t('nav.memories'), icon: Images };
   const profile: NavItem = { to: '/app/profile', label: t('nav.profile'), icon: UserRound };
-  // Barra laterale (desktop): tutto; barra in basso (mobile): il profilo sta nel menu dell'avatar.
-  const items: NavItem[] = [trips, memories, profile];
+  const isAdmin = me?.role === 'superadmin';
+  const admin: NavItem = { to: '/app/admin', label: t('nav.admin'), icon: Shield };
+  // Barra laterale (desktop): tutto; barra in basso (mobile): profilo e admin stanno nel menu
+  // dell'avatar.
+  const items: NavItem[] = [trips, memories, profile, ...(isAdmin ? [admin] : [])];
   const fab = useCurrentFab();
   const keyboard = useKeyboard();
   const isActive = (item: NavItem) =>
@@ -142,7 +163,7 @@ export function AppLayout() {
           <div className="flex-1" />
           <NotificationBell />
           <ThemeToggle />
-          {me && <UserMenu me={me} onLogout={logout} />}
+          {me && <UserMenu me={me} isAdmin={isAdmin} onLogout={logout} />}
         </header>
 
         <InstallBanner />
