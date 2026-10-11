@@ -1110,7 +1110,8 @@
       "writing": "Nina is writing the description…",
       "writeFailed": "I could not write the description. Try again.",
       "discard": "Don't save",
-      "descriptionSaved": "Description saved."
+      "descriptionSaved": "Description saved.",
+      "credit": "Photo: {{credit}}"
     },
     "none": "No photo",
     "upload": "Upload",

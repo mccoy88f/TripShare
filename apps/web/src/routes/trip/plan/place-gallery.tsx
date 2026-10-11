@@ -144,7 +144,6 @@ export function PlaceGallery({
       onIndex={setIndex}
       onClose={onClose}
       title={place.name}
-      subtitle={current?.credit || undefined}
       loadingMore={loading}
       hasMore={!done}
       footer={
@@ -175,6 +174,11 @@ export function PlaceGallery({
                 />
               </div>
             )
+          )}
+          {current?.credit && (
+            <p className="truncate text-xs text-white/70">
+              {t('placePhoto.gallery.credit', { credit: current.credit })}
+            </p>
           )}
           {slides.length === 0 && !loading && (
             <p className="text-white/80">{t('placePhoto.gallery.none')}</p>
