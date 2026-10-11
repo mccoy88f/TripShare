@@ -42,6 +42,7 @@ import { Dialog as DialogPrimitive } from 'radix-ui';
 import { toast } from 'sonner';
 import { DIALOG_FOOTER } from '@/components/dialog-footer';
 import { UserAvatar } from '@/components/ui/avatar';
+import { useSwipeDownClose } from '@/components/image-viewer';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Select } from '@/components/ui/input';
@@ -812,6 +813,7 @@ function Lightbox({
 }) {
   const { t, i18n } = useTranslation();
   const scroller = useRef<HTMLDivElement>(null);
+  const frame = useSwipeDownClose(onClose);
   const [muted, setMuted] = useState(true);
   const m = memories[index]!;
   // Il file da condividere si prepara in anticipo (su iPhone la condivisione parte dal tocco).
@@ -860,6 +862,7 @@ function Lightbox({
     <DialogPrimitive.Root open onOpenChange={(o) => !o && onClose()}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Content
+          ref={frame}
           className="fixed inset-0 z-50 bg-black text-white outline-none"
           onKeyDown={(e) => {
             if (e.key === 'ArrowLeft') go(-1);

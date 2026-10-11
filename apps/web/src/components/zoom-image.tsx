@@ -184,6 +184,8 @@ export function ZoomImage({
   return (
     <div
       ref={box}
+      // Il visualizzatore non chiude con lo swipe in giù mentre l'immagine è ingrandita.
+      data-zoomed={view.scale > 1 ? 'true' : undefined}
       className={cn(
         'flex max-h-full max-w-full items-center justify-center overflow-hidden',
         wrapperClassName,

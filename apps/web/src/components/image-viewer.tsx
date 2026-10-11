@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ZoomImage } from '@/components/zoom-image';
 import { cn } from '@/lib/utils';
@@ -16,6 +16,87 @@ export interface ViewerSlide {
 /** Pulsante tondo sul nero, come nel visualizzatore dei ricordi. */
 export const viewerButton =
   'rounded-full bg-black/50 p-2.5 text-white backdrop-blur hover:bg-black/70 [&_svg]:size-5';
+
+/**
+ * Swipe in giù per chiudere un visualizzatore a schermo intero: la schermata segue il dito e si
+ * chiude se si è scesi abbastanza (o con un gesto veloce), altrimenti torna su. Non parte con
+ * due dita, con l'immagine ingrandita (lì il dito la sposta) né con un gesto orizzontale (che
+ * scorre tra le immagini).
+ */
+/** Restituisce la funzione da passare come `ref` all'elemento a schermo intero. */
+export function useSwipeDownClose(onClose: () => void) {
+  const close = useRef(onClose);
+  close.current = onClose;
+  // L'elemento arriva dopo il primo render (il portale si monta più tardi): si tiene nello stato.
+  const [el, setEl] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!el) return;
+    let start: { x: number; y: number; t: number } | null = null;
+    let mode: 'none' | 'down' | 'other' = 'none';
+    let dy = 0;
+    let v = 0;
+    let last = { y: 0, t: 0 };
+    const reset = (animate: boolean) => {
+      el.style.transition = animate ? 'transform 0.2s ease, opacity 0.2s ease' : '';
+      el.style.transform = '';
+      el.style.opacity = '';
+    };
+    const onStart = (e: TouchEvent) => {
+      const zoomed = (e.target as HTMLElement | null)?.closest('[data-zoomed="true"]');
+      if (e.touches.length !== 1 || zoomed) {
+        start = null;
+        return;
+      }
+      const t = e.touches[0]!;
+      start = { x: t.clientX, y: t.clientY, t: performance.now() };
+      last = { y: t.clientY, t: start.t };
+      mode = 'none';
+      dy = 0;
+      v = 0;
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!start) return;
+      if (e.touches.length !== 1) {
+        if (mode === 'down') reset(true);
+        start = null;
+        return;
+      }
+      const t = e.touches[0]!;
+      const mx = t.clientX - start.x;
+      const my = t.clientY - start.y;
+      if (mode === 'none' && (Math.abs(mx) > 8 || Math.abs(my) > 8))
+        mode = my > 0 && Math.abs(my) > Math.abs(mx) ? 'down' : 'other';
+      if (mode !== 'down') return;
+      e.preventDefault();
+      const now = performance.now();
+      v = (t.clientY - last.y) / Math.max(1, now - last.t);
+      last = { y: t.clientY, t: now };
+      dy = Math.max(0, my);
+      el.style.transition = 'none';
+      el.style.transform = `translateY(${dy}px)`;
+      el.style.opacity = String(Math.max(0.3, 1 - dy / 500));
+    };
+    const onEnd = () => {
+      if (mode === 'down') {
+        if (dy > 120 || (dy > 40 && v > 0.6)) close.current();
+        else reset(true);
+      }
+      start = null;
+      mode = 'none';
+    };
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchmove', onMove, { passive: false });
+    el.addEventListener('touchend', onEnd);
+    el.addEventListener('touchcancel', onEnd);
+    return () => {
+      el.removeEventListener('touchstart', onStart);
+      el.removeEventListener('touchmove', onMove);
+      el.removeEventListener('touchend', onEnd);
+      el.removeEventListener('touchcancel', onEnd);
+    };
+  }, [el]);
+  return setEl;
+}
 
 /**
  * Anteprima a schermo intero di una o più immagini, con lo stesso aspetto di quella dei ricordi:
@@ -50,6 +131,7 @@ export function ImageViewer({
 }) {
   const { t } = useTranslation();
   const scroller = useRef<HTMLDivElement>(null);
+  const frame = useSwipeDownClose(onClose);
   const [failed, setFailed] = useState<Set<string>>(new Set());
 
   const scrollTo = (i: number, behavior: ScrollBehavior = 'smooth') => {
@@ -83,6 +165,7 @@ export function ImageViewer({
     <DialogPrimitive.Root open onOpenChange={(o) => !o && onClose()}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Content
+          ref={frame}
           className="fixed inset-0 z-50 bg-black text-white outline-none"
           onKeyDown={(e) => {
             if (e.key === 'ArrowLeft') go(-1);
