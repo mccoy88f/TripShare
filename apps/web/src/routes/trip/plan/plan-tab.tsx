@@ -501,6 +501,8 @@ function ActivityCard({
   // L'icona dell'attività è la foto del primo luogo che ne ha una.
   const photoPlace = places.find((p) => p.photo);
   const photo = photoPlace?.photo;
+  // Senza foto, l'emoji apre comunque la galleria (con la ricerca) del primo luogo.
+  const galleryPlace = photoPlace ?? places[0];
   const [viewing, setViewing] = useState(false);
   const booking = a.bookingId ? plan.bookings.find((b) => b.id === a.bookingId) : undefined;
   const tr = a.transport;
@@ -546,6 +548,19 @@ function ActivityCard({
                 loading="lazy"
                 className="size-11 rounded-xl object-cover shadow-xs transition hover:brightness-110"
               />
+            </button>
+          ) : galleryPlace ? (
+            <button
+              type="button"
+              aria-label={t('placePhoto.view', { name: galleryPlace.name })}
+              onClick={(e) => {
+                e.stopPropagation();
+                setViewing(true);
+              }}
+              onKeyDown={(e) => e.stopPropagation()}
+              className="shrink-0 rounded-lg text-xl leading-6 outline-none transition hover:scale-110 focus-visible:ring-4 focus-visible:ring-ring/30"
+            >
+              {a.emoji ?? ACTIVITY_TYPE_EMOJI[a.type]}
             </button>
           ) : (
             <span className="text-xl leading-6">{a.emoji ?? ACTIVITY_TYPE_EMOJI[a.type]}</span>
@@ -660,10 +675,10 @@ function ActivityCard({
           </div>
         )}
       </div>
-      {viewing && photoPlace?.photo && (
+      {viewing && galleryPlace && (
         <PlaceGallery
           tripId={tripId}
-          place={photoPlace}
+          place={galleryPlace}
           destination={plan.trip.destination.name || undefined}
           canEdit={!!onEdit}
           onClose={() => setViewing(false)}

@@ -155,9 +155,18 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
                 </button>
               )}
               <div className="flex items-start gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-xl">
+                <button
+                  type="button"
+                  aria-label={t('placePhoto.view', { name: p.name })}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setGallery(p);
+                  }}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-xl outline-none transition hover:scale-110 focus-visible:ring-4 focus-visible:ring-ring/30"
+                >
                   {PLACE_KIND_EMOJI[p.kind]}
-                </span>
+                </button>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">{p.name}</p>
                   <p className="text-xs text-muted-foreground">
