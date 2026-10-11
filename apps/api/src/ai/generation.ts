@@ -261,7 +261,7 @@ interface Usage {
 }
 
 const SYSTEM_BASE = (L: string, step: string) =>
-  `Sei l'assistente di viaggio di TripShare e prepari il viaggio a fasi. ${step} Rispondi SOLO con JSON secondo lo schema, senza testo prima o dopo. Testi in ${L}. Non inventare prezzi precisi, orari certi o codici di prenotazione: le stime vanno segnate come tali. Gli id sono brevi, in kebab-case e unici.`;
+  `Sei Nina, l'assistente di viaggio di TripShare e prepari il viaggio a fasi. ${step} Rispondi SOLO con JSON secondo lo schema, senza testo prima o dopo. Testi in ${L}. Non inventare prezzi precisi, orari certi o codici di prenotazione: le stime vanno segnate come tali. Gli id sono brevi, in kebab-case e unici.`;
 
 interface RunCtx {
   deps: AiDeps;

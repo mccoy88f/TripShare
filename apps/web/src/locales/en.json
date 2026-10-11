@@ -42,7 +42,7 @@
   "landing": {
     "badge": "Group trips, no spreadsheets",
     "title": "Plan the trip. <1>Split the costs.</1>",
-    "subtitle": "TripShare brings together the itinerary, places, bookings and the group's expenses. AI drafts the plan, reads receipts and tells you who owes whom.",
+    "subtitle": "TripShare brings together the itinerary, places, bookings and the group's expenses. Nina drafts the plan, reads receipts and tells you who owes whom.",
     "ctaPrimary": "Create your account",
     "ctaSecondary": "I already have an account",
     "features": {
@@ -55,7 +55,7 @@
         "text": "Equal parts, shares, percentages or per item. In multiple currencies."
       },
       "ai": {
-        "title": "AI that works for you",
+        "title": "Nina works for you",
         "text": "Drafts the itinerary, checks opening hours and turns receipts and screenshots into expenses."
       },
       "settle": {
@@ -171,10 +171,10 @@
     "removePhoto": "Remove photo",
     "photoTooLarge": "The photo is too large.",
     "ai": {
-      "title": "Artificial intelligence",
+      "title": "Nina, the AI assistant",
       "mode": {
-        "central": "AI uses the instance key, with a monthly limit per user.",
-        "per_user": "To use AI you need your own OpenRouter or Google Gemini key.",
+        "central": "Nina uses the instance key, with a monthly limit per user.",
+        "per_user": "To use Nina you need your own OpenRouter or Google Gemini key.",
         "mixed": "You can use the instance key or add your own (OpenRouter or Google Gemini): if present, yours is used."
       },
       "usage": "Requests this month with the instance key: {{requests}} of {{limit}}.",
@@ -478,7 +478,7 @@
       "packing": "Packing",
       "tickets": "Tickets",
       "notes": "Notes",
-      "assistant": "Assistant"
+      "assistant": "Nina"
     },
     "new": {
       "title": "New trip",
@@ -516,7 +516,7 @@
     },
     "fab": {
       "plan": "Add activity",
-      "assistant": "Ask the assistant",
+      "assistant": "Ask Nina",
       "expenses": "Add expense",
       "budget": "Add budget item",
       "bookings": "Add booking",
@@ -525,11 +525,11 @@
       "packing": "Add to packing",
       "notes": "Add note",
       "members": "Invite someone",
-      "noDays": "Create the trip days first (or generate them with AI)."
+      "noDays": "Create the trip days first (or let Nina build the plan)."
     },
     "resetTitle": "Reset trip",
     "reset": "Reset trip",
-    "resetText": "Removes expenses, balances, the plan (days, activities, places, bookings, budget and packing), tickets, notes and assistant chats. Title, dates, currency, cover and members stay. This can't be undone.",
+    "resetText": "Removes expenses, balances, the plan (days, activities, places, bookings, budget and packing), tickets, notes and chats with Nina. Title, dates, currency, cover and members stay. This can't be undone.",
     "resetConfirm": "Reset the trip?",
     "resetDone": "Trip reset"
   },
@@ -690,7 +690,7 @@
       "stepMore": "Notes and sources",
       "schedule": "To plan",
       "scheduleTitle": "Add to the plan",
-      "suggestDay": "Suggest the day with AI",
+      "suggestDay": "Ask Nina to suggest the day",
       "addToPlan": "Add to the plan",
       "scheduled": "{{name}} added to the plan",
       "inPlan": "In the plan"
@@ -868,28 +868,28 @@
     "editTitle": "Edit note"
   },
   "ai": {
-    "notAvailable": "AI is not configured: ask the administrator to set a key, or add your own in your profile if allowed.",
+    "notAvailable": "Nina is not configured: ask the administrator to set a key, or add your own in your profile if allowed.",
     "errors": {
-      "AI_NOT_CONFIGURED": "AI has not been configured by the administrator yet.",
+      "AI_NOT_CONFIGURED": "Nina has not been configured by the administrator yet.",
       "AI_KEY_REQUIRED": "To use AI, add your OpenRouter or Gemini key in your profile.",
       "AI_QUOTA_EXCEEDED": "You reached your monthly AI request limit.",
       "AI_INVALID_KEY": "The AI key is not valid.",
       "AI_NO_CREDIT": "The AI key has run out of credit.",
       "AI_RATE_LIMITED": "Too many requests to the AI provider: try again shortly.",
       "AI_PROVIDER_ERROR": "The AI provider returned an error. Try again or change model.",
-      "AI_EMPTY_RESPONSE": "The AI did not answer. Try again.",
-      "AI_INVALID_RESPONSE": "The AI gave an invalid answer. Try again or use a more capable model.",
-      "AI_TOO_MANY_JOBS": "You already have other AI requests running: wait for them to finish.",
+      "AI_EMPTY_RESPONSE": "Nina did not answer. Try again.",
+      "AI_INVALID_RESPONSE": "Nina gave an invalid answer. Try again or use a more capable model.",
+      "AI_TOO_MANY_JOBS": "You already have other requests to Nina running: wait for them to finish.",
       "AI_FILE_NOT_FOUND": "File not found: upload it again.",
       "AI_INVALID_IMAGE": "The image cannot be read.",
       "AI_BLOCKED": "The provider blocked the request.",
-      "AI_TIMEOUT": "The AI is taking too long: try again later.",
+      "AI_TIMEOUT": "Nina is taking too long: try again later.",
       "AI_OWN_KEYS_DISABLED": "Personal keys are not enabled on this instance.",
       "TRIP_NOT_FOUND": "Trip not found.",
-      "AI_FAILED": "Something went wrong with the AI. Try again."
+      "AI_FAILED": "Something went wrong with Nina. Try again."
     },
     "receipt": {
-      "scan": "Read receipt with AI",
+      "scan": "Let Nina read the receipt",
       "reading": "Reading…",
       "read": "Receipt read: check the details before saving.",
       "lowConfidence": "Uncertain reading: double-check amount and date.",
@@ -911,9 +911,9 @@
       "added_other": "{{count}} bookings added"
     },
     "generate": {
-      "button": "Generate with AI",
-      "title": "Plan with AI",
-      "hint": "Describe the trip you have in mind: the AI prepares days, activities, places, bookings to make, budget and packing. You can edit everything.",
+      "button": "Generate with Nina",
+      "title": "Plan with Nina",
+      "hint": "Describe the trip you have in mind: Nina prepares days, activities, places, bookings to make, budget and packing. You can edit everything.",
       "prompt": "What trip would you like?",
       "promptHint": "Interests, pace, means of transport, must-sees or things to avoid.",
       "promptPlaceholder": "E.g. Scotland by car, 5 days, castles and Loch Ness, no hard hikes",
@@ -934,20 +934,20 @@
         "adventure": "🧗 Adventure",
         "budget": "💸 Budget"
       },
-      "working": "The AI is preparing the plan: it can take up to a couple of minutes.",
+      "working": "Nina is preparing the plan: it can take up to a couple of minutes.",
       "submit": "Generate the plan",
-      "create": "Create the trip with AI",
+      "create": "Create the trip with Nina",
       "done": "Plan created!",
-      "withAi": "Create with AI",
+      "withAi": "Create with Nina",
       "manual": "Fill in manually"
     },
     "chat": {
-      "intro": "Ask for advice about the trip or changes to the plan: the assistant proposes them and you apply them with one tap.",
+      "intro": "Ask for advice about the trip or changes to the plan: Nina proposes them and you apply them with one tap.",
       "s1": "What must we not miss?",
       "s2": "Add a free morning to rest",
       "s3": "Where to eat well near our stay?",
       "s4": "What do we do if it rains?",
-      "placeholder": "Write to the assistant…",
+      "placeholder": "Write to Nina…",
       "send": "Send",
       "thinking": "Thinking…",
       "clear": "Delete conversation",
@@ -991,7 +991,7 @@
       "unverified": "{{name}}: information updated but to be double-checked."
     },
     "packing": {
-      "suggest": "Suggest with AI",
+      "suggest": "Ask Nina to suggest",
       "thinking": "Preparing suggestions…",
       "nothing": "No new suggestions: the list is already complete.",
       "title": "Packing suggestions",
@@ -1016,12 +1016,12 @@
   },
   "capture": {
     "title": "Add",
-    "hint": "Take a photo of a receipt, invoice, confirmation or boarding pass: AI prepares the expense, booking, place and ticket for you to review.",
+    "hint": "Take a photo of a receipt, invoice, confirmation or boarding pass: Nina prepares the expense, booking, place and ticket for you to review.",
     "camera": "Camera",
     "gallery": "Gallery",
     "manual": "Manual",
     "reading": "Reading the document",
-    "readingHint": "AI is reading the document…",
+    "readingHint": "Nina is reading the document…",
     "reviewTitle": "Here's what I found",
     "lowConfidence": "Uncertain reading: double-check before saving.",
     "expense": "Expense",
@@ -1090,7 +1090,7 @@
     },
     "count_one": "{{count}} result",
     "count_other": "{{count}} results",
-    "ask": "Ask the assistant"
+    "ask": "Ask Nina"
   },
   "placePhoto": {
     "none": "No photo",
@@ -1113,9 +1113,9 @@
     "rights": "Free photos from Wikimedia Commons: the author and licence are saved as the credit.",
     "view": "Open the photo of {{name}}",
     "failed": "Some photos could not be downloaded: invalid or unreachable address.",
-    "ask": "Ask the assistant to find a photo",
-    "askTitle": "Photos found by the assistant",
-    "asking": "The assistant is searching the web for photos and checking they can be downloaded… this may take a moment.",
+    "ask": "Ask Nina to find a photo",
+    "askTitle": "Photos found by Nina",
+    "asking": "Nina is searching the web for photos and checking they can be downloaded… this may take a moment.",
     "askNone": "I couldn't find reliable photos for this place. Try Search or upload your own.",
     "askPick": "Pick the photo you prefer:"
   },
@@ -1253,7 +1253,7 @@
     },
     "text": {
       "running": "You can stay here or carry on: the rest fills in by itself.",
-      "done": "Review the proposal: you can change anything by hand or ask the AI.",
+      "done": "Review the proposal: you can change anything by hand or ask Nina.",
       "failed": "A step did not work. What was already done is saved."
     },
     "steps": {
@@ -1309,7 +1309,7 @@
       "when": "The dates and the nights at each stop.",
       "who": "Needed for lodging, cars and splitting costs.",
       "mode": "Start from an empty trip or get a proposed plan.",
-      "prefs": "What you choose guides the AI's proposals. You can change everything later.",
+      "prefs": "What you choose guides Nina's proposals. You can change everything later.",
       "review": "Check and create the trip. Tap a row to edit it."
     },
     "main": "Main destination",
@@ -1360,8 +1360,8 @@
     "years_one": "1 year",
     "years_other": "{{count}} years",
     "inviteFailed": "Invitation not sent to {{email}}.",
-    "modeAi": "Create with AI",
-    "modeAiText": "The AI proposes places, days, bookings, budget and packing in a few steps you can watch.",
+    "modeAi": "Create with Nina",
+    "modeAiText": "Nina proposes places, days, bookings, budget and packing in a few steps you can watch.",
     "modeEmpty": "Start empty",
     "modeEmptyText": "Create the trip without proposals: I add places and activities myself.",
     "autoTitle": "Trip to {{place}}",
@@ -1373,7 +1373,7 @@
     "peopleSummary": "{{adults}} adults, {{children}} children",
     "aiNotice": "After creating it you will see the progress: transport, places, days, bookings, budget and packing. Prices are estimates and places to check are flagged.",
     "create": "Create trip",
-    "createAi": "Create with AI",
+    "createAi": "Create with Nina",
     "creating": "Creating the trip…",
     "prefs": {
       "types": "Type of trip",
@@ -1452,12 +1452,12 @@
     }
   },
   "refine": {
-    "ask": "Ask the AI",
-    "title": "Ask the AI",
+    "ask": "Ask Nina",
+    "title": "Ask Nina",
     "placeholder": "What do you want to change? E.g. \"swap the place for something quieter\"",
     "send": "Ask",
-    "thinking": "The AI is preparing a proposal…",
-    "reviewTitle": "AI proposal",
+    "thinking": "Nina is preparing a proposal…",
+    "reviewTitle": "Nina's proposal",
     "applied": "Change applied",
     "undo": "Undo",
     "undone": "Change undone",
@@ -1503,10 +1503,10 @@
     "apply_other": "Apply {{count}} changes"
   },
   "section": {
-    "places": "Suggest places with AI",
-    "bookings": "Suggest bookings with AI",
-    "budget": "Suggest a budget with AI",
-    "plan": "Suggest the plan with AI",
+    "places": "Ask Nina to suggest places",
+    "bookings": "Ask Nina to suggest bookings",
+    "budget": "Ask Nina to suggest a budget",
+    "plan": "Ask Nina to suggest the plan",
     "needDates": "The trip dates are needed."
   }
 }

@@ -42,7 +42,7 @@
   "landing": {
     "badge": "Viaggi di gruppo, senza fogli di calcolo",
     "title": "Organizza il viaggio. <1>Dividete le spese.</1>",
-    "subtitle": "TripShare mette insieme programma, luoghi, prenotazioni e conti del gruppo. L'AI prepara l'itinerario, legge gli scontrini e vi dice chi deve cosa a chi.",
+    "subtitle": "TripShare mette insieme programma, luoghi, prenotazioni e conti del gruppo. Nina prepara l'itinerario, legge gli scontrini e vi dice chi deve cosa a chi.",
     "ctaPrimary": "Crea il tuo account",
     "ctaSecondary": "Ho già un account",
     "features": {
@@ -55,7 +55,7 @@
         "text": "Parti uguali, quote, percentuali o per singola voce. In più valute."
       },
       "ai": {
-        "title": "AI che lavora per voi",
+        "title": "Nina lavora per voi",
         "text": "Genera l'itinerario, verifica gli orari e trasforma scontrini e screenshot in spese."
       },
       "settle": {
@@ -171,10 +171,10 @@
     "removePhoto": "Rimuovi foto",
     "photoTooLarge": "La foto è troppo grande.",
     "ai": {
-      "title": "Intelligenza artificiale",
+      "title": "Nina, l'assistente AI",
       "mode": {
-        "central": "L'AI usa la chiave dell'istanza, con un limite mensile per utente.",
-        "per_user": "Per usare l'AI serve una tua chiave OpenRouter o Google Gemini.",
+        "central": "Nina usa la chiave dell'istanza, con un limite mensile per utente.",
+        "per_user": "Per usare Nina serve una tua chiave OpenRouter o Google Gemini.",
         "mixed": "Puoi usare la chiave dell'istanza o aggiungere la tua (OpenRouter o Google Gemini): se c'è, si usa la tua."
       },
       "usage": "Richieste questo mese con la chiave dell'istanza: {{requests}} su {{limit}}.",
@@ -478,7 +478,7 @@
       "packing": "Bagagli",
       "tickets": "Biglietti",
       "notes": "Note",
-      "assistant": "Assistente"
+      "assistant": "Nina"
     },
     "new": {
       "title": "Nuovo viaggio",
@@ -516,7 +516,7 @@
     },
     "fab": {
       "plan": "Aggiungi attività",
-      "assistant": "Chiedi all'assistente",
+      "assistant": "Chiedi a Nina",
       "expenses": "Aggiungi spesa",
       "budget": "Aggiungi voce di budget",
       "bookings": "Aggiungi prenotazione",
@@ -525,11 +525,11 @@
       "packing": "Aggiungi ai bagagli",
       "notes": "Aggiungi nota",
       "members": "Invita qualcuno",
-      "noDays": "Crea prima i giorni del viaggio (o generali con l'AI)."
+      "noDays": "Crea prima i giorni del viaggio (o fai creare il programma a Nina)."
     },
     "resetTitle": "Azzera viaggio",
     "reset": "Azzera viaggio",
-    "resetText": "Toglie spese, saldi, programma (giorni, attività, luoghi, prenotazioni, budget e valigia), biglietti, note e chat dell'assistente. Restano titolo, date, valuta, copertina e partecipanti. Non si può annullare.",
+    "resetText": "Toglie spese, saldi, programma (giorni, attività, luoghi, prenotazioni, budget e valigia), biglietti, note e chat con Nina. Restano titolo, date, valuta, copertina e partecipanti. Non si può annullare.",
     "resetConfirm": "Azzerare il viaggio?",
     "resetDone": "Viaggio azzerato"
   },
@@ -690,7 +690,7 @@
       "stepMore": "Note e fonti",
       "schedule": "Al programma",
       "scheduleTitle": "Aggiungi al programma",
-      "suggestDay": "Suggerisci il giorno con l'AI",
+      "suggestDay": "Fai suggerire il giorno a Nina",
       "addToPlan": "Aggiungi al programma",
       "scheduled": "{{name}} aggiunto al programma",
       "inPlan": "In programma"
@@ -868,28 +868,28 @@
     "editTitle": "Modifica nota"
   },
   "ai": {
-    "notAvailable": "L'AI non è configurata: chiedi all'amministratore di impostare una chiave, oppure aggiungi la tua nel profilo se è consentito.",
+    "notAvailable": "Nina non è configurata: chiedi all'amministratore di impostare una chiave, oppure aggiungi la tua nel profilo se è consentito.",
     "errors": {
-      "AI_NOT_CONFIGURED": "L'AI non è ancora configurata dall'amministratore.",
+      "AI_NOT_CONFIGURED": "Nina non è ancora configurata dall'amministratore.",
       "AI_KEY_REQUIRED": "Per usare l'AI aggiungi la tua chiave OpenRouter o Gemini nel profilo.",
       "AI_QUOTA_EXCEEDED": "Hai raggiunto il limite mensile di richieste AI.",
       "AI_INVALID_KEY": "La chiave AI non è valida.",
       "AI_NO_CREDIT": "Credito AI esaurito sulla chiave.",
       "AI_RATE_LIMITED": "Troppe richieste al provider AI: riprova tra poco.",
       "AI_PROVIDER_ERROR": "Il provider AI ha risposto con un errore. Riprova o cambia modello.",
-      "AI_EMPTY_RESPONSE": "L'AI non ha risposto. Riprova.",
-      "AI_INVALID_RESPONSE": "L'AI ha dato una risposta non valida. Riprova o usa un modello più capace.",
-      "AI_TOO_MANY_JOBS": "Hai già altre richieste AI in corso: attendi che finiscano.",
+      "AI_EMPTY_RESPONSE": "Nina non ha risposto. Riprova.",
+      "AI_INVALID_RESPONSE": "Nina ha dato una risposta non valida. Riprova o usa un modello più capace.",
+      "AI_TOO_MANY_JOBS": "Hai già altre richieste a Nina in corso: attendi che finiscano.",
       "AI_FILE_NOT_FOUND": "File non trovato: caricalo di nuovo.",
       "AI_INVALID_IMAGE": "L'immagine non è leggibile.",
       "AI_BLOCKED": "Il provider ha bloccato la richiesta.",
-      "AI_TIMEOUT": "L'AI ci sta mettendo troppo: riprova più tardi.",
+      "AI_TIMEOUT": "Nina ci sta mettendo troppo: riprova più tardi.",
       "AI_OWN_KEYS_DISABLED": "Le chiavi personali non sono abilitate su questa istanza.",
       "TRIP_NOT_FOUND": "Viaggio non trovato.",
-      "AI_FAILED": "Qualcosa è andato storto con l'AI. Riprova."
+      "AI_FAILED": "Qualcosa è andato storto con Nina. Riprova."
     },
     "receipt": {
-      "scan": "Leggi scontrino con l'AI",
+      "scan": "Fai leggere lo scontrino a Nina",
       "reading": "Lettura in corso…",
       "read": "Scontrino letto: controlla i dati prima di salvare.",
       "lowConfidence": "Lettura incerta: controlla bene importo e data.",
@@ -911,9 +911,9 @@
       "added_other": "{{count}} prenotazioni aggiunte"
     },
     "generate": {
-      "button": "Genera con l'AI",
-      "title": "Programma con l'AI",
-      "hint": "Descrivi il viaggio che vorresti: l'AI prepara giorni, attività, luoghi, prenotazioni da fare, budget e bagagli. Potrai modificare tutto.",
+      "button": "Genera con Nina",
+      "title": "Programma con Nina",
+      "hint": "Descrivi il viaggio che vorresti: Nina prepara giorni, attività, luoghi, prenotazioni da fare, budget e bagagli. Potrai modificare tutto.",
       "prompt": "Che viaggio vorresti?",
       "promptHint": "Interessi, ritmo, mezzi di trasporto, cose da non perdere o da evitare.",
       "promptPlaceholder": "Es. Scozia in auto, 5 giorni, castelli e Loch Ness, niente trekking impegnativi",
@@ -934,20 +934,20 @@
         "adventure": "🧗 Avventura",
         "budget": "💸 Economico"
       },
-      "working": "L'AI sta preparando il programma: può richiedere fino a un paio di minuti.",
+      "working": "Nina sta preparando il programma: può richiedere fino a un paio di minuti.",
       "submit": "Genera il programma",
-      "create": "Crea il viaggio con l'AI",
+      "create": "Crea il viaggio con Nina",
       "done": "Programma creato!",
-      "withAi": "Crea con l'AI",
+      "withAi": "Crea con Nina",
       "manual": "Compila a mano"
     },
     "chat": {
-      "intro": "Chiedi consigli sul viaggio o modifiche al programma: l'assistente le propone e tu le applichi con un tocco.",
+      "intro": "Chiedi consigli sul viaggio o modifiche al programma: Nina le propone e tu le applichi con un tocco.",
       "s1": "Cosa non dobbiamo perderci?",
       "s2": "Aggiungi una mattina libera per riposare",
       "s3": "Dove mangiare bene vicino all'alloggio?",
       "s4": "Cosa facciamo se piove?",
-      "placeholder": "Scrivi all'assistente…",
+      "placeholder": "Scrivi a Nina…",
       "send": "Invia",
       "thinking": "Sto pensando…",
       "clear": "Elimina conversazione",
@@ -991,7 +991,7 @@
       "unverified": "{{name}}: informazioni aggiornate ma da ricontrollare."
     },
     "packing": {
-      "suggest": "Suggerisci con l'AI",
+      "suggest": "Fai suggerire a Nina",
       "thinking": "Preparo i suggerimenti…",
       "nothing": "Nessun suggerimento nuovo: la lista è già completa.",
       "title": "Suggerimenti per i bagagli",
@@ -1016,12 +1016,12 @@
   },
   "capture": {
     "title": "Aggiungi",
-    "hint": "Fotografa uno scontrino, una ricevuta, una conferma o una carta d'imbarco: l'AI prepara spesa, prenotazione, luogo e biglietto da controllare.",
+    "hint": "Fotografa uno scontrino, una ricevuta, una conferma o una carta d'imbarco: Nina prepara spesa, prenotazione, luogo e biglietto da controllare.",
     "camera": "Scatta",
     "gallery": "Galleria",
     "manual": "Manuale",
     "reading": "Lettura del documento",
-    "readingHint": "L'AI sta leggendo il documento…",
+    "readingHint": "Nina sta leggendo il documento…",
     "reviewTitle": "Ecco cosa ho trovato",
     "lowConfidence": "Lettura incerta: controlla bene i dati prima di salvare.",
     "expense": "Spesa",
@@ -1090,7 +1090,7 @@
     },
     "count_one": "{{count}} risultato",
     "count_other": "{{count}} risultati",
-    "ask": "Chiedi all'assistente"
+    "ask": "Chiedi a Nina"
   },
   "placePhoto": {
     "none": "Nessuna foto",
@@ -1113,9 +1113,9 @@
     "rights": "Foto libere di Wikimedia Commons: l'autore e la licenza vengono salvati come credito.",
     "view": "Apri la foto di {{name}}",
     "failed": "Alcune foto non si sono potute scaricare: indirizzo non valido o non raggiungibile.",
-    "ask": "Chiedi all'assistente di trovare una foto",
-    "askTitle": "Foto trovate dall'assistente",
-    "asking": "L'assistente cerca delle foto sul web e controlla che si possano scaricare… può richiedere un po' di tempo.",
+    "ask": "Chiedi a Nina di trovare una foto",
+    "askTitle": "Foto trovate da Nina",
+    "asking": "Nina cerca delle foto sul web e controlla che si possano scaricare… può richiedere un po' di tempo.",
     "askNone": "Non ho trovato foto affidabili per questo luogo. Prova con Cerca oppure Carica una tua foto.",
     "askPick": "Scegli la foto che preferisci:"
   },
@@ -1253,7 +1253,7 @@
     },
     "text": {
       "running": "Puoi restare qui o continuare: il resto si riempie da solo.",
-      "done": "Controlla la proposta: puoi cambiare tutto a mano o chiedere all'AI.",
+      "done": "Controlla la proposta: puoi cambiare tutto a mano o chiedere a Nina.",
       "failed": "Una fase non è riuscita. Quello che è già stato fatto è salvato."
     },
     "steps": {
@@ -1309,7 +1309,7 @@
       "when": "Le date e le notti in ogni tappa.",
       "who": "Servono per alloggi, auto e divisione delle spese.",
       "mode": "Puoi partire da un viaggio vuoto o farti proporre un programma.",
-      "prefs": "Quello che scegli guida le proposte dell'AI. Puoi cambiare tutto dopo.",
+      "prefs": "Quello che scegli guida le proposte di Nina. Puoi cambiare tutto dopo.",
       "review": "Controlla e crea il viaggio. Toccando una riga la modifichi."
     },
     "main": "Destinazione principale",
@@ -1360,8 +1360,8 @@
     "years_one": "1 anno",
     "years_other": "{{count}} anni",
     "inviteFailed": "Invito non inviato a {{email}}.",
-    "modeAi": "Crea con l'AI",
-    "modeAiText": "L'AI propone luoghi, giornate, prenotazioni, budget e valigia in pochi passaggi che vedi avanzare.",
+    "modeAi": "Crea con Nina",
+    "modeAiText": "Nina propone luoghi, giornate, prenotazioni, budget e valigia in pochi passaggi che vedi avanzare.",
     "modeEmpty": "Parto da vuoto",
     "modeEmptyText": "Creo il viaggio senza proposte: aggiungo io luoghi e attività.",
     "autoTitle": "Viaggio a {{place}}",
@@ -1373,7 +1373,7 @@
     "peopleSummary": "{{adults}} adulti, {{children}} bambini",
     "aiNotice": "Dopo la creazione vedrai l'avanzamento: mezzi, luoghi, giornate, prenotazioni, budget e valigia. I prezzi sono stime e i luoghi da controllare sono segnalati.",
     "create": "Crea viaggio",
-    "createAi": "Crea con l'AI",
+    "createAi": "Crea con Nina",
     "creating": "Creo il viaggio…",
     "prefs": {
       "types": "Tipo di viaggio",
@@ -1452,12 +1452,12 @@
     }
   },
   "refine": {
-    "ask": "Chiedi all'AI",
-    "title": "Chiedi all'AI",
+    "ask": "Chiedi a Nina",
+    "title": "Chiedi a Nina",
     "placeholder": "Cosa vuoi cambiare? Es. «cambia luogo con qualcosa di più tranquillo»",
     "send": "Chiedi",
-    "thinking": "L'AI sta preparando una proposta…",
-    "reviewTitle": "Proposta dell'AI",
+    "thinking": "Nina sta preparando una proposta…",
+    "reviewTitle": "Proposta di Nina",
     "applied": "Modifica applicata",
     "undo": "Annulla",
     "undone": "Modifica annullata",
@@ -1503,10 +1503,10 @@
     "apply_other": "Applica {{count}} modifiche"
   },
   "section": {
-    "places": "Proponi i luoghi con l'AI",
-    "bookings": "Proponi le prenotazioni con l'AI",
-    "budget": "Proponi il budget con l'AI",
-    "plan": "Proponi il programma con l'AI",
+    "places": "Fai proporre i luoghi a Nina",
+    "bookings": "Fai proporre le prenotazioni a Nina",
+    "budget": "Fai proporre il budget a Nina",
+    "plan": "Fai proporre il programma a Nina",
     "needDates": "Servono le date del viaggio."
   }
 }

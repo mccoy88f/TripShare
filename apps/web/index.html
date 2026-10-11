@@ -10,7 +10,7 @@
     <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)" />
     <meta
       name="description"
-      content="TripShare: organizza viaggi di gruppo e dividi le spese, con l'aiuto dell'AI."
+      content="TripShare: organizza viaggi di gruppo e dividi le spese, con l'aiuto di Nina."
     />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -181,12 +181,20 @@
     </script>
     <!-- Travelpayouts (affiliazione per voli e hotel): verifica del sito. Si carica solo fuori dall'area
          riservata (/app) e dagli inviti, per non farlo girare dove ci sono dati dei viaggi. -->
-    <script nowprocket data-noptimize="1" data-cfasync="false" data-wpfc-render="false" seraph-accel-crit="1" data-no-defer="1" data-cmp-ab="2">
+    <script
+      nowprocket
+      data-noptimize="1"
+      data-cfasync="false"
+      data-wpfc-render="false"
+      seraph-accel-crit="1"
+      data-no-defer="1"
+      data-cmp-ab="2"
+    >
       (function () {
         if (/^\/(app|invite)(\/|$)/.test(location.pathname)) return;
-        var script = document.createElement("script");
+        var script = document.createElement('script');
         script.async = 1;
-        script.setAttribute("data-cmp-ab", "2");
+        script.setAttribute('data-cmp-ab', '2');
         script.src = 'https://tpembars.com/NTgzOTMy.js?t=583932';
         document.head.appendChild(script);
       })();
