@@ -42,4 +42,4 @@ export function createDirectEmailSender(env: Env) {
   };
 }
 
-export { renderEmail, type EmailTemplate };
+export type { EmailTemplate };

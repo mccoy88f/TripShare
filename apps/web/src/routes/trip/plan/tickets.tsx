@@ -30,7 +30,7 @@ import {
   renderCodeSvg,
   type CodeFormat,
 } from '@/lib/barcode';
-import { dateRange } from '@/lib/format';
+import { formatDateRange } from '@/lib/format';
 import { BOOKING_EMOJI } from '@/lib/plan';
 import { renderTicketImage, saveTicketImage } from '@/lib/ticket-image';
 import { useTRPC } from '@/lib/trpc';
@@ -501,7 +501,7 @@ function TicketViewerBody({
       const end = booking?.end?.date && booking.end.date !== start?.date ? booking.end.date : null;
       const subtitle = start
         ? end
-          ? `${dateRange(start.date, end, locale)} ${end.slice(0, 4)}`
+          ? `${formatDateRange(start.date, end, locale)} ${end.slice(0, 4)}`
           : `${long(start.date)}${start.time ? ` · ${start.time}` : ''}`
         : undefined;
       const title = booking?.title ?? ticket.label ?? t('tickets.ticket');

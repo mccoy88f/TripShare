@@ -91,7 +91,7 @@ export function clearModelsCache() {
   cache = null;
 }
 
-export interface KeyInfo {
+interface KeyInfo {
   label: string | null;
   usage: number | null;
   limit: number | null;

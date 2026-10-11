@@ -17,47 +17,45 @@ import type { TripDocument } from '@tripshare/shared/trip-format';
  * fondono in un solo evento ("Marco ha aggiunto 4 attività"). Il registro non deve mai far
  * fallire la modifica da cui nasce: gli errori si ignorano.
  */
-export const EVENT_TYPES = [
-  'expense.created',
-  'expense.updated',
-  'expense.deleted',
-  'expense.paid',
-  'settlement.created',
-  'plan.activity.added',
-  'plan.activity.updated',
-  'plan.activity.deleted',
-  'plan.day.added',
-  'plan.day.deleted',
-  'plan.place.added',
-  'plan.place.updated',
-  'plan.place.photo',
-  'plan.place.deleted',
-  'plan.booking.added',
-  'plan.booking.updated',
-  'plan.booking.deleted',
-  'plan.budget.added',
-  'plan.budget.updated',
-  'plan.budget.deleted',
-  'plan.packing.added',
-  'plan.packing.deleted',
-  'plan.tips.updated',
-  'plan.replaced',
-  'ticket.added',
-  'memory.added',
-  'note.created',
-  'note.updated',
-  'member.joined',
-  'member.left',
-  'member.role',
-  'trip.updated',
-  'trip.reset',
-] as const;
-export type EventType = (typeof EVENT_TYPES)[number];
+export type EventType =
+  | 'expense.created'
+  | 'expense.updated'
+  | 'expense.deleted'
+  | 'expense.paid'
+  | 'settlement.created'
+  | 'plan.activity.added'
+  | 'plan.activity.updated'
+  | 'plan.activity.deleted'
+  | 'plan.day.added'
+  | 'plan.day.deleted'
+  | 'plan.place.added'
+  | 'plan.place.updated'
+  | 'plan.place.photo'
+  | 'plan.place.deleted'
+  | 'plan.booking.added'
+  | 'plan.booking.updated'
+  | 'plan.booking.deleted'
+  | 'plan.budget.added'
+  | 'plan.budget.updated'
+  | 'plan.budget.deleted'
+  | 'plan.packing.added'
+  | 'plan.packing.deleted'
+  | 'plan.tips.updated'
+  | 'plan.replaced'
+  | 'ticket.added'
+  | 'memory.added'
+  | 'note.created'
+  | 'note.updated'
+  | 'member.joined'
+  | 'member.left'
+  | 'member.role'
+  | 'trip.updated'
+  | 'trip.reset';
 
 export type EventData = Record<string, string | number | boolean | null | undefined>;
 
 /** Finestra entro cui modifiche simili dello stesso autore si fondono. */
-export const COALESCE_MS = 5 * 60 * 1000;
+const COALESCE_MS = 5 * 60 * 1000;
 
 export interface ActorProfile {
   name: string;
@@ -94,7 +92,7 @@ export const onRecordedEvent = (fn: EventListener) => {
   return () => listeners.delete(fn);
 };
 
-export interface EventInput {
+interface EventInput {
   tripId: string;
   /** Utente che ha fatto la modifica: non riceve la notifica. */
   actorUserId: string;
@@ -103,7 +101,7 @@ export interface EventInput {
   data?: EventData;
 }
 
-export async function recordEvent(db: Database, input: EventInput): Promise<RecordedEvent | null> {
+async function recordEvent(db: Database, input: EventInput): Promise<RecordedEvent | null> {
   const members = await db
     .select({
       id: tripMember.id,
@@ -310,7 +308,7 @@ export async function pruneEvents(db: Database, days = 90) {
 
 // --- Cosa è cambiato nel programma ---------------------------------------------------------
 
-export interface PlanChange {
+interface PlanChange {
   type: EventType;
   entityId: string;
   data: EventData;

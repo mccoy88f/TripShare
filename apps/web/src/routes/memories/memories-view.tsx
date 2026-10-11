@@ -102,7 +102,7 @@ const localDay = (d: Date) =>
  * Foto e video con data e posizione: i propri e quelli che gli altri partecipanti dei tuoi viaggi
  * hanno condiviso con il gruppo.
  */
-export function MemoriesView() {
+function MemoriesView() {
   const { t, i18n } = useTranslation();
   const trpc = useTRPC();
   const queryClient = useQueryClient();

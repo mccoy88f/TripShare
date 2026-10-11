@@ -10,7 +10,7 @@ import { UserAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useSession } from '@/lib/auth-client';
-import { dateRange } from '@/lib/format';
+import { formatDateRange } from '@/lib/format';
 import { useTRPC } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
@@ -71,7 +71,7 @@ export function InvitePage() {
             {trip.startDate && (
               <span className="inline-flex items-center gap-1.5">
                 <CalendarDays className="size-4" />
-                {dateRange(trip.startDate, trip.endDate)}
+                {formatDateRange(trip.startDate, trip.endDate)}
               </span>
             )}
             {trip.destination && <span>📍 {trip.destination}</span>}

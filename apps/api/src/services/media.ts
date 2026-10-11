@@ -102,7 +102,7 @@ export async function processPhoto(
 }
 
 /** "+45.4642+009.1900+120.0/" (ISO 6709) → coordinate. */
-export function parseIso6709(text: unknown): { lat: number; lon: number } | null {
+function parseIso6709(text: unknown): { lat: number; lon: number } | null {
   if (typeof text !== 'string') return null;
   const m = /([+-]\d+(?:\.\d+)?)([+-]\d+(?:\.\d+)?)/.exec(text);
   if (!m) return null;

@@ -16,7 +16,7 @@ import { textareaClass } from './fields';
 
 const STYLES = ['relax', 'culture', 'nature', 'food', 'nightlife', 'kids', 'adventure', 'budget'];
 
-export interface GenerateValues {
+interface GenerateValues {
   prompt: string;
   destination: string;
   startDate: string;
@@ -30,7 +30,7 @@ export interface GenerateValues {
 }
 
 /** Modulo per chiedere all'AI un programma di viaggio completo. */
-export function GenerateTripForm({
+function GenerateTripForm({
   initial,
   lockTripFields = false,
   submitLabel,

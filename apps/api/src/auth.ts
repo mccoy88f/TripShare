@@ -18,9 +18,6 @@ import { findValidInvitation, hasPendingInvitationFor } from './routers/invitati
 import type { Env } from './env.js';
 import type { SettingsService } from './settings.js';
 
-export const ROLES = ['user', 'superadmin'] as const;
-export type Role = (typeof ROLES)[number];
-
 // Ruoli del plugin admin di Better Auth: solo il super admin gestisce gli utenti.
 const ac = createAccessControl(defaultStatements);
 const roles = {
@@ -28,7 +25,7 @@ const roles = {
   superadmin: ac.newRole({ ...adminAc.statements }),
 };
 
-export interface AuthDeps {
+interface AuthDeps {
   env: Env;
   db: Database;
   settings: SettingsService;
@@ -41,7 +38,7 @@ function localeOf(user: { locale?: unknown }, request?: Request): Locale {
 }
 
 /** Verifica se un indirizzo può registrarsi, in base alle impostazioni dell'istanza. */
-export async function checkRegistration(
+async function checkRegistration(
   deps: AuthDeps,
   email: string,
   inviteToken?: string | null,

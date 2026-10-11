@@ -6,5 +6,6 @@ export * from './split.js';
 export * from './paypal.js';
 export * from './notification-texts.js';
 export * from './geo.js';
+export * from './memory-name.js';
 export * from './receipt-text.js';
 // Il formato del viaggio (con Zod) si importa da '@tripshare/shared/trip-format'.

@@ -13,7 +13,7 @@ async function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
   return value;
 }
 
-export interface GeoPoint {
+interface GeoPoint {
   name: string;
   country?: string;
   lat: number;
@@ -45,7 +45,7 @@ export async function geocode(
   return null;
 }
 
-export interface DayWeather {
+interface DayWeather {
   date: string;
   code: number;
   max: number;

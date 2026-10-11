@@ -18,7 +18,7 @@ export function longDate(iso: string, locale: Locale = currentLocale()) {
   );
 }
 
-export function dateRange(
+export function formatDateRange(
   start: string | null,
   end: string | null,
   locale: Locale = currentLocale(),

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 
-export interface ConfirmOptions {
+interface ConfirmOptions {
   title: string;
   description?: string;
   /** Testo del pulsante di conferma; di default "Elimina" o "Conferma". */

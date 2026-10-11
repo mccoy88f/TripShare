@@ -2,7 +2,7 @@
  * Ricerca di foto di luoghi su Wikimedia Commons: libere, senza chiave, con autore e licenza.
  * Le foto scelte vengono scaricate e salvate su TripShare.
  */
-export interface PhotoResult {
+interface PhotoResult {
   thumb: string;
   /** Indirizzo dell'immagine da scaricare quando viene scelta. */
   full: string;

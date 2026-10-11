@@ -15,7 +15,8 @@ export interface BudgetContext {
   rates: Partial<Record<CurrencyCode, number>>;
 }
 
-function nightsBetween(start?: string, end?: string) {
+/** Notti da moltiplicare per un importo "a notte": almeno una, e una sola se mancano le date. */
+function billableNights(start?: string, end?: string) {
   if (!start || !end) return 1;
   const diff = (Date.parse(`${end}T12:00:00Z`) - Date.parse(`${start}T12:00:00Z`)) / 86_400_000;
   return Math.max(1, Math.round(diff));
@@ -81,7 +82,7 @@ export function summarizeBudget(doc: TripDocument, ctx: BudgetContext): BudgetSu
       total = moneyToTripMinor(
         item.amount,
         ctx,
-        nightsBetween(booking?.start.date, booking?.end?.date),
+        billableNights(booking?.start.date, booking?.end?.date),
       );
       if (total === null) missing.add(item.amount.currency);
     } else if (item.status === 'pending') {

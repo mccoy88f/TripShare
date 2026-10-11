@@ -116,8 +116,8 @@ export const SETTINGS = {
 } as const;
 
 export type SettingKey = keyof typeof SETTINGS;
-export type SettingValue<K extends SettingKey> = z.output<(typeof SETTINGS)[K]['schema']>;
-export const SETTING_KEYS = Object.keys(SETTINGS) as SettingKey[];
+type SettingValue<K extends SettingKey> = z.output<(typeof SETTINGS)[K]['schema']>;
+const SETTING_KEYS = Object.keys(SETTINGS) as SettingKey[];
 
 export function isSettingKey(key: string): key is SettingKey {
   return key in SETTINGS;

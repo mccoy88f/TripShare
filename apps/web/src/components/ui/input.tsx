@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 import { cn } from '@/lib/utils';
 
-export const fieldClass =
+const fieldClass =
   'flex h-11 w-full min-w-0 rounded-md border border-input bg-card px-3.5 text-[15px] shadow-xs transition outline-none placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/20 disabled:opacity-50 aria-invalid:border-destructive';
 
 export function Input({ className, ...props }: ComponentProps<'input'>) {
@@ -25,7 +25,7 @@ export function Select({ className, ...props }: ComponentProps<'select'>) {
   );
 }
 
-export function Label({ className, ...props }: ComponentProps<'label'>) {
+function Label({ className, ...props }: ComponentProps<'label'>) {
   return <label className={cn('text-sm font-medium', className)} {...props} />;
 }
 

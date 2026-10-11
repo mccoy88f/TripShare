@@ -31,5 +31,3 @@ export async function listMembers(db: Database, tripId: string) {
     removed: !!r.member.removedAt,
   }));
 }
-
-export type TripMemberView = Awaited<ReturnType<typeof listMembers>>[number];

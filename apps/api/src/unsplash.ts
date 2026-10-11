@@ -5,7 +5,7 @@
  */
 const BASE = 'https://api.unsplash.com';
 
-export interface UnsplashPhoto {
+interface UnsplashPhoto {
   id: string;
   thumb: string;
   description: string | null;
@@ -80,5 +80,3 @@ export async function downloadPhoto(
     credit: { name: photo.user.name, url: utm(photo.user.links.html, app) },
   };
 }
-
-export const unsplashHome = (app: string) => utm('https://unsplash.com/', app);

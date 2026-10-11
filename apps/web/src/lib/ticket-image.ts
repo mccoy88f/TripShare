@@ -3,7 +3,7 @@
  * codice (QR, Aztec, barre…) su fondo bianco, numero di prenotazione. Si disegna in un canvas,
  * quindi funziona offline e senza server.
  */
-export interface TicketCard {
+interface TicketCard {
   emoji: string;
   title: string;
   subtitle?: string;

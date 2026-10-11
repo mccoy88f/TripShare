@@ -47,7 +47,7 @@ function zxing() {
 }
 
 /** Riporta il formato letto da ZXing a uno di quelli gestiti da TripShare. */
-export function normalizeFormat(format: string): CodeFormat | null {
+function normalizeFormat(format: string): CodeFormat | null {
   const f = format.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
   if (f.startsWith('qr') || f.startsWith('microqr') || f.startsWith('rmqr')) return 'QRCode';
   if (f.startsWith('aztec')) return 'AztecCode';

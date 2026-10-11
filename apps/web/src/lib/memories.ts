@@ -1,3 +1,4 @@
+import { memoryFileName } from '@tripshare/shared';
 import type { AvatarUser } from '@/components/ui/avatar';
 
 export interface Memory {
@@ -88,17 +89,12 @@ export function lastTrip(): string | null {
   }
 }
 
-const pad = (n: number) => String(n).padStart(2, '0');
-
-/** Nome del file scaricato o condiviso: data e ora del ricordo più un pezzo dell'identificativo. */
-export function memoryFileName(m: Memory) {
-  const d = memoryDate(m);
-  const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
-  return `ricordo-${stamp}-${m.id.slice(0, 6)}.${m.kind === 'video' ? 'mp4' : 'jpg'}`;
-}
+/** Nome del file scaricato o condiviso: lo stesso che dà il server (vedi `memoryFileName` in shared). */
+const fileNameOf = (m: Memory) =>
+  memoryFileName({ id: m.id, kind: m.kind, at: memoryDate(m) }, true);
 
 /** Fa partire il download di un indirizzo con il gestore di download del browser. */
-export function triggerDownload(href: string) {
+function triggerDownload(href: string) {
   const a = document.createElement('a');
   a.href = href;
   a.rel = 'noopener';
@@ -130,7 +126,7 @@ export function prepareFile(m: Memory): Promise<File> {
       .then(async (res) => {
         if (!res.ok) throw new Error('FETCH_FAILED');
         const blob = await res.blob();
-        return new File([blob], memoryFileName(m), { type: blob.type });
+        return new File([blob], fileNameOf(m), { type: blob.type });
       })
       .catch((err) => {
         files.delete(m.id);
@@ -141,7 +137,7 @@ export function prepareFile(m: Memory): Promise<File> {
   return p;
 }
 
-export type ShareResult = 'shared' | 'cancelled' | 'retry' | 'unsupported' | 'failed';
+type ShareResult = 'shared' | 'cancelled' | 'retry' | 'unsupported' | 'failed';
 
 /** Apre il menu "Condividi" del sistema con i file dei ricordi. */
 export async function shareMemories(list: Memory[]): Promise<ShareResult> {

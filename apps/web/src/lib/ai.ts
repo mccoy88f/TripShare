@@ -7,7 +7,7 @@ import type { AppRouter } from '@tripshare/api/router';
 import { aiConnected, onAiDelta, waitForAiEvent } from './ai-events';
 import { useTRPC } from './trpc';
 
-export type AiInput = inferRouterInputs<AppRouter>['ai']['start']['input'];
+type AiInput = inferRouterInputs<AppRouter>['ai']['start']['input'];
 
 /** Carica la foto o il PDF da far leggere all'AI (archivio privato del viaggio). */
 export async function uploadAiFile(tripId: string, file: File) {

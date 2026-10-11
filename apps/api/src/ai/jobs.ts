@@ -190,7 +190,7 @@ async function loadTripContext(db: Database, tripId: string, locale: Locale, use
 }
 
 /** Risultato di una chiamata al modello già validata, con i consumi. */
-export interface SpecRun {
+interface SpecRun {
   value: unknown;
   citations: { url: string; title?: string }[];
   model: string | null;

@@ -11,8 +11,7 @@ import {
 } from '@tripshare/db';
 import { allocate, computeBalances, simplifyDebts, type LedgerExpense } from '@tripshare/shared';
 
-export const TRIP_ROLES = ['owner', 'editor', 'viewer'] as const;
-export type TripRole = (typeof TRIP_ROLES)[number];
+type TripRole = 'owner' | 'editor' | 'viewer';
 const RANK: Record<TripRole, number> = { viewer: 0, editor: 1, owner: 2 };
 
 /** Verifica che l'utente sia membro del viaggio con almeno il ruolo indicato. */
@@ -39,7 +38,7 @@ export async function requireMember(
   return row;
 }
 
-export interface Ledger {
+interface Ledger {
   /** Saldo per membro nella valuta del viaggio: positivo = deve ricevere. */
   balances: Record<string, number>;
   /** Trasferimenti suggeriti per saldare tutto. */

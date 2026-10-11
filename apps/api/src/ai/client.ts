@@ -16,7 +16,7 @@ export interface ChatMessage {
   content: string | ContentPart[];
 }
 
-export interface CompletionRequest {
+interface CompletionRequest {
   provider?: AiProvider;
   apiKey: string;
   model: string;
@@ -36,7 +36,7 @@ export interface CompletionRequest {
   onDelta?: (textSoFar: string) => void;
 }
 
-export interface CompletionResult {
+interface CompletionResult {
   content: string;
   model: string;
   promptTokens: number | null;

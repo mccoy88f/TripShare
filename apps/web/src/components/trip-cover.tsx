@@ -13,7 +13,7 @@ export const COVER_GRADIENTS: Record<string, string> = {
 };
 export const DEFAULT_COVER = '#0d9488';
 
-export function coverBackground(coverImage?: string | null, coverColor?: string | null) {
+function coverBackground(coverImage?: string | null, coverColor?: string | null) {
   if (coverImage) return `center / cover no-repeat url("${coverImage}")`;
   return COVER_GRADIENTS[coverColor ?? DEFAULT_COVER] ?? COVER_GRADIENTS[DEFAULT_COVER]!;
 }

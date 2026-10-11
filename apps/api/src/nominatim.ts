@@ -13,7 +13,7 @@ const MIN_INTERVAL_MS = process.env.NODE_ENV === 'test' ? 0 : 1100;
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const CACHE_MAX = 500;
 
-export interface PlaceHit {
+interface PlaceHit {
   /** Nome breve, es. "Edinburgh Castle, Edimburgo". */
   label: string;
   /** Indirizzo completo. */

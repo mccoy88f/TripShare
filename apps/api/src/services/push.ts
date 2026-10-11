@@ -37,7 +37,7 @@ export interface PushTarget {
 }
 
 /** Invia una notifica a un dispositivo; con 404 o 410 l'errore ha `statusCode` e il dispositivo va tolto. */
-export type PushSender = (target: PushTarget, payload: PushPayload) => Promise<void>;
+type PushSender = (target: PushTarget, payload: PushPayload) => Promise<void>;
 
 export async function ensureVapid(settings: SettingsService) {
   const existing = await settings.get('push.vapid');
@@ -62,7 +62,7 @@ export function createWebPushSender(settings: SettingsService, subject: string):
   };
 }
 
-export interface PushDeps {
+interface PushDeps {
   db: Database;
   sender: PushSender;
   log?: (msg: string) => void;

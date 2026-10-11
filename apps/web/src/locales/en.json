@@ -1,6 +1,5 @@
 {
   "common": {
-    "appName": "TripShare",
     "save": "Save",
     "saved": "Saved",
     "cancel": "Cancel",
@@ -31,8 +30,6 @@
     "signOut": "Sign out",
     "openApp": "Open the app",
     "trips": "Trips",
-    "expenses": "Expenses",
-    "balances": "Balances",
     "profile": "Profile",
     "admin": "Administration",
     "privacy": "Privacy",
@@ -144,10 +141,7 @@
     "noTripsText": "Create your first trip, invite the group and start logging expenses.",
     "newTrip": "New trip",
     "installTitle": "Install TripShare",
-    "installText": "Use it like an app, even offline.",
     "install": "Install",
-    "updateAvailable": "A new version is available.",
-    "reload": "Update",
     "offlineReady": "TripShare is ready to work offline.",
     "installIosTip": "Choose “Add to Home Screen”"
   },
@@ -197,7 +191,6 @@
     "database": "Database",
     "redis": "Redis",
     "smtp": "SMTP",
-    "ok": "OK",
     "down": "Error",
     "usersCount": "Registered users",
     "emailQueue": "Email queue",
@@ -225,7 +218,6 @@
     "allowedDomainsHint": "Comma separated. Empty = all.",
     "appName": "Instance name",
     "appNameHint": "Empty = APP_NAME value.",
-    "payments": "Repayments",
     "paypalEnabled": "Show PayPal.me links",
     "uploads": "Maximum file size (MB)",
     "unsplash": "Unsplash Access Key (cover search)",
@@ -254,11 +246,9 @@
     "quota": "Monthly quota per user (USD)",
     "denyDataCollection": "Only use providers that don't retain data",
     "search": "Search by name or email",
-    "role": "Role",
     "verified": "Verified",
     "notVerified": "Unverified",
     "banned": "Suspended",
-    "joined": "Joined",
     "auditEmpty": "No actions recorded.",
     "forbidden": "This section is reserved to the super admin.",
     "checkKey": "Check key",
@@ -501,10 +491,6 @@
       "notes": "Notes",
       "assistant": "Nina"
     },
-    "new": {
-      "title": "New trip",
-      "submit": "Create trip"
-    },
     "form": {
       "title": "Trip name",
       "titlePlaceholder": "Weekend in Lisbon",
@@ -598,7 +584,6 @@
     "useAlternative": "Use this plan",
     "tips": "Good to know",
     "or": "or",
-    "edit": "Edit",
     "links": "Links",
     "linksHint": "One per line: Title | https://…",
     "onePerLine": "One per line.",
@@ -614,7 +599,6 @@
       "notJson": "The file is not valid JSON."
     },
     "activity": {
-      "add": "Activity",
       "newTitle": "New activity",
       "editTitle": "Edit activity",
       "title": "Title",
@@ -866,12 +850,6 @@
       "FILE_TOO_LARGE": "file too large",
       "UNKNOWN_MEMBER": "invalid traveler"
     },
-    "emptyTab": "No tickets yet",
-    "emptyTabText": "Upload tickets, QR codes and Wallet passes from bookings: they will show up here, with who they are assigned to.",
-    "all": "All tickets",
-    "manage": "Manage tickets",
-    "needBooking": "Add a booking first: tickets are linked to a booking.",
-    "chooseBooking": "Which booking?",
     "orphan": "Booking no longer in the plan",
     "orphans": "Tickets without a booking",
     "orphansHint": "The booking of these tickets was removed from the plan. Open them to view or delete them.",
@@ -934,18 +912,6 @@
       "readOcr": "Receipt read without AI: check the details before saving.",
       "rereadAi": "Doesn't look right? Read again with Nina"
     },
-    "booking": {
-      "fromScreenshot": "From screenshot or PDF",
-      "reading": "Reading…",
-      "none": "No bookings found in the document.",
-      "found": "Bookings found",
-      "foundHint": "Check them and choose which to add. You can edit them later.",
-      "travelers": "Travelers: {{names}}",
-      "add_one": "Add {{count}} booking",
-      "add_other": "Add {{count}} bookings",
-      "added_one": "{{count}} booking added",
-      "added_other": "{{count}} bookings added"
-    },
     "generate": {
       "button": "Generate with Nina",
       "title": "Plan with Nina",
@@ -972,10 +938,7 @@
       },
       "working": "Nina is preparing the plan: it can take up to a couple of minutes.",
       "submit": "Generate the plan",
-      "create": "Create the trip with Nina",
-      "done": "Plan created!",
-      "withAi": "Create with Nina",
-      "manual": "Fill in manually"
+      "done": "Plan created!"
     },
     "chat": {
       "intro": "Ask for advice about the trip or changes to the plan: Nina proposes them and you apply them with one tap.",
@@ -990,7 +953,6 @@
       "confirmClear": "Delete this conversation?",
       "proposed_one": "{{count}} proposed change",
       "proposed_other": "{{count}} proposed changes",
-      "apply": "Apply to plan",
       "applied": "Applied to the plan",
       "ops": {
         "deleteActivity": "Remove activity",
@@ -1064,7 +1026,6 @@
     "booking": "Booking",
     "place": "Place",
     "ticket": "Ticket",
-    "existingBooking": "Linked to the existing booking: {{title}}",
     "splitAll": "Split equally among everyone ({{count}}); you can change it later.",
     "codeFound": "code read",
     "noCode": "no code read: the photo is saved",

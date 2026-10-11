@@ -15,9 +15,8 @@ import { textareaClass } from './plan/fields';
 import { describeOp } from './assistant-tab';
 import { ProposalDialog } from './proposal-dialog';
 
-export type AskTargetType =
-  'activity' | 'place' | 'booking' | 'day' | 'budget' | 'packing' | 'tips';
-export interface AskTarget {
+type AskTargetType = 'activity' | 'place' | 'booking' | 'day' | 'budget' | 'packing' | 'tips';
+interface AskTarget {
   type: AskTargetType;
   id: string;
 }

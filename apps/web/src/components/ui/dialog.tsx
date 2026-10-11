@@ -4,7 +4,6 @@ import { useEffect, useRef, type ComponentProps, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 export const Dialog = DialogPrimitive.Root;
-export const DialogTrigger = DialogPrimitive.Trigger;
 export const DialogClose = DialogPrimitive.Close;
 
 /** Finestra modale: foglio dal basso su mobile, scheda centrata su desktop. */

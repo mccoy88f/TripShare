@@ -1,6 +1,5 @@
 {
   "common": {
-    "appName": "TripShare",
     "save": "Salva",
     "saved": "Salvato",
     "cancel": "Annulla",
@@ -31,8 +30,6 @@
     "signOut": "Esci",
     "openApp": "Apri l'app",
     "trips": "Viaggi",
-    "expenses": "Spese",
-    "balances": "Saldi",
     "profile": "Profilo",
     "admin": "Amministrazione",
     "privacy": "Privacy",
@@ -144,10 +141,7 @@
     "noTripsText": "Crea il primo viaggio, invita il gruppo e inizia a segnare le spese.",
     "newTrip": "Nuovo viaggio",
     "installTitle": "Installa TripShare",
-    "installText": "Usala come un'app, anche offline.",
     "install": "Installa",
-    "updateAvailable": "È disponibile una nuova versione.",
-    "reload": "Aggiorna",
     "offlineReady": "TripShare è pronta per l'uso offline.",
     "installIosTip": "Scegli «Aggiungi alla schermata Home»"
   },
@@ -197,7 +191,6 @@
     "database": "Database",
     "redis": "Redis",
     "smtp": "SMTP",
-    "ok": "OK",
     "down": "Errore",
     "usersCount": "Utenti registrati",
     "emailQueue": "Coda email",
@@ -225,7 +218,6 @@
     "allowedDomainsHint": "Separati da virgola. Vuoto = tutti.",
     "appName": "Nome dell'istanza",
     "appNameHint": "Vuoto = valore di APP_NAME.",
-    "payments": "Rimborsi",
     "paypalEnabled": "Mostra i link PayPal.me",
     "uploads": "Dimensione massima dei file (MB)",
     "unsplash": "Unsplash Access Key (ricerca copertine)",
@@ -254,11 +246,9 @@
     "quota": "Quota mensile per utente (USD)",
     "denyDataCollection": "Usa solo provider che non conservano i dati",
     "search": "Cerca per nome o email",
-    "role": "Ruolo",
     "verified": "Verificato",
     "notVerified": "Da verificare",
     "banned": "Sospeso",
-    "joined": "Iscritto il",
     "auditEmpty": "Nessuna azione registrata.",
     "forbidden": "Questa sezione è riservata al super admin.",
     "checkKey": "Verifica chiave",
@@ -501,10 +491,6 @@
       "notes": "Note",
       "assistant": "Nina"
     },
-    "new": {
-      "title": "Nuovo viaggio",
-      "submit": "Crea viaggio"
-    },
     "form": {
       "title": "Nome del viaggio",
       "titlePlaceholder": "Weekend a Lisbona",
@@ -598,7 +584,6 @@
     "useAlternative": "Usa questo piano",
     "tips": "Da ricordare",
     "or": "oppure",
-    "edit": "Modifica",
     "links": "Link",
     "linksHint": "Uno per riga: Titolo | https://…",
     "onePerLine": "Uno per riga.",
@@ -614,7 +599,6 @@
       "notJson": "Il file non è un JSON valido."
     },
     "activity": {
-      "add": "Attività",
       "newTitle": "Nuova attività",
       "editTitle": "Modifica attività",
       "title": "Titolo",
@@ -866,12 +850,6 @@
       "FILE_TOO_LARGE": "file troppo grande",
       "UNKNOWN_MEMBER": "partecipante non valido"
     },
-    "emptyTab": "Ancora nessun biglietto",
-    "emptyTabText": "Carica biglietti, QR e pass Wallet dalle prenotazioni: compariranno qui, con a chi sono assegnati.",
-    "all": "Tutti i biglietti",
-    "manage": "Gestisci biglietti",
-    "needBooking": "Aggiungi prima una prenotazione: i biglietti si collegano a una prenotazione.",
-    "chooseBooking": "A quale prenotazione?",
     "orphan": "Prenotazione non più nel programma",
     "orphans": "Biglietti senza prenotazione",
     "orphansHint": "La prenotazione di questi biglietti è stata tolta dal programma. Aprili per vederli o eliminarli.",
@@ -934,18 +912,6 @@
       "readOcr": "Scontrino letto senza AI: controlla i dati prima di salvare.",
       "rereadAi": "Non torna? Rileggi con Nina"
     },
-    "booking": {
-      "fromScreenshot": "Da screenshot o PDF",
-      "reading": "Lettura in corso…",
-      "none": "Nessuna prenotazione trovata nel documento.",
-      "found": "Prenotazioni trovate",
-      "foundHint": "Controlla e scegli quali aggiungere. Puoi modificarle dopo.",
-      "travelers": "Passeggeri: {{names}}",
-      "add_one": "Aggiungi {{count}} prenotazione",
-      "add_other": "Aggiungi {{count}} prenotazioni",
-      "added_one": "{{count}} prenotazione aggiunta",
-      "added_other": "{{count}} prenotazioni aggiunte"
-    },
     "generate": {
       "button": "Genera con Nina",
       "title": "Programma con Nina",
@@ -972,10 +938,7 @@
       },
       "working": "Nina sta preparando il programma: può richiedere fino a un paio di minuti.",
       "submit": "Genera il programma",
-      "create": "Crea il viaggio con Nina",
-      "done": "Programma creato!",
-      "withAi": "Crea con Nina",
-      "manual": "Compila a mano"
+      "done": "Programma creato!"
     },
     "chat": {
       "intro": "Chiedi consigli sul viaggio o modifiche al programma: Nina le propone e tu le applichi con un tocco.",
@@ -990,7 +953,6 @@
       "confirmClear": "Eliminare questa conversazione?",
       "proposed_one": "{{count}} modifica proposta",
       "proposed_other": "{{count}} modifiche proposte",
-      "apply": "Applica al programma",
       "applied": "Applicate al programma",
       "ops": {
         "deleteActivity": "Rimuovi attività",
@@ -1064,7 +1026,6 @@
     "booking": "Prenotazione",
     "place": "Luogo",
     "ticket": "Biglietto",
-    "existingBooking": "Collegato alla prenotazione già presente: {{title}}",
     "splitAll": "Divisa in parti uguali tra tutti ({{count}}); potrai cambiarla dopo.",
     "codeFound": "codice letto",
     "noCode": "nessun codice letto: si salva la foto",

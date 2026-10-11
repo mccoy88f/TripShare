@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import { useTRPC } from './trpc';
 
-export type PushStatus =
+type PushStatus =
   /** Il browser non supporta le notifiche push. */
   | 'unsupported'
   /** iPhone/iPad: servono l'app installata nella schermata Home. */

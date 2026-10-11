@@ -10,7 +10,7 @@ import { useAiStatus, useAiTask } from '@/lib/ai';
 import { useTRPC } from '@/lib/trpc';
 import { uploadImage } from '@/lib/upload';
 
-export interface PlacePhoto {
+interface PlacePhoto {
   photo?: string;
   photoCredit?: string;
 }

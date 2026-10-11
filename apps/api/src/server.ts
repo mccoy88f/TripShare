@@ -14,6 +14,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { bookingTicket, expense, memory, trip, tripMember, user } from '@tripshare/db';
 import { TICKET_CODE_FORMATS } from './routers/tickets.js';
 import { infoFromPkpass } from './services/wallet-pass.js';
+import { memoryFileName } from '@tripshare/shared';
 import { tripDocumentJsonSchema } from '@tripshare/shared/trip-format';
 import { notifyTrip } from './services/events.js';
 import {
@@ -31,17 +32,6 @@ import { createRealtime, subscribeUser, subscribeUserAi } from './services/realt
 import { requireMember } from './services/trips.js';
 import { appRouter, type AppRouter } from './routers/index.js';
 import type { AppServices, Context } from './trpc/init.js';
-
-/** Nome di un ricordo scaricato: data e ora (UTC) più un pezzo dell'identificativo. */
-function memoryFileName(
-  row: { id: string; kind: string; takenAt: Date | null; createdAt: Date },
-  photoAsJpeg: boolean,
-) {
-  const d = (row.takenAt ?? row.createdAt).toISOString();
-  const stamp = `${d.slice(0, 10).replaceAll('-', '')}-${d.slice(11, 16).replace(':', '')}`;
-  const ext = row.kind === 'video' ? 'mp4' : photoAsJpeg ? 'jpg' : 'webp';
-  return `ricordo-${stamp}-${row.id.slice(0, 6)}.${ext}`;
-}
 
 function toHeaders(req: FastifyRequest): Headers {
   const headers = new Headers();
@@ -505,7 +495,7 @@ export async function buildServer(
             const path = storage.privatePath(row.storageName);
             if (!path) continue;
             const entry = new ZipPassThrough(
-              `${String(i + 1).padStart(3, '0')}-${memoryFileName(row, true)}`,
+              `${String(i + 1).padStart(3, '0')}-${memoryFileName({ id: row.id, kind: row.kind, at: row.takenAt ?? row.createdAt }, true)}`,
             );
             zip.add(entry);
             if (row.kind === 'photo') {
@@ -552,7 +542,10 @@ export async function buildServer(
         if (req.query.download === '1')
           reply.header(
             'content-disposition',
-            `attachment; filename="${memoryFileName(row, req.query.v === 'jpg')}"`,
+            `attachment; filename="${memoryFileName(
+              { id: row.id, kind: row.kind, at: row.takenAt ?? row.createdAt },
+              req.query.v === 'jpg',
+            )}"`,
           );
         // Foto in JPEG: la si apre ovunque (WebP non sempre si importa nella galleria).
         if (req.query.v === 'jpg' && row.kind === 'photo') {

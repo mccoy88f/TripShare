@@ -57,11 +57,9 @@ export const ReceiptResultSchema = z.object({
   confidence: z.enum(['high', 'medium', 'low']),
   notes: z.string().max(400).optional().describe('Dubbi o parti illeggibili'),
 });
-export type ReceiptResult = z.infer<typeof ReceiptResultSchema>;
-
 // ─── Prenotazioni da screenshot o PDF ───────────────────────────────────────
 
-export const BookingResultSchema = z.object({
+const BookingResultSchema = z.object({
   bookings: z.array(BookingSchema.extend({ id: RefSchema.optional() })).max(20),
   travelers: z
     .array(z.string().max(120))
@@ -70,12 +68,10 @@ export const BookingResultSchema = z.object({
     .describe('Nomi dei passeggeri / ospiti indicati nel documento'),
   notes: z.string().max(600).optional(),
 });
-export type BookingResult = z.infer<typeof BookingResultSchema>;
-
 // ─── Assistente del viaggio ─────────────────────────────────────────────────
 
 /** Spesa proposta dall'assistente: diventa una spesa vera solo quando l'utente la conferma. */
-export const ExpenseProposalSchema = z.object({
+const ExpenseProposalSchema = z.object({
   title: z.string().min(1).max(160),
   amount: z.number().positive().describe('Importo totale in unità maggiori'),
   currency: z.enum(CURRENCY_CODES),
@@ -95,8 +91,6 @@ export const ExpenseProposalSchema = z.object({
   status: z.enum(['paid', 'planned']).default('paid').describe('"planned" se è ancora da pagare'),
   notes: z.string().max(400).optional(),
 });
-export type ExpenseProposal = z.infer<typeof ExpenseProposalSchema>;
-
 export const ChatResultSchema = z.object({
   reply: z
     .string()
@@ -153,7 +147,7 @@ export type PlacePhotoResult = z.infer<typeof PlacePhotoResultSchema>;
 
 // ─── Documento fotografato (scontrino, ricevuta, conferma, carta d'imbarco…) ──
 
-export const DOCUMENT_TYPES = [
+const DOCUMENT_TYPES = [
   'receipt',
   'invoice',
   'booking_confirmation',
@@ -213,11 +207,11 @@ export const DocumentResultSchema = z.object({
   confidence: z.enum(['high', 'medium', 'low']),
   notes: z.string().max(400).optional(),
 });
-export type DocumentResult = z.infer<typeof DocumentResultSchema>;
+type DocumentResult = z.infer<typeof DocumentResultSchema>;
 
 // ─── In quale giorno mettere un luogo ───────────────────────────────────────
 
-export const ScheduleResultSchema = z.object({
+const ScheduleResultSchema = z.object({
   date: z.iso.date().describe('Giorno del programma in cui inserire la visita'),
   time: z
     .string()
@@ -227,13 +221,11 @@ export const ScheduleResultSchema = z.object({
   durationMin: z.number().int().min(10).max(720).optional(),
   reason: z.string().min(1).max(400).describe('Perché quel giorno, in una o due frasi'),
 });
-export type ScheduleResult = z.infer<typeof ScheduleResultSchema>;
+type ScheduleResult = z.infer<typeof ScheduleResultSchema>;
 
 // ─── Lista bagagli ──────────────────────────────────────────────────────────
 
-export const PackingResultSchema = z.object({ items: z.array(PackingItemSchema).max(40) });
-export type PackingResult = z.infer<typeof PackingResultSchema>;
-
+const PackingResultSchema = z.object({ items: z.array(PackingItemSchema).max(40) });
 // ─── Definizione dei compiti ────────────────────────────────────────────────
 
 export const AiInputSchema = z.discriminatedUnion('kind', [
@@ -360,7 +352,7 @@ function filePart(dataUrl: string, mime: string, name: string): ContentPart {
 }
 
 /** Riassunto compatto del programma per l'assistente (senza campi vuoti). */
-export function planContext(plan: TripDocument, extra: Record<string, unknown> = {}) {
+function planContext(plan: TripDocument, extra: Record<string, unknown> = {}) {
   return JSON.stringify({ ...plan, ...extra }, (_k, v) =>
     Array.isArray(v) && v.length === 0 ? undefined : v,
   );

@@ -8,12 +8,12 @@ import sharp from 'sharp';
  * I nomi sono casuali (128 bit) e non indovinabili; le immagini vengono ridimensionate,
  * convertite in WebP e ripulite dai metadati (EXIF, posizione).
  */
-export const IMAGE_PRESETS = {
+const IMAGE_PRESETS = {
   avatar: { width: 512, height: 512, fit: 'cover' as const },
   cover: { width: 1600, height: 900, fit: 'cover' as const },
   place: { width: 1200, height: 800, fit: 'cover' as const },
 };
-export type ImagePreset = keyof typeof IMAGE_PRESETS;
+type ImagePreset = keyof typeof IMAGE_PRESETS;
 
 const NAME = /^[a-z]+-[a-f0-9]{32}\.webp$/;
 const PRIVATE_NAME = /^[a-f0-9]{32}\.[a-z0-9]{1,8}$/;

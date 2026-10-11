@@ -61,7 +61,7 @@ function nights(b: Booking) {
 }
 
 /** Spesa precompilata da una prenotazione (importo totale nella valuta della prenotazione). */
-export function expenseFromBooking(b: Booking, travelers: number): ExpensePreset {
+function expenseFromBooking(b: Booking, travelers: number): ExpensePreset {
   const currency = b.cost && isCurrencyCode(b.cost.currency) ? b.cost.currency : undefined;
   const amount =
     b.cost && currency

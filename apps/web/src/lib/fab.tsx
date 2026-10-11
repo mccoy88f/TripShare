@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useRef, useSyncExternalStore } fr
  * Pulsante "+" al centro della barra in basso: ogni pagina può registrare la sua azione
  * (nuova spesa, nuovo luogo…). Senza azione registrata il "+" crea un nuovo viaggio.
  */
-export interface FabAction {
+interface FabAction {
   label: string;
   run: () => void;
 }

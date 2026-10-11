@@ -6,7 +6,7 @@ import { onRecordedEvent, type EventData, type RecordedEvent } from './events.js
  * suoi membri (Server-Sent Events). Con Redis i messaggi passano da un canale comune, così
  * funziona anche con più istanze dell'API; senza, restano nel processo.
  */
-export interface RealtimeMessage {
+interface RealtimeMessage {
   tripId: string;
   /** Tipo dell'evento (es. "expense.created") o "packing" per le spunte. */
   kind: string;
@@ -37,7 +37,7 @@ export function subscribeUser(userId: string, write: Writer) {
 }
 
 /** Consegna ai dispositivi collegati a questo processo. */
-export function dispatchLocal(message: RealtimeMessage) {
+function dispatchLocal(message: RealtimeMessage) {
   for (const userId of message.users)
     for (const write of clients.get(userId) ?? [])
       try {
@@ -95,7 +95,7 @@ export function createAiEmitter(redis?: Redis): (event: AiEvent) => void {
   };
 }
 
-export interface Realtime {
+interface Realtime {
   publish(message: RealtimeMessage): Promise<void>;
   close(): Promise<void>;
 }

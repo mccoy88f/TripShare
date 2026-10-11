@@ -1,7 +1,7 @@
 import { formatNotification } from '@tripshare/shared';
 import { currentLocale } from './i18n';
 
-export { notificationTarget, type NotificationTarget } from '@tripshare/shared';
+export { notificationTarget } from '@tripshare/shared';
 
 /** Testo di una notifica, composto nella lingua corrente dai parametri dell'evento. */
 export function describeNotification(

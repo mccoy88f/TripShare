@@ -30,5 +30,3 @@ document.documentElement.lang = i18n.resolvedLanguage ?? DEFAULT_LOCALE;
 export function currentLocale(): Locale {
   return (i18n.resolvedLanguage as Locale | undefined) ?? DEFAULT_LOCALE;
 }
-
-export default i18n;

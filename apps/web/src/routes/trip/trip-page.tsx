@@ -12,7 +12,7 @@ import { askAssistant } from '@/lib/assistant-ask';
 import { focusItem } from '@/lib/search-focus';
 import { SearchPanel, type SearchResult } from './search';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { dateRange, money } from '@/lib/format';
+import { formatDateRange, money } from '@/lib/format';
 import { useTRPC } from '@/lib/trpc';
 import { BalancePill } from '@/routes/trips';
 import { useAiStatus } from '@/lib/ai';
@@ -198,7 +198,7 @@ export function TripPage() {
               {trip.startDate && (
                 <span className="inline-flex items-center gap-1.5">
                   <CalendarDays className="size-4" />
-                  {dateRange(trip.startDate, trip.endDate)}
+                  {formatDateRange(trip.startDate, trip.endDate)}
                 </span>
               )}
               {trip.destination && <span>📍 {trip.destination}</span>}

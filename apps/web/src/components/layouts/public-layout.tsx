@@ -5,7 +5,7 @@ import { LanguageSwitcher, ThemeToggle } from '@/components/preferences';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/lib/auth-client';
 
-export function PublicHeader() {
+function PublicHeader() {
   const { t } = useTranslation();
   const { data: session } = useSession();
   return (
@@ -34,7 +34,7 @@ export function PublicHeader() {
   );
 }
 
-export function PublicFooter() {
+function PublicFooter() {
   const { t } = useTranslation();
   return (
     <footer className="border-t py-8 pb-[calc(2rem+env(safe-area-inset-bottom))]">

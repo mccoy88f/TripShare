@@ -9,7 +9,7 @@ import { AvatarStack } from '@/components/avatar-stack';
 import { useMe } from '@/components/layouts/app-layout';
 import { TripCover } from '@/components/trip-cover';
 import { Button } from '@/components/ui/button';
-import { dateRange, money } from '@/lib/format';
+import { formatDateRange, money } from '@/lib/format';
 import { useTRPC } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
@@ -106,7 +106,7 @@ function PendingInvitations() {
                 {inv.inviter
                   ? t('invite.invitedBy', { name: inv.inviter })
                   : t('invite.invitedGeneric')}
-                {inv.startDate ? ` · ${dateRange(inv.startDate, inv.endDate)}` : ''}
+                {inv.startDate ? ` · ${formatDateRange(inv.startDate, inv.endDate)}` : ''}
                 {inv.destination ? ` · ${inv.destination}` : ''}
               </p>
             </div>
@@ -215,7 +215,7 @@ export function TripsPage() {
                     {trip.startDate ? (
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-black/25 px-2.5 py-1 text-xs font-medium backdrop-blur">
                         <CalendarDays className="size-3.5" />
-                        {dateRange(trip.startDate, trip.endDate)}
+                        {formatDateRange(trip.startDate, trip.endDate)}
                       </span>
                     ) : (
                       <span />

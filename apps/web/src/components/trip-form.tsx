@@ -2,7 +2,7 @@ import { Camera, ImageIcon, Loader2, Smile, Trash2 } from 'lucide-react';
 import { useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CURRENCIES, CURRENCY_CODES, type CurrencyCode } from '@tripshare/shared';
-import { COVER_GRADIENTS, DEFAULT_COVER, TripCover } from '@/components/trip-cover';
+import { COVER_GRADIENTS, TripCover } from '@/components/trip-cover';
 import { Button } from '@/components/ui/button';
 import {
   UnsplashPicker,
@@ -14,7 +14,7 @@ import { Field, Input, Select } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
-export interface TripFormValues {
+interface TripFormValues {
   title: string;
   emoji: string | null;
   destination: string;
@@ -279,17 +279,6 @@ export function TripForm({
     </form>
   );
 }
-
-export const emptyTripForm = (currency: CurrencyCode): TripFormValues => ({
-  title: '',
-  emoji: null,
-  destination: '',
-  description: '',
-  startDate: '',
-  endDate: '',
-  currency,
-  coverColor: DEFAULT_COVER,
-});
 
 /** Converte i valori del modulo nell'input dell'API. */
 export function toTripInput(v: TripFormValues) {

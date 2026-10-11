@@ -14,7 +14,7 @@ export type EmailTemplate =
     }
   | { kind: 'test' };
 
-export interface RenderedEmail {
+interface RenderedEmail {
   subject: string;
   html: string;
   text: string;

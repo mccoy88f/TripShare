@@ -7,7 +7,7 @@ import type { CurrencyCode } from '@tripshare/shared';
 const cache = new Map<string, { rate: number; at: number }>();
 const TTL = 6 * 3600 * 1000;
 
-export interface FxResult {
+interface FxResult {
   rate: number;
   /** Data a cui si riferisce il tasso (la BCE non pubblica nei festivi). */
   date: string;

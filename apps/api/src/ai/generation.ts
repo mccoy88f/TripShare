@@ -40,7 +40,7 @@ import { lang, schemaOf, today, type TaskSpec } from './tasks.js';
  * l'avanzamento e, se una fase fallisce, si rifà solo quella. Le fasi successive ricevono ciò che
  * è stato deciso prima (la "strategia" del viaggio), così il risultato resta coerente.
  */
-export const GENERATION_STEPS = [
+const GENERATION_STEPS = [
   'strategy',
   'places',
   'days',
@@ -49,7 +49,7 @@ export const GENERATION_STEPS = [
   'packing',
   'photos',
 ] as const;
-export type GenStepKey = (typeof GENERATION_STEPS)[number];
+type GenStepKey = (typeof GENERATION_STEPS)[number];
 
 export interface GenStep {
   key: GenStepKey;
@@ -885,7 +885,7 @@ async function stepPhotos(
 // Orchestrazione
 // ---------------------------------------------------------------------------------------------
 
-export interface GenerationRange {
+interface GenerationRange {
   /** Ultima fase da eseguire (di default l'ultima). */
   until?: GenStepKey;
   /**

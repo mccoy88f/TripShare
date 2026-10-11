@@ -117,7 +117,7 @@ export async function downloadImage(
 }
 
 /** Indirizzo dell'immagine di anteprima dichiarata da una pagina (Open Graph o Twitter). */
-export function pageImageUrl(html: string, base: string): string | null {
+function pageImageUrl(html: string, base: string): string | null {
   const metas = html.match(/<meta\b[^>]*>/gi) ?? [];
   for (const wanted of ['og:image:secure_url', 'og:image', 'twitter:image', 'twitter:image:src']) {
     for (const tag of metas) {

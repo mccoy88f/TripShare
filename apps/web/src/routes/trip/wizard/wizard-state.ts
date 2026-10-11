@@ -73,7 +73,7 @@ export const totalNights = (s: WizardState) =>
   s.start && s.end && s.end >= s.start ? nightsBetween(s.start, s.end) : 0;
 
 /** Stesso posto (le coordinate cercate due volte coincidono quasi esattamente). */
-export const sameSpot = (a: GeoPlace, b: GeoPlace) =>
+const sameSpot = (a: GeoPlace, b: GeoPlace) =>
   Math.abs(a.lat - b.lat) < 0.01 && Math.abs(a.lon - b.lon) < 0.01;
 
 /** La tappa che corrisponde alla destinazione principale. */
@@ -104,7 +104,7 @@ export function patchWizard(cur: WizardState, patch: Partial<WizardState>): Wiza
 }
 
 /** Riordina le tappe (se l'ordine non è manuale) e ripartisce le notti (se non sono state toccate). */
-export function normalize(s: WizardState): WizardState {
+function normalize(s: WizardState): WizardState {
   let next = s;
   if (!next.manualOrder && next.stops.length > 1 && next.origin) {
     const ret = returnPoint(next);

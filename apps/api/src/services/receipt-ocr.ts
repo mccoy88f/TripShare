@@ -90,7 +90,7 @@ function recognize(png: Buffer, mode: '6' | '4'): Promise<string> {
 
 const RANK = { high: 3, medium: 2, low: 1 } as const;
 
-export interface OcrReceipt {
+interface OcrReceipt {
   receipt: ParsedReceipt;
   text: string;
 }
