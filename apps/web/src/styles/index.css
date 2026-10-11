@@ -191,3 +191,15 @@ fieldset:disabled :is(input, textarea)::placeholder {
   color: transparent;
   -webkit-text-fill-color: transparent;
 }
+
+/* Interfaccia dei visualizzatori a schermo intero: si nasconde con una dissolvenza al tocco sulla foto. */
+[data-chrome-item] {
+  transition: opacity 0.2s ease;
+}
+[data-chrome='hidden'] [data-chrome-item] {
+  opacity: 0;
+}
+[data-chrome='hidden'] [data-chrome-item],
+[data-chrome='hidden'] [data-chrome-item] * {
+  pointer-events: none !important;
+}

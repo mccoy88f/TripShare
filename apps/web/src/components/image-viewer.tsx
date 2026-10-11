@@ -193,6 +193,7 @@ export function ImageViewer({
       <DialogPrimitive.Portal>
         <DialogPrimitive.Content
           ref={frame}
+          data-chrome={visible ? 'shown' : 'hidden'}
           className="fixed inset-0 z-50 bg-black text-white outline-none"
           onKeyDown={(e) => {
             if (e.key === 'ArrowLeft') go(-1);
@@ -233,35 +234,37 @@ export function ImageViewer({
             )}
           </div>
 
-          {visible && (
-            <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-3 bg-gradient-to-b from-black/70 to-transparent p-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
-              <div className="pointer-events-auto min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{title}</p>
-                <p className="flex items-center gap-1.5 truncate text-xs text-white/75">
-                  {subtitle}
-                  {slides.length > 0 && (
-                    <span className={cn(subtitle && 'ml-1')}>
-                      {index + 1} / {slides.length}
-                      {hasMore && '+'}
-                    </span>
-                  )}
-                  {loadingMore && slides.length > 0 && <Loader2 className="size-3 animate-spin" />}
-                </p>
-              </div>
-              {actions}
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label={t('common.close')}
-                className={cn(viewerButton, 'pointer-events-auto')}
-              >
-                <X />
-              </button>
+          <div
+            data-chrome-item
+            className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-3 bg-gradient-to-b from-black/70 to-transparent p-3 pt-[calc(0.75rem+env(safe-area-inset-top))]"
+          >
+            <div className="pointer-events-auto min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">{title}</p>
+              <p className="flex items-center gap-1.5 truncate text-xs text-white/75">
+                {subtitle}
+                {slides.length > 0 && (
+                  <span className={cn(subtitle && 'ml-1')}>
+                    {index + 1} / {slides.length}
+                    {hasMore && '+'}
+                  </span>
+                )}
+                {loadingMore && slides.length > 0 && <Loader2 className="size-3 animate-spin" />}
+              </p>
             </div>
-          )}
-
-          {visible && index > 0 && (
+            {actions}
             <button
+              type="button"
+              onClick={onClose}
+              aria-label={t('common.close')}
+              className={cn(viewerButton, 'pointer-events-auto')}
+            >
+              <X />
+            </button>
+          </div>
+
+          {index > 0 && (
+            <button
+              data-chrome-item
               type="button"
               onClick={() => go(-1)}
               aria-label={t('common.back')}
@@ -273,8 +276,9 @@ export function ImageViewer({
               <ChevronLeft />
             </button>
           )}
-          {visible && index < slides.length - 1 && (
+          {index < slides.length - 1 && (
             <button
+              data-chrome-item
               type="button"
               onClick={() => go(1)}
               aria-label={t('steps.next')}
@@ -287,8 +291,11 @@ export function ImageViewer({
             </button>
           )}
 
-          {visible && footer && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end gap-3 bg-gradient-to-t from-black/75 to-transparent p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+          {footer && (
+            <div
+              data-chrome-item
+              className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end gap-3 bg-gradient-to-t from-black/75 to-transparent p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+            >
               <div className="pointer-events-auto min-w-0 flex-1 text-sm">{footer}</div>
             </div>
           )}
