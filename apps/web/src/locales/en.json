@@ -875,7 +875,10 @@
     "chooseBooking": "Which booking?",
     "orphan": "Booking no longer in the plan",
     "orphans": "Tickets without a booking",
-    "orphansHint": "The booking of these tickets was removed from the plan. Open them to view or delete them."
+    "orphansHint": "The booking of these tickets was removed from the plan. Open them to view or delete them.",
+    "reference": "Booking reference",
+    "copyReference": "Tap to copy",
+    "referenceCopied": "Reference copied"
   },
   "notes": {
     "title": "Title",

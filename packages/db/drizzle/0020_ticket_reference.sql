@@ -1,0 +1,1 @@
+ALTER TABLE "booking_ticket" ADD COLUMN "reference" text;

@@ -42,6 +42,8 @@ type Ticket = {
   mimeType: string | null;
   codeFormat: string | null;
   codeValue: string | null;
+  /** Numero di prenotazione o di biglietto (letto dal pass o dal link Wallet). */
+  reference: string | null;
   walletUrl: string | null;
   fileUrl: string | null;
 };
@@ -59,6 +61,12 @@ export function myTickets(tickets: Ticket[] | undefined, myMemberId: string, boo
       (!bookingId || t.bookingId === bookingId),
   );
 }
+
+/** Dispositivo Apple (iPhone, iPad, Mac): lì si propone Apple Wallet, altrove Google Wallet. */
+const onApple = () =>
+  typeof navigator !== 'undefined' &&
+  (/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent) ||
+    /Mac|iPhone|iPad/.test(navigator.platform ?? ''));
 
 const isPkpass = (t: Ticket) => t.mimeType === 'application/vnd.apple.pkpass';
 const isImage = (t: Ticket) => !!t.mimeType?.startsWith('image/');
@@ -448,6 +456,9 @@ function TicketViewerBody({
     }),
   );
   const ticket = tickets[Math.min(i, tickets.length - 1)]!;
+  // Il numero di prenotazione del biglietto, o quello della prenotazione nel programma.
+  const reference =
+    ticket.reference ?? bookings.find((b) => b.id === ticket.bookingId)?.confirmationCode;
   const booking = bookings.find((b) => b.id === ticket.bookingId);
   const member = trip.members.find((m) => m.id === ticket.memberId);
 
@@ -473,6 +484,14 @@ function TicketViewerBody({
       .catch(() => {});
     return () => void lock?.release();
   }, []);
+
+  // Apple Wallet e Google Wallet sono alternativi: si mostra quello del dispositivo; se il
+  // biglietto ha solo l'altro, si offre quello.
+  const hasApple = !!ticket.fileUrl && isPkpass(ticket);
+  const hasGoogle = !!ticket.walletUrl;
+  const apple = onApple();
+  const showApple = hasApple && (apple || !hasGoogle);
+  const showGoogle = hasGoogle && (!apple || !hasApple);
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -543,6 +562,34 @@ function TicketViewerBody({
               </p>
             </div>
           )}
+          {reference && (
+            <div
+              className={cn(
+                'grid place-items-center gap-1 rounded-2xl border bg-muted/40 text-center',
+                ticket.codeValue ? 'px-4 py-2' : 'px-4 py-6',
+              )}
+            >
+              <span className="text-xs font-medium text-muted-foreground">
+                {t('tickets.reference')}
+              </span>
+              <button
+                type="button"
+                className={cn(
+                  'font-mono font-semibold tracking-wider break-all',
+                  ticket.codeValue ? 'text-lg' : 'text-3xl',
+                )}
+                title={t('tickets.copyReference')}
+                onClick={() => {
+                  void navigator.clipboard
+                    ?.writeText(reference)
+                    .then(() => toast.success(t('tickets.referenceCopied')))
+                    .catch(() => undefined);
+                }}
+              >
+                {reference}
+              </button>
+            </div>
+          )}
           {!ticket.codeValue && ticket.fileUrl && isImage(ticket) && (
             <img
               src={ticket.fileUrl}
@@ -567,17 +614,17 @@ function TicketViewerBody({
               </Button>
             )}
             <div className="flex-1" />
-            {ticket.fileUrl && isPkpass(ticket) && (
+            {showApple && (
               <Button asChild className="bg-black text-white hover:bg-black/85">
-                <a href={ticket.fileUrl}>
+                <a href={ticket.fileUrl ?? undefined}>
                   <Wallet />
                   {t('tickets.appleWallet')}
                 </a>
               </Button>
             )}
-            {ticket.walletUrl && (
+            {showGoogle && (
               <Button asChild variant="outline">
-                <a href={ticket.walletUrl} target="_blank" rel="noopener noreferrer">
+                <a href={ticket.walletUrl ?? undefined} target="_blank" rel="noopener noreferrer">
                   <Wallet />
                   {t('tickets.googleWallet')}
                 </a>

@@ -229,6 +229,8 @@ export const bookingTicket = pgTable(
     size: integer(),
     codeFormat: text(),
     codeValue: text(),
+    /** Numero di prenotazione o di biglietto, da mostrare quando manca un codice a barre. */
+    reference: text(),
     walletUrl: text(),
     createdBy: text().references(() => user.id, { onDelete: 'set null' }),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),

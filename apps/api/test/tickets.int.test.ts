@@ -93,6 +93,31 @@ run('booking tickets (integration)', () => {
     });
     expect((await list()).map((x) => x.codeValue).sort()).toEqual(['G-12345', 'M1ROSSI/ANNA']);
 
+    // Senza codice a barre, il numero di prenotazione del pass resta disponibile.
+    await upload(
+      owner,
+      trip.id,
+      { bookingId: 'hotel' },
+      {
+        name: 'hotel.pkpass',
+        type: 'application/vnd.apple.pkpass',
+        data: pkpass({
+          generic: {
+            auxiliaryFields: [{ key: 'confirmation', label: 'Booking', value: 'HT-4821' }],
+          },
+        }),
+      },
+    );
+    const hotel = (
+      await t.trpc<{ bookingId: string; codeValue: string | null; reference: string | null }[]>(
+        'tickets.list',
+        owner,
+        { tripId: trip.id },
+        'query',
+      )
+    ).data.find((x) => x.bookingId === 'hotel');
+    expect(hotel).toMatchObject({ codeValue: null, reference: 'HT-4821' });
+
     // Un .pkpass già salvato senza codice (caricato prima) lo ottiene alla prima lettura.
     const old = await upload(
       owner,

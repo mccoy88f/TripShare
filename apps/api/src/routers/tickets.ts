@@ -1,10 +1,10 @@
 import { TRPCError } from '@trpc/server';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { bookingTicket, tripMember } from '@tripshare/db';
 import { notifyTrip } from '../services/events.js';
 import { requireMember } from '../services/trips.js';
-import { codeFromGoogleWalletUrl, codeFromPkpass } from '../services/wallet-pass.js';
+import { infoFromGoogleWalletUrl, infoFromPkpass, type PassInfo } from '../services/wallet-pass.js';
 import { authedProcedure, router, type Context } from '../trpc/init.js';
 
 export const TICKET_CODE_FORMATS = [
@@ -34,8 +34,8 @@ async function checkMember(ctx: Context, tripId: string, memberId: string | null
   if (!m) throw new TRPCError({ code: 'BAD_REQUEST', message: 'UNKNOWN_MEMBER' });
 }
 
-/** Biglietti per cui si è già cercato il codice nel Wallet senza trovarlo: non si rilegge ogni volta. */
-const noWalletCode = new Set<string>();
+/** Biglietti Wallet già letti per ricavarne codice e prenotazione: non si rileggono ogni volta. */
+const walletChecked = new Set<string>();
 
 export const ticketsRouter = router({
   list: authedProcedure.input(z.object({ tripId: z.uuid() })).query(async ({ ctx, input }) => {
@@ -47,23 +47,26 @@ export const ticketsRouter = router({
         .where(eq(bookingTicket.tripId, input.tripId))
         .orderBy(asc(bookingTicket.bookingId), asc(bookingTicket.createdAt));
     let rows = await query();
-    // I biglietti Wallet caricati senza codice (anche prima che si leggesse): lo si ricava ora.
+    // I biglietti Wallet (anche caricati prima che si leggesse il file) senza codice o senza
+    // numero di prenotazione: li si ricava ora, una volta sola per biglietto.
     let found = false;
     for (const r of rows) {
-      if (r.codeValue || noWalletCode.has(r.id)) continue;
-      let code = null;
+      const isPass = r.mimeType === 'application/vnd.apple.pkpass' || !!r.walletUrl;
+      if (!isPass || (r.codeValue && r.reference) || walletChecked.has(r.id)) continue;
+      walletChecked.add(r.id);
+      let info: PassInfo = { code: null, reference: null };
       if (r.mimeType === 'application/vnd.apple.pkpass' && r.storageName) {
         const data = await ctx.storage?.readPrivate(r.storageName);
-        code = data ? codeFromPkpass(data) : null;
-      } else if (r.walletUrl) code = codeFromGoogleWalletUrl(r.walletUrl);
-      if (!code) {
-        if (r.mimeType === 'application/vnd.apple.pkpass' || r.walletUrl) noWalletCode.add(r.id);
-        continue;
+        if (data) info = infoFromPkpass(data);
+      } else if (r.walletUrl) info = infoFromGoogleWalletUrl(r.walletUrl);
+      const patch: Partial<typeof bookingTicket.$inferInsert> = {};
+      if (!r.codeValue && info.code) {
+        patch.codeFormat = info.code.format;
+        patch.codeValue = info.code.value;
       }
-      await ctx.db
-        .update(bookingTicket)
-        .set({ codeFormat: code.format, codeValue: code.value })
-        .where(and(eq(bookingTicket.id, r.id), isNull(bookingTicket.codeValue)));
+      if (!r.reference && info.reference) patch.reference = info.reference;
+      if (Object.keys(patch).length === 0) continue;
+      await ctx.db.update(bookingTicket).set(patch).where(eq(bookingTicket.id, r.id));
       found = true;
     }
     if (found) rows = await query();
@@ -92,9 +95,9 @@ export const ticketsRouter = router({
     .mutation(async ({ ctx, input }) => {
       await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
       await checkMember(ctx, input.tripId, input.memberId);
-      // Dal link Google Wallet si ricava anche il codice, se non è stato indicato.
-      const walletCode =
-        !input.codeValue && input.walletUrl ? codeFromGoogleWalletUrl(input.walletUrl) : null;
+      // Dal link Google Wallet si ricavano anche il codice e il numero di prenotazione.
+      const wallet = input.walletUrl ? infoFromGoogleWalletUrl(input.walletUrl) : null;
+      const walletCode = !input.codeValue && wallet?.code ? wallet.code : null;
       const [row] = await ctx.db
         .insert(bookingTicket)
         .values({
@@ -102,6 +105,7 @@ export const ticketsRouter = router({
           ...(walletCode
             ? { codeFormat: walletCode.format as never, codeValue: walletCode.value }
             : {}),
+          reference: wallet?.reference ?? null,
           memberId: input.memberId ?? null,
           createdBy: ctx.user.id,
         })
@@ -183,7 +187,7 @@ export const ticketsRouter = router({
       await checkMember(ctx, input.tripId, input.memberId);
       const { tripId, id, ...patch } = input;
       // Un nuovo link Wallet va riletto per ricavarne il codice.
-      noWalletCode.delete(id);
+      walletChecked.delete(id);
       await ctx.db
         .update(bookingTicket)
         .set(patch)
