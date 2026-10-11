@@ -67,7 +67,7 @@ function fakeAi(calls: Call[], replies: Record<string, unknown[]>) {
           pages: {
             '1': {
               index: 1,
-              title: 'File:Foto.jpg',
+              title: 'File:Cattedrale Quattro Canti Colosseo Foro Romano Pantheon.jpg',
               imageinfo: [
                 {
                   thumburl: 'https://93.184.216.34/commons-1.jpg',
