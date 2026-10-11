@@ -1500,7 +1500,8 @@
       }
     },
     "apply_one": "Apply the change",
-    "apply_other": "Apply {{count}} changes"
+    "apply_other": "Apply {{count}} changes",
+    "continueInChat": "Continue in chat"
   },
   "section": {
     "places": "Ask Nina to suggest places",

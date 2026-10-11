@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { inferRouterInputs } from '@trpc/server';
 import type { AppRouter } from '@tripshare/api/router';
+import { aiConnected, onAiDelta, waitForAiEvent } from './ai-events';
 import { useTRPC } from './trpc';
 
 export type AiInput = inferRouterInputs<AppRouter>['ai']['start']['input'];
@@ -32,8 +33,6 @@ export function useAiStatus() {
   return useQuery({ ...trpc.ai.status.queryOptions(), staleTime: 60_000 });
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 /**
  * Avvia un lavoro AI e ne attende il risultato (il worker lo elabora in background).
  * Gli errori vengono mostrati con un toast tradotto e la promessa restituisce null.
@@ -49,26 +48,37 @@ export function useAiTask() {
     async <T>(
       tripId: string | null,
       input: AiInput,
-      options: { onStarted?: (started: { conversationId: string | null }) => void } = {},
+      options: {
+        onStarted?: (started: { conversationId: string | null }) => void;
+        /** Testo della risposta della chat mentre viene scritta. */
+        onDelta?: (text: string) => void;
+      } = {},
     ): Promise<T | null> => {
       setRunning(true);
       try {
         const { id, conversationId } = await start.mutateAsync({ tripId, input });
         options.onStarted?.({ conversationId });
-        const deadline = Date.now() + 5 * 60_000;
-        for (let delay = 800; Date.now() < deadline; delay = Math.min(delay * 1.3, 3000)) {
-          const job = await queryClient.fetchQuery({
-            ...trpc.ai.job.queryOptions({ id }),
-            staleTime: 0,
-          });
-          if (job.status === 'done') {
-            void queryClient.invalidateQueries({ queryKey: trpc.ai.status.queryKey() });
-            return job.result as T;
+        const stopDelta = options.onDelta ? onAiDelta(id, options.onDelta) : undefined;
+        try {
+          const deadline = Date.now() + 5 * 60_000;
+          for (let delay = 800; Date.now() < deadline; delay = Math.min(delay * 1.3, 3000)) {
+            const job = await queryClient.fetchQuery({
+              ...trpc.ai.job.queryOptions({ id }),
+              staleTime: 0,
+            });
+            if (job.status === 'done') {
+              void queryClient.invalidateQueries({ queryKey: trpc.ai.status.queryKey() });
+              return job.result as T;
+            }
+            if (job.status === 'error') throw new Error(job.error ?? 'AI_FAILED');
+            // Con il flusso in tempo reale il server avvisa appena il lavoro finisce: si
+            // controlla solo ogni tanto, per sicurezza. Senza, si controlla spesso.
+            await waitForAiEvent(id, aiConnected() ? 8000 : delay);
           }
-          if (job.status === 'error') throw new Error(job.error ?? 'AI_FAILED');
-          await sleep(delay);
+          throw new Error('AI_TIMEOUT');
+        } finally {
+          stopDelta?.();
         }
-        throw new Error('AI_TIMEOUT');
       } catch (err) {
         // Gli errori arrivano come "CODICE: dettaglio del provider".
         const message = err instanceof Error ? err.message : 'AI_FAILED';

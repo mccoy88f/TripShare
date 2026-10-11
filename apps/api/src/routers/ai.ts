@@ -136,9 +136,21 @@ export const aiRouter = router({
           })
           .where(eq(trip.id, input.tripId));
       }
-      if (job.kind === 'chat' && input.tripId) {
-        // Ogni messaggio appartiene a una conversazione: se manca se ne apre una nuova.
+      if ((job.kind === 'chat' || job.kind === 'refine') && input.tripId) {
+        // Ogni messaggio appartiene a una conversazione: se manca se ne apre una nuova. Le
+        // richieste su un elemento vanno nell'ultima chat del viaggio, se c'è.
         let conversationId = job.conversationId;
+        if (!conversationId && job.kind === 'refine') {
+          const [latest] = await ctx.db
+            .select({ id: aiConversation.id })
+            .from(aiConversation)
+            .where(
+              and(eq(aiConversation.tripId, input.tripId), eq(aiConversation.userId, ctx.user.id)),
+            )
+            .orderBy(desc(aiConversation.updatedAt))
+            .limit(1);
+          conversationId = latest?.id;
+        }
         if (conversationId) {
           const [own] = await ctx.db
             .select({ id: aiConversation.id })
@@ -152,7 +164,10 @@ export const aiRouter = router({
             );
           if (!own) throw new TRPCError({ code: 'NOT_FOUND', message: 'CONVERSATION_NOT_FOUND' });
         } else {
-          const title = job.message.replace(/\s+/g, ' ').trim().slice(0, 60);
+          const title = (job.kind === 'chat' ? job.message : (job.label ?? job.instruction))
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, 60);
           const [created] = await ctx.db
             .insert(aiConversation)
             .values({ tripId: input.tripId, userId: ctx.user.id, title })
@@ -167,7 +182,8 @@ export const aiRouter = router({
         });
         return {
           ...started,
-          conversationId: job.kind === 'chat' ? (job.conversationId ?? null) : null,
+          conversationId:
+            job.kind === 'chat' || job.kind === 'refine' ? (job.conversationId ?? null) : null,
         };
       } catch (err) {
         if (err instanceof AiJobError)

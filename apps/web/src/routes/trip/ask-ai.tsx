@@ -1,5 +1,6 @@
 import { Loader2, Send, Sparkles } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -24,6 +25,9 @@ export interface AskTarget {
 interface RefineResult {
   summary: string;
   actions: PlanOp[];
+  /** Messaggio della chat che registra la proposta (per segnarla come applicata). */
+  messageId?: string;
+  conversationId?: string;
 }
 
 /**
@@ -96,6 +100,8 @@ function AskAiDialog({
   const { apply, pending } = usePlanOps(tripId);
   const { data: planData } = usePlan(tripId);
   const undo = useMutation(trpc.plan.undo.mutationOptions());
+  const markApplied = useMutation(trpc.ai.chat.markApplied.mutationOptions());
+  const navigate = useNavigate();
   const [instruction, setInstruction] = useState('');
   const [proposal, setProposal] = useState<RefineResult | null>(null);
   const plan = planData?.plan;
@@ -104,8 +110,37 @@ function AskAiDialog({
   const ask = async (text: string) => {
     const instr = text.trim();
     if (instr.length < 3 || running) return;
-    const result = await run<RefineResult>(tripId, { kind: 'refine', target, instruction: instr });
-    if (result) setProposal(result);
+    const result = await run<RefineResult>(tripId, {
+      kind: 'refine',
+      target,
+      instruction: instr,
+      label: name.slice(0, 120),
+    });
+    if (result) {
+      setProposal(result);
+      // La richiesta è ora nella chat del viaggio.
+      void queryClient.invalidateQueries({
+        queryKey: trpc.ai.chat.conversations.queryKey({ tripId }),
+      });
+    }
+  };
+
+  /** Apre la chat del viaggio, dove la richiesta è già registrata, per continuare lì. */
+  const continueInChat = async () => {
+    const conversationId = proposal?.conversationId;
+    if (conversationId)
+      await queryClient.invalidateQueries({
+        queryKey: trpc.ai.chat.history.queryKey({ tripId, conversationId }),
+      });
+    await queryClient.invalidateQueries({
+      queryKey: trpc.ai.chat.conversations.queryKey({ tripId }),
+    });
+    onClose();
+    void navigate({
+      to: '/app/trips/$tripId',
+      params: { tripId },
+      search: { tab: 'assistant' },
+    });
   };
 
   const placeNames = Object.fromEntries((plan?.places ?? []).map((p) => [p.id, p.name]));
@@ -157,9 +192,26 @@ function AskAiDialog({
         before={before}
         applyLabel={(count) => t('refine.apply', { count })}
         applying={pending || undo.isPending}
+        secondary={
+          proposal.conversationId
+            ? { label: t('refine.continueInChat'), onClick: () => void continueInChat() }
+            : undefined
+        }
         onClose={onClose}
         onApply={async (ops) => {
           const res = await apply(ops, { snapshot: name.slice(0, 60) });
+          if (proposal.messageId) {
+            await markApplied
+              .mutateAsync({ tripId, messageId: proposal.messageId })
+              .catch(() => undefined);
+            if (proposal.conversationId)
+              void queryClient.invalidateQueries({
+                queryKey: trpc.ai.chat.history.queryKey({
+                  tripId,
+                  conversationId: proposal.conversationId,
+                }),
+              });
+          }
           const snapshotId = res?.snapshotId;
           toast.success(t('refine.applied'), {
             duration: 15_000,

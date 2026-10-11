@@ -161,6 +161,8 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
   );
   const [message, setMessage] = useState('');
   const [sent, setSent] = useState<string | null>(null);
+  /** Risposta di Nina mentre la scrive, prima che sia salvata nella conversazione. */
+  const [streamed, setStreamed] = useState('');
   const [expense, setExpense] = useState<ExpensePreset | null>(null);
   /** Modifiche proposte in revisione prima di essere applicate. */
   const [reviewing, setReviewing] = useState<{ messageId: string; ops: PlanOp[] } | null>(null);
@@ -169,6 +171,7 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
   useOnAdd('assistant', () => input.current?.focus());
   const canEdit = trip.role !== 'viewer';
 
+  const streaming = streamed.length > 0;
   // Corpo tra graffe: in Chrome recente scrollIntoView restituisce una Promise, che React
   // scambierebbe per la funzione di pulizia dell'effetto.
   const scrollToEnd = () => {
@@ -176,7 +179,7 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
   };
   useEffect(() => {
     scrollToEnd();
-  }, [history?.length, sent, conversationId]);
+  }, [history?.length, sent, conversationId, streaming]);
   // Con la tastiera aperta l'ultimo messaggio resta visibile sopra la casella di testo.
   useEffect(() => {
     if (keyboard.open) scrollToEnd();
@@ -198,11 +201,13 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
     if (!msg || running) return;
     setMessage('');
     setSent(msg);
+    setStreamed('');
     let target = conversationId ?? null;
     await run(
       trip.id,
       { kind: 'chat', message: msg, ...(target ? { conversationId: target } : {}) },
       {
+        onDelta: setStreamed,
         onStarted: ({ conversationId: started }) => {
           if (started && started !== target) {
             target = started;
@@ -218,6 +223,7 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
       });
     await queryClient.invalidateQueries({ queryKey: conversationsKey });
     setSent(null);
+    setStreamed('');
   };
 
   useEffect(() => {
@@ -440,10 +446,18 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
               {sent}
             </div>
           </div>
-          <div className="flex items-center gap-2 px-1 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" />
-            {t('ai.chat.thinking')}
-          </div>
+          {streamed ? (
+            <div className="flex justify-start">
+              <div className="max-w-[85%] rounded-2xl rounded-bl-md border bg-card px-4 py-2.5 text-sm break-words">
+                <Markdown>{streamed}</Markdown>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-1 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              {t('ai.chat.thinking')}
+            </div>
+          )}
         </>
       )}
       <div ref={bottom} />

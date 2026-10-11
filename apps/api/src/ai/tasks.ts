@@ -297,6 +297,10 @@ export const AiInputSchema = z.discriminatedUnion('kind', [
       id: z.string().min(1).max(64),
     }),
     instruction: z.string().trim().min(3).max(1000),
+    /** Nome dell'elemento, per la cronologia della chat. */
+    label: z.string().trim().max(120).optional(),
+    /** Chat in cui registrare la richiesta (di solito l'ultima del viaggio). */
+    conversationId: z.uuid().optional(),
   }),
   z.object({ kind: z.literal('verify'), placeId: z.string().max(64) }),
   z.object({
@@ -575,7 +579,14 @@ JSON Schema: ${JSON.stringify(schemaOf(RefineResultSchema))}
 Programma: ${planContext(ctx.plan!, { group: extra.group })}
 Brief del gruppo: ${JSON.stringify(extra.brief ?? null)}
 Linee guida: ${JSON.stringify(extra.guidelines ?? [])}
-Elemento da cambiare: ${JSON.stringify(extra.target ?? null)}`,
+Elemento da cambiare: ${JSON.stringify(extra.target ?? null)}${
+              ctx.history?.length
+                ? `\nConversazione recente con il gruppo (per contesto: tieni conto di ciò che avete già deciso):\n${ctx.history
+                    .map((m) => `${m.role === 'user' ? 'Utente' : 'Nina'}: ${m.content}`)
+                    .join('\n')
+                    .slice(-4000)}`
+                : ''
+            }`,
           },
           { role: 'user', content: input.instruction },
         ],

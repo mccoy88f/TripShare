@@ -1500,7 +1500,8 @@
       }
     },
     "apply_one": "Applica la modifica",
-    "apply_other": "Applica {{count}} modifiche"
+    "apply_other": "Applica {{count}} modifiche",
+    "continueInChat": "Continua in chat"
   },
   "section": {
     "places": "Fai proporre i luoghi a Nina",

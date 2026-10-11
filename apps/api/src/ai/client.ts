@@ -29,6 +29,11 @@ export interface CompletionRequest {
   appName: string;
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
+  /**
+   * Se presente la risposta si legge man mano che il modello la scrive e a ogni pezzo si
+   * chiama la funzione con il testo completo scritto finora.
+   */
+  onDelta?: (textSoFar: string) => void;
 }
 
 export interface CompletionResult {
@@ -52,6 +57,28 @@ export class AiError extends Error {
 
 const base = () =>
   (process.env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1').replace(/\/$/, '');
+
+const isEventStream = (res: Response) =>
+  (res.headers.get('content-type') ?? '').includes('text/event-stream');
+
+/** Legge un flusso Server-Sent Events e restituisce il contenuto di ogni riga `data:`. */
+async function* sseData(res: Response): AsyncGenerator<string> {
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    for (let i = buffer.indexOf('\n'); i >= 0; i = buffer.indexOf('\n')) {
+      const line = buffer.slice(0, i).replace(/\r$/, '');
+      buffer = buffer.slice(i + 1);
+      if (line.startsWith('data:')) yield line.slice(5).trim();
+    }
+  }
+  const rest = buffer.trim();
+  if (rest.startsWith('data:')) yield rest.slice(5).trim();
+}
 
 export async function complete(req: CompletionRequest): Promise<CompletionResult> {
   return req.provider === 'gemini' ? completeGemini(req) : completeOpenRouter(req);
@@ -78,6 +105,7 @@ async function completeOpenRouter(req: CompletionRequest): Promise<CompletionRes
       : {}),
     ...(req.web ? { plugins: [{ id: 'web', max_results: 5 }] } : {}),
     ...(req.denyDataCollection ? { provider: { data_collection: 'deny' } } : {}),
+    ...(req.onDelta ? { stream: true } : {}),
   };
   const res = await (req.fetchImpl ?? fetch)(`${base()}/chat/completions`, {
     method: 'POST',
@@ -90,6 +118,8 @@ async function completeOpenRouter(req: CompletionRequest): Promise<CompletionRes
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(req.timeoutMs ?? 240_000),
   });
+  if (res.ok && req.onDelta && isEventStream(res))
+    return readOpenRouterStream(res, models[0]!, req.onDelta);
   const json = (await res.json().catch(() => null)) as {
     model?: string;
     choices?: { message?: { content?: string | null } }[];
@@ -111,6 +141,52 @@ async function completeOpenRouter(req: CompletionRequest): Promise<CompletionRes
     promptTokens: json.usage?.prompt_tokens ?? null,
     completionTokens: json.usage?.completion_tokens ?? null,
     cost: json.usage?.cost ?? null,
+  };
+}
+
+/** Risposta di OpenRouter in streaming: il testo arriva a pezzi, i consumi nell'ultimo. */
+async function readOpenRouterStream(
+  res: Response,
+  requested: string,
+  onDelta: (text: string) => void,
+): Promise<CompletionResult> {
+  let content = '';
+  let model: string | undefined;
+  let usage: { prompt_tokens?: number; completion_tokens?: number; cost?: number } | undefined;
+  for await (const data of sseData(res)) {
+    if (data === '[DONE]') break;
+    let chunk: {
+      model?: string;
+      choices?: { delta?: { content?: string | null } }[];
+      usage?: typeof usage;
+      error?: { message?: string; code?: number };
+    };
+    try {
+      chunk = JSON.parse(data);
+    } catch {
+      continue;
+    }
+    if (chunk.error) {
+      const message = chunk.error.message ?? 'stream error';
+      if (chunk.error.code === 429)
+        throw new AiError(`AI_RATE_LIMITED: ${message}`.slice(0, 500), 429);
+      throw new AiError(`AI_PROVIDER_ERROR: ${message}`.slice(0, 500), chunk.error.code);
+    }
+    model = chunk.model ?? model;
+    if (chunk.usage) usage = chunk.usage;
+    const piece = chunk.choices?.[0]?.delta?.content;
+    if (piece) {
+      content += piece;
+      onDelta(content);
+    }
+  }
+  if (!content.trim()) throw new AiError('AI_EMPTY_RESPONSE');
+  return {
+    content,
+    model: model ?? requested,
+    promptTokens: usage?.prompt_tokens ?? null,
+    completionTokens: usage?.completion_tokens ?? null,
+    cost: usage?.cost ?? null,
   };
 }
 
@@ -168,6 +244,51 @@ async function completeGemini(req: CompletionRequest): Promise<CompletionResult>
   throw lastError ?? new AiError('AI_PROVIDER_ERROR');
 }
 
+/** Unisce i pezzi di una risposta Gemini in streaming in una risposta come quella completa. */
+async function readGeminiStream(
+  res: Response,
+  onDelta: (text: string) => void,
+): Promise<GeminiResponse> {
+  let text = '';
+  const merged: GeminiResponse = {};
+  const chunks: { web?: { uri?: string; title?: string } }[] = [];
+  let finishReason: string | undefined;
+  for await (const data of sseData(res)) {
+    let part: GeminiResponse;
+    try {
+      part = JSON.parse(data) as GeminiResponse;
+    } catch {
+      continue;
+    }
+    if (part.error) {
+      merged.error = part.error;
+      break;
+    }
+    if (part.promptFeedback?.blockReason) merged.promptFeedback = part.promptFeedback;
+    if (part.usageMetadata) merged.usageMetadata = part.usageMetadata;
+    if (part.modelVersion) merged.modelVersion = part.modelVersion;
+    const candidate = part.candidates?.[0];
+    if (candidate?.finishReason) finishReason = candidate.finishReason;
+    chunks.push(...(candidate?.groundingMetadata?.groundingChunks ?? []));
+    const piece = (candidate?.content?.parts ?? [])
+      .filter((p) => !p.thought && typeof p.text === 'string')
+      .map((p) => p.text)
+      .join('');
+    if (piece) {
+      text += piece;
+      onDelta(text);
+    }
+  }
+  merged.candidates = [
+    {
+      content: { parts: [{ text }] },
+      finishReason,
+      groundingMetadata: { groundingChunks: chunks },
+    },
+  ];
+  return merged;
+}
+
 async function callGemini(
   req: CompletionRequest,
   model: string,
@@ -199,7 +320,9 @@ async function callGemini(
     ...(req.web ? { tools: [{ google_search: {} }] } : {}),
   };
   const res = await (req.fetchImpl ?? fetch)(
-    `${geminiBase()}/models/${encodeURIComponent(model)}:generateContent`,
+    `${geminiBase()}/models/${encodeURIComponent(model)}:${
+      req.onDelta ? 'streamGenerateContent?alt=sse' : 'generateContent'
+    }`,
     {
       method: 'POST',
       headers: { 'x-goog-api-key': req.apiKey, 'content-type': 'application/json' },
@@ -207,7 +330,10 @@ async function callGemini(
       signal: AbortSignal.timeout(req.timeoutMs ?? 240_000),
     },
   );
-  const json = (await res.json().catch(() => null)) as GeminiResponse | null;
+  const json =
+    res.ok && req.onDelta && isEventStream(res)
+      ? await readGeminiStream(res, req.onDelta)
+      : ((await res.json().catch(() => null)) as GeminiResponse | null);
   if (!res.ok || !json || json.error) {
     const message = json?.error?.message ?? `HTTP ${res.status}`;
     if (res.status === 401 || res.status === 403 || /API key/i.test(message))

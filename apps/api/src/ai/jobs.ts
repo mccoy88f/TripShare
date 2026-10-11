@@ -4,6 +4,7 @@ import { aiChatMessage, aiConversation, aiJob, trip, user, type Database } from 
 import { isLocale, type Locale } from '@tripshare/shared';
 import { applyPlanOps, PlanOpError, type TripDocument } from '@tripshare/shared/trip-format';
 import { listMembers } from '../services/members.js';
+import type { AiEvent } from '../services/realtime.js';
 import { activeMemberCount, readPlan } from '../services/plan.js';
 import { computeLedgers } from '../services/trips.js';
 import type { SettingsService } from '../settings.js';
@@ -13,6 +14,7 @@ import { downloadImageFromAnyUrl } from '../image-download.js';
 import { searchCommons } from '../photo-search.js';
 import { AiError, complete, type ChatMessage } from './client.js';
 import { runGeneration } from './generation.js';
+import { replyFromPartialJson, throttleText } from './stream.js';
 import {
   AiInputSchema,
   buildRepairMessage,
@@ -41,6 +43,8 @@ export interface AiDeps {
   httpFetch?: typeof fetch;
   /** Accoda il lavoro al worker; senza coda il lavoro gira subito nel processo. */
   enqueue?: (jobId: string) => Promise<void>;
+  /** Avvisa chi ha richiesto il lavoro quando finisce e, per la chat, man mano che risponde. */
+  emit?: (event: AiEvent) => void;
   log?: (msg: string) => void;
 }
 
@@ -191,6 +195,8 @@ export async function runSpec(
   access: Awaited<ReturnType<typeof resolveAiAccess>>,
   spec: ReturnType<typeof buildTask>,
   locale: Locale,
+  /** Testo grezzo della risposta scritto finora (si ricomincia a ogni nuovo tentativo). */
+  onText?: (text: string) => void,
 ): Promise<SpecRun> {
   const messages: ChatMessage[] = [...spec.messages];
   const out = { value: null as unknown, model: access.model as string | null };
@@ -211,6 +217,7 @@ export async function runSpec(
       appUrl: deps.appUrl,
       appName: deps.appName,
       fetchImpl: deps.httpFetch,
+      onDelta: onText,
     });
     out.model = res.model;
     promptTokens += res.promptTokens ?? 0;
@@ -236,8 +243,47 @@ export async function runSpec(
   };
 }
 
+/** Gli ultimi messaggi di una chat (dal più vecchio), per dare contesto al modello. */
+async function loadChatHistory(
+  db: Database,
+  tripId: string,
+  userId: string,
+  conversationId?: string,
+): Promise<{ role: 'user' | 'assistant'; content: string }[]> {
+  const rows = await db
+    .select({ role: aiChatMessage.role, content: aiChatMessage.content })
+    .from(aiChatMessage)
+    .where(
+      and(
+        eq(aiChatMessage.tripId, tripId),
+        eq(aiChatMessage.userId, userId),
+        conversationId
+          ? eq(aiChatMessage.conversationId, conversationId)
+          : isNull(aiChatMessage.conversationId),
+      ),
+    )
+    .orderBy(desc(aiChatMessage.createdAt))
+    .limit(12);
+  return rows
+    .reverse()
+    .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
+}
+
 /** Esegue un lavoro: chiama il modello, valida la risposta (con correzioni) e salva il risultato. */
 export async function processAiJob(deps: AiDeps, jobId: string) {
+  await runAiJob(deps, jobId);
+  if (!deps.emit) return;
+  // Chi aspetta il risultato lo riceve subito, senza dover chiedere.
+  const [row] = await deps.db
+    .select({ userId: aiJob.userId, status: aiJob.status, error: aiJob.error })
+    .from(aiJob)
+    .where(eq(aiJob.id, jobId));
+  if (row?.status === 'done') deps.emit({ userId: row.userId, jobId, phase: 'done' });
+  else if (row?.status === 'error')
+    deps.emit({ userId: row.userId, jobId, phase: 'error', error: row.error ?? 'AI_FAILED' });
+}
+
+async function runAiJob(deps: AiDeps, jobId: string) {
   const { db } = deps;
   const [job] = await db.select().from(aiJob).where(eq(aiJob.id, jobId));
   if (!job || (job.status !== 'queued' && job.status !== 'running')) return;
@@ -273,25 +319,11 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
     }
     if (input.kind === 'receipt' || input.kind === 'booking' || input.kind === 'document')
       ctx.fileDataUrl = await fileDataUrl(deps.storage, input.file, input.mime);
+    if (input.kind === 'refine' && job.tripId && input.conversationId)
+      ctx.history = await loadChatHistory(db, job.tripId, job.userId, input.conversationId);
     if (input.kind === 'chat') {
       if (!job.tripId) throw new AiJobError('TRIP_NOT_FOUND');
-      const history = await db
-        .select({ role: aiChatMessage.role, content: aiChatMessage.content })
-        .from(aiChatMessage)
-        .where(
-          and(
-            eq(aiChatMessage.tripId, job.tripId),
-            eq(aiChatMessage.userId, job.userId),
-            input.conversationId
-              ? eq(aiChatMessage.conversationId, input.conversationId)
-              : isNull(aiChatMessage.conversationId),
-          ),
-        )
-        .orderBy(desc(aiChatMessage.createdAt))
-        .limit(12);
-      ctx.history = history
-        .reverse()
-        .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
+      ctx.history = await loadChatHistory(db, job.tripId, job.userId, input.conversationId);
       await db.insert(aiChatMessage).values({
         tripId: job.tripId,
         userId: job.userId,
@@ -356,7 +388,15 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
       };
     }
 
-    const run = await runSpec(deps, access, spec, locale);
+    // Nella chat la risposta si vede mentre il modello la scrive.
+    const streaming =
+      input.kind === 'chat' && deps.emit
+        ? throttleText((raw) => {
+            const reply = replyFromPartialJson(raw);
+            if (reply) deps.emit!({ userId: job.userId, jobId, phase: 'delta', text: reply });
+          })
+        : undefined;
+    const run = await runSpec(deps, access, spec, locale, streaming);
     model = run.model;
     promptTokens += run.promptTokens;
     completionTokens += run.completionTokens;
@@ -374,6 +414,34 @@ export async function processAiJob(deps: AiDeps, jobId: string) {
       result = {
         candidates: await fetchPlacePhotos(deps, input.name, value as PlacePhotoResult),
       };
+    if (input.kind === 'refine' && job.tripId && input.conversationId) {
+      // La richiesta resta nella chat del viaggio: Nina la ricorda e si può continuare lì.
+      const refined = value as RefineResult;
+      const asked = input.label ? `«${input.label}»: ${input.instruction}` : input.instruction;
+      await db.insert(aiChatMessage).values({
+        tripId: job.tripId,
+        userId: job.userId,
+        conversationId: input.conversationId,
+        role: 'user',
+        content: asked,
+      });
+      const [msg] = await db
+        .insert(aiChatMessage)
+        .values({
+          tripId: job.tripId,
+          userId: job.userId,
+          conversationId: input.conversationId,
+          role: 'assistant',
+          content: refined.summary,
+          actions: refined.actions.length ? refined.actions : null,
+        })
+        .returning({ id: aiChatMessage.id });
+      await db
+        .update(aiConversation)
+        .set({ updatedAt: new Date() })
+        .where(eq(aiConversation.id, input.conversationId));
+      result = { ...refined, messageId: msg!.id, conversationId: input.conversationId };
+    }
     if (input.kind === 'chat') {
       const chat = value as ChatResult;
       const [msg] = await db

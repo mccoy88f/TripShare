@@ -1,3 +1,4 @@
+import { dispatchAiLocal } from '../services/realtime.js';
 import type { AppServices } from '../trpc/init.js';
 import type { AiDeps } from './jobs.js';
 
@@ -17,6 +18,8 @@ export function aiDeps(services: AppServices): AiDeps {
           await queue.add('run', { jobId }, { removeOnComplete: 1000, removeOnFail: 1000 });
         }
       : undefined,
+    // Senza worker il lavoro gira nel processo dell'API, che ha già i dispositivi collegati.
+    emit: queue ? undefined : dispatchAiLocal,
     log: (msg) => console.warn(msg),
   };
 }

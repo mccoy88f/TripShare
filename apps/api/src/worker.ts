@@ -4,6 +4,7 @@ import { createDb } from '@tripshare/db';
 import { AI_QUEUE, processAiJob } from './ai/jobs.js';
 import { EMAIL_QUEUE, createDirectEmailSender, type EmailJob } from './email/index.js';
 import { envWarnings, loadEnv } from './env.js';
+import { createAiEmitter } from './services/realtime.js';
 import { MEDIA_QUEUE, processVideoMemory } from './services/memories.js';
 import { createWebPushSender, NOTIFY_QUEUE, sendEventPush } from './services/push.js';
 import { SettingsService } from './settings.js';
@@ -36,6 +37,7 @@ emailWorker.on('failed', (job, err) =>
   ),
 );
 
+const aiEmit = createAiEmitter(connection);
 const aiWorker = new Worker<{ jobId: string }>(
   AI_QUEUE,
   async (job) => {
@@ -49,6 +51,7 @@ const aiWorker = new Worker<{ jobId: string }>(
         encryptionKey: env.ENCRYPTION_KEY,
         appUrl: env.APP_URL,
         appName: env.APP_NAME,
+        emit: aiEmit,
         log: (msg) => console.warn(msg),
       },
       job.data.jobId,

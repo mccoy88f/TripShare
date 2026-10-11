@@ -4,6 +4,7 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { subscribeUserAi, type AiEvent } from '../src/services/realtime.js';
 import { createTestApp } from './helpers.js';
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
@@ -21,6 +22,9 @@ interface Call {
   body: Record<string, unknown>;
   auth: string | null;
 }
+
+/** Chiamata a Gemini (anche in streaming, come nella chat). */
+const isGemini = (url: string) => /:(stream[Gg]|g)enerateContent/.test(url);
 
 /** Finto OpenRouter + Gemini: risponde in base al nome dello schema richiesto. */
 function fakeAi(calls: Call[], replies: Record<string, unknown[]>) {
@@ -86,7 +90,7 @@ function fakeAi(calls: Call[], replies: Record<string, unknown[]>) {
       });
     if (url.endsWith('/key')) return Response.json({ data: { label: 'k', usage: 0 } });
     let schemaName: string;
-    if (url.includes(':generateContent')) {
+    if (isGemini(url)) {
       const system = JSON.stringify(body.systemInstruction ?? body.contents);
       schemaName = /scontrin/i.test(system) ? 'tripshare_receipt' : 'tripshare_assistant';
     } else {
@@ -96,7 +100,7 @@ function fakeAi(calls: Call[], replies: Record<string, unknown[]>) {
     const queue = replies[schemaName]!;
     const reply = queue.length > 1 ? queue.shift() : queue[0];
     const text = typeof reply === 'string' ? reply : JSON.stringify(reply);
-    if (url.includes(':generateContent'))
+    if (isGemini(url))
       return Response.json({
         candidates: [{ content: { parts: [{ text }] } }],
         usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 20 },
@@ -253,8 +257,8 @@ run('AI jobs (integration)', () => {
       'query',
     );
     expect(job.data).toMatchObject({ status: 'done', provider: 'gemini' });
-    const call = calls.find((c) => c.url.includes(':generateContent'))!;
-    expect(call.url).toContain('/models/gemini-flash-latest:generateContent');
+    const call = calls.find((c) => isGemini(c.url))!;
+    expect(call.url).toContain('/models/gemini-flash-latest:');
     expect(call.auth).toBe('AIza-central-gemini-key');
     expect(call.body.generationConfig).toMatchObject({ responseMimeType: 'application/json' });
     // Gemini rifiuta gli schemi grandi: lo schema va solo nel prompt.
@@ -283,6 +287,30 @@ run('AI jobs (integration)', () => {
       input: { kind: 'chat', message: 'Altro?' },
     });
     expect(again.error?.message).toBe('AI_QUOTA_EXCEEDED');
+  });
+
+  it('tells the user when a job is done, without polling', async () => {
+    await t.settings.set('gemini.apiKey', 'AIza-central-gemini-key');
+    await t.settings.set('ai.provider', 'gemini');
+    const { marco, tripId } = await setup();
+    const me = await t.app.inject({
+      method: 'GET',
+      url: '/api/auth/get-session',
+      headers: { cookie: marco },
+    });
+    const userId = (me.json() as { user: { id: string } }).user.id;
+    const events: AiEvent[] = [];
+    const stop = subscribeUserAi(userId, (e) => events.push(e));
+    try {
+      replies.tripshare_assistant = [{ reply: 'Ciao', actions: [] }];
+      const started = await t.trpc<{ id: string }>('ai.start', marco, {
+        tripId,
+        input: { kind: 'chat', message: 'Ciao' },
+      });
+      expect(events).toEqual([{ userId, jobId: started.data.id, phase: 'done' }]);
+    } finally {
+      stop();
+    }
   });
 
   it('repeats a chat message, dropping it and everything after it', async () => {
@@ -451,6 +479,133 @@ run('AI jobs (integration)', () => {
       'query',
     );
     expect(failed.data).toMatchObject({ status: 'error', error: 'TARGET_NOT_FOUND' });
+  });
+
+  it('keeps element requests in the trip chat and remembers them', async () => {
+    await t.settings.set('openrouter.apiKey', 'sk-or-central-key-123');
+    const { marco, tripId } = await setup();
+    await t.trpc('plan.applyOps', marco, {
+      tripId,
+      ops: [
+        { type: 'ensureDays', start: '2026-10-12', end: '2026-10-14' },
+        {
+          type: 'upsertActivity',
+          date: '2026-10-12',
+          activity: { id: 'castle', title: 'Castello', time: '10:00', type: 'visit' },
+        },
+      ],
+    });
+    replies.tripshare_assistant = [{ reply: 'Il castello è meglio di mattina.', actions: [] }];
+    const first = await t.trpc<{ conversationId: string }>('ai.start', marco, {
+      tripId,
+      input: { kind: 'chat', message: 'Quando conviene il castello?' },
+    });
+    const conversationId = first.data.conversationId;
+
+    const edit = {
+      type: 'upsertActivity',
+      date: '2026-10-12',
+      activity: { id: 'castle', title: 'Castello', time: '15:00', type: 'visit' },
+    };
+    replies.tripshare_refine = [{ summary: 'Lo sposto al pomeriggio.', actions: [edit] }];
+    const started = await t.trpc<{ id: string; conversationId: string }>('ai.start', marco, {
+      tripId,
+      input: {
+        kind: 'refine',
+        target: { type: 'activity', id: 'castle' },
+        instruction: 'Spostalo al pomeriggio',
+        label: 'Castello',
+      },
+    });
+    // Senza indicare la chat, la richiesta va in quella più recente del viaggio.
+    expect(started.data.conversationId).toBe(conversationId);
+    const job = await t.trpc<{ result: { messageId: string; conversationId: string } }>(
+      'ai.job',
+      marco,
+      { id: started.data.id },
+      'query',
+    );
+    expect(job.data.result.conversationId).toBe(conversationId);
+
+    // Nina conosceva già la conversazione.
+    const refineCall = calls.find((c) => JSON.stringify(c.body).includes('tripshare_refine'))!;
+    expect(JSON.stringify(refineCall.body)).toContain('Il castello è meglio di mattina.');
+
+    const history = () =>
+      t.trpc<{ id: string; role: string; content: string; appliedAt: string | null }[]>(
+        'ai.chat.history',
+        marco,
+        { tripId, conversationId },
+        'query',
+      );
+    const messages = (await history()).data;
+    expect(messages.map((m) => m.content)).toEqual([
+      'Quando conviene il castello?',
+      'Il castello è meglio di mattina.',
+      '«Castello»: Spostalo al pomeriggio',
+      'Lo sposto al pomeriggio.',
+    ]);
+
+    // Applicata dalla scheda: in chat risulta applicata.
+    await t.trpc('ai.chat.markApplied', marco, {
+      tripId,
+      messageId: job.data.result.messageId,
+    });
+    expect((await history()).data[3]!.appliedAt).not.toBeNull();
+
+    // E la chat successiva se la ricorda.
+    replies.tripshare_assistant = [{ reply: 'Va bene.', actions: [] }];
+    calls.length = 0;
+    await t.trpc('ai.start', marco, {
+      tripId,
+      input: { kind: 'chat', message: 'Grazie', conversationId },
+    });
+    expect(JSON.stringify(calls[0]!.body)).toContain('Lo sposto al pomeriggio.');
+  });
+
+  it('opens a chat named after the element when the trip has none', async () => {
+    await t.settings.set('openrouter.apiKey', 'sk-or-central-key-123');
+    const { marco, tripId } = await setup();
+    await t.trpc('plan.applyOps', marco, {
+      tripId,
+      ops: [
+        { type: 'ensureDays', start: '2026-10-12', end: '2026-10-14' },
+        {
+          type: 'upsertActivity',
+          date: '2026-10-12',
+          activity: { id: 'castle', title: 'Castello', time: '10:00', type: 'visit' },
+        },
+      ],
+    });
+    replies.tripshare_refine = [
+      {
+        summary: 'Ok.',
+        actions: [
+          {
+            type: 'upsertActivity',
+            date: '2026-10-12',
+            activity: { id: 'castle', title: 'Castello', time: '11:00', type: 'visit' },
+          },
+        ],
+      },
+    ];
+    const started = await t.trpc<{ conversationId: string | null }>('ai.start', marco, {
+      tripId,
+      input: {
+        kind: 'refine',
+        target: { type: 'activity', id: 'castle' },
+        instruction: 'Un po’ più tardi',
+        label: 'Castello',
+      },
+    });
+    expect(started.data.conversationId).toEqual(expect.any(String));
+    const list = await t.trpc<{ id: string; title: string }[]>(
+      'ai.chat.conversations',
+      marco,
+      { tripId },
+      'query',
+    );
+    expect(list.data).toEqual([expect.objectContaining({ id: started.data.conversationId })]);
   });
 
   describe('phased trip generation', () => {
@@ -866,7 +1021,7 @@ run('AI jobs (integration)', () => {
 
     replies.tripshare_assistant = [{ reply: 'ok', actions: [] }];
     await t.trpc('ai.start', marco, { tripId, input: { kind: 'chat', message: 'ciao' } });
-    const call = calls.find((c) => c.url.includes(':generateContent'))!;
+    const call = calls.find((c) => isGemini(c.url))!;
     expect(call.auth).toBe('AIza-personal-key-0000');
   });
 

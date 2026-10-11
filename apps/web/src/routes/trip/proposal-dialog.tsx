@@ -1,4 +1,4 @@
-import { Check, Loader2, Pencil } from 'lucide-react';
+import { Check, Loader2, MessageSquare, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -86,6 +86,7 @@ export function ProposalDialog({
   hint,
   before,
   applyLabel,
+  secondary,
 }: {
   ops: PlanOp[];
   describe: (op: PlanOp, t: TFunction) => string;
@@ -94,6 +95,8 @@ export function ProposalDialog({
   title?: string;
   hint?: string;
   applyLabel?: (count: number) => string;
+  /** Seconda azione accanto a quella principale (es. continuare la conversazione in chat). */
+  secondary?: { label: string; onClick: () => void };
   applying: boolean;
   onClose: () => void;
   onApply: (ops: PlanOp[]) => Promise<void>;
@@ -198,14 +201,26 @@ export function ProposalDialog({
               </div>
             );
           })}
-          <Button
-            className="mt-3 justify-self-end"
-            disabled={applying || count === 0}
-            onClick={() => onApply(withDependencies(draft, chosen))}
-          >
-            {applying ? <Loader2 className="animate-spin" /> : <Check />}
-            {applyLabel ? applyLabel(count) : t('ai.chat.applySelected', { count })}
-          </Button>
+          <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+            {secondary && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={applying}
+                onClick={secondary.onClick}
+              >
+                <MessageSquare />
+                {secondary.label}
+              </Button>
+            )}
+            <Button
+              disabled={applying || count === 0}
+              onClick={() => onApply(withDependencies(draft, chosen))}
+            >
+              {applying ? <Loader2 className="animate-spin" /> : <Check />}
+              {applyLabel ? applyLabel(count) : t('ai.chat.applySelected', { count })}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

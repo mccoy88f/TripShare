@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { UserAvatar, type AvatarUser } from '@/components/ui/avatar';
+import { pushAiEvent, setAiConnected, type AiEventMessage } from './ai-events';
 import { describeNotification, notificationTarget } from './notifications';
 import { focusItem } from './search-focus';
 import { useTRPC } from './trpc';
@@ -33,7 +34,16 @@ export function useRealtime(enabled: boolean) {
     if (!enabled || typeof EventSource === 'undefined') return;
     const source = new EventSource('/api/events', { withCredentials: true });
     let opened = false;
+    source.addEventListener('ai', (e) => {
+      try {
+        pushAiEvent(JSON.parse((e as MessageEvent<string>).data) as AiEventMessage);
+      } catch {
+        // evento non valido: ignorato
+      }
+    });
+    source.onerror = () => setAiConnected(false);
     source.onopen = () => {
+      setAiConnected(true);
       // Dopo una riconnessione si può aver perso qualcosa: si rileggono i dati.
       if (opened) void queryClient.invalidateQueries();
       opened = true;
@@ -76,6 +86,9 @@ export function useRealtime(enabled: boolean) {
         },
       });
     });
-    return () => source.close();
+    return () => {
+      setAiConnected(false);
+      source.close();
+    };
   }, [enabled, queryClient, trpc, navigate, t]);
 }

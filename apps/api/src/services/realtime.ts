@@ -48,6 +48,52 @@ export function dispatchLocal(message: RealtimeMessage) {
 }
 
 const CHANNEL = 'tripshare:realtime';
+const AI_CHANNEL = 'tripshare:ai';
+
+/**
+ * Avanzamento di un lavoro AI per chi lo ha richiesto: `done` ed `error` chiudono l'attesa senza
+ * dover chiedere ogni tanto al server; `delta` porta il testo della risposta man mano che arriva.
+ */
+export interface AiEvent {
+  userId: string;
+  jobId: string;
+  phase: 'done' | 'error' | 'delta';
+  /** Solo per `error`: codice dell'errore. */
+  error?: string;
+  /** Solo per `delta`: testo della risposta scritto finora (sostituisce quello precedente). */
+  text?: string;
+}
+
+type AiWriter = (event: AiEvent) => void;
+const aiClients = new Map<string, Set<AiWriter>>();
+
+export function subscribeUserAi(userId: string, write: AiWriter) {
+  let set = aiClients.get(userId);
+  if (!set) aiClients.set(userId, (set = new Set()));
+  set.add(write);
+  return () => {
+    set.delete(write);
+    if (set.size === 0) aiClients.delete(userId);
+  };
+}
+
+/** Consegna un evento AI ai dispositivi collegati a questo processo. */
+export function dispatchAiLocal(event: AiEvent) {
+  for (const write of aiClients.get(event.userId) ?? [])
+    try {
+      write(event);
+    } catch {
+      // una connessione chiusa si pulisce da sola
+    }
+}
+
+/** Pubblica gli eventi AI dal worker: con Redis arrivano a qualunque istanza dell'API. */
+export function createAiEmitter(redis?: Redis): (event: AiEvent) => void {
+  return (event) => {
+    if (redis) void redis.publish(AI_CHANNEL, JSON.stringify(event)).catch(() => undefined);
+    else dispatchAiLocal(event);
+  };
+}
 
 export interface Realtime {
   publish(message: RealtimeMessage): Promise<void>;
@@ -58,10 +104,11 @@ export function createRealtime(redis?: Redis): Realtime {
   let sub: Redis | undefined;
   if (redis) {
     sub = redis.duplicate();
-    void sub.subscribe(CHANNEL).catch(() => undefined);
-    sub.on('message', (_channel, raw) => {
+    void sub.subscribe(CHANNEL, AI_CHANNEL).catch(() => undefined);
+    sub.on('message', (channel, raw) => {
       try {
-        dispatchLocal(JSON.parse(raw) as RealtimeMessage);
+        if (channel === AI_CHANNEL) dispatchAiLocal(JSON.parse(raw) as AiEvent);
+        else dispatchLocal(JSON.parse(raw) as RealtimeMessage);
       } catch {
         // messaggio non valido: ignorato
       }

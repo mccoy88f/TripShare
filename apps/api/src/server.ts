@@ -26,7 +26,7 @@ import {
 } from './services/media.js';
 import { processVideoMemory, tripForDate, visibleTo } from './services/memories.js';
 import { registerPushDelivery } from './services/push.js';
-import { createRealtime, subscribeUser } from './services/realtime.js';
+import { createRealtime, subscribeUser, subscribeUserAi } from './services/realtime.js';
 import { requireMember } from './services/trips.js';
 import { appRouter, type AppRouter } from './routers/index.js';
 import type { AppServices, Context } from './trpc/init.js';
@@ -104,10 +104,16 @@ export async function buildServer(
         `event: change\ndata: ${JSON.stringify({ ...rest, notify: notify.includes(session.user.id) })}\n\n`,
       );
     });
+    const unsubscribeAi = subscribeUserAi(session.user.id, (event) => {
+      const { userId: _userId, ...rest } = event;
+      void _userId;
+      res.write(`event: ai\ndata: ${JSON.stringify(rest)}\n\n`);
+    });
     const heartbeat = setInterval(() => res.write(': ping\n\n'), 25_000);
     const cleanup = () => {
       clearInterval(heartbeat);
       unsubscribe();
+      unsubscribeAi();
     };
     req.raw.on('close', cleanup);
     res.on('error', cleanup);
