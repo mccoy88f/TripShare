@@ -7,7 +7,6 @@ import {
   MapPin,
   CalendarCheck,
   CalendarPlus,
-  Images,
   Sparkles,
 } from 'lucide-react';
 import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
@@ -137,8 +136,8 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
               )}
               style={p.photo ? ({ '--photo': `url("${p.photo}")` } as CSSProperties) : undefined}
             >
-              {p.photo && (
-                // Solo questo pulsante apre la galleria: il resto della scheda apre i dettagli.
+              <div className="flex items-start gap-3">
+                {/* L'icona apre la galleria (foto e ricerca), come nel programma; il resto della scheda apre i dettagli. */}
                 <button
                   type="button"
                   aria-label={t('placePhoto.view', { name: p.name })}
@@ -148,31 +147,10 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
                     setGallery(p);
                   }}
                   onKeyDown={(e) => e.stopPropagation()}
-                  className="absolute top-3 right-3 grid size-9 place-items-center rounded-full bg-black/45 text-white outline-none transition hover:bg-black/65 focus-visible:ring-4 focus-visible:ring-ring/30"
+                  className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-xl outline-none transition hover:scale-110 focus-visible:ring-4 focus-visible:ring-ring/30"
                 >
-                  <Images className="size-4" />
+                  {PLACE_KIND_EMOJI[p.kind]}
                 </button>
-              )}
-              <div className="flex items-start gap-3">
-                {p.photo ? (
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-xl">
-                    {PLACE_KIND_EMOJI[p.kind]}
-                  </span>
-                ) : (
-                  // Senza foto l'emoji apre comunque la galleria (e la ricerca).
-                  <button
-                    type="button"
-                    aria-label={t('placePhoto.view', { name: p.name })}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setGallery(p);
-                    }}
-                    onKeyDown={(e) => e.stopPropagation()}
-                    className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-xl outline-none transition hover:scale-110 focus-visible:ring-4 focus-visible:ring-ring/30"
-                  >
-                    {PLACE_KIND_EMOJI[p.kind]}
-                  </button>
-                )}
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">{p.name}</p>
                   <p className="text-xs text-muted-foreground">
