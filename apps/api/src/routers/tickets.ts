@@ -1,9 +1,10 @@
 import { TRPCError } from '@trpc/server';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { bookingTicket, tripMember } from '@tripshare/db';
 import { notifyTrip } from '../services/events.js';
 import { requireMember } from '../services/trips.js';
+import { codeFromGoogleWalletUrl, codeFromPkpass } from '../services/wallet-pass.js';
 import { authedProcedure, router, type Context } from '../trpc/init.js';
 
 export const TICKET_CODE_FORMATS = [
@@ -33,14 +34,39 @@ async function checkMember(ctx: Context, tripId: string, memberId: string | null
   if (!m) throw new TRPCError({ code: 'BAD_REQUEST', message: 'UNKNOWN_MEMBER' });
 }
 
+/** Biglietti per cui si è già cercato il codice nel Wallet senza trovarlo: non si rilegge ogni volta. */
+const noWalletCode = new Set<string>();
+
 export const ticketsRouter = router({
   list: authedProcedure.input(z.object({ tripId: z.uuid() })).query(async ({ ctx, input }) => {
     await requireMember(ctx.db, input.tripId, ctx.user.id);
-    const rows = await ctx.db
-      .select()
-      .from(bookingTicket)
-      .where(eq(bookingTicket.tripId, input.tripId))
-      .orderBy(asc(bookingTicket.bookingId), asc(bookingTicket.createdAt));
+    const query = () =>
+      ctx.db
+        .select()
+        .from(bookingTicket)
+        .where(eq(bookingTicket.tripId, input.tripId))
+        .orderBy(asc(bookingTicket.bookingId), asc(bookingTicket.createdAt));
+    let rows = await query();
+    // I biglietti Wallet caricati senza codice (anche prima che si leggesse): lo si ricava ora.
+    let found = false;
+    for (const r of rows) {
+      if (r.codeValue || noWalletCode.has(r.id)) continue;
+      let code = null;
+      if (r.mimeType === 'application/vnd.apple.pkpass' && r.storageName) {
+        const data = await ctx.storage?.readPrivate(r.storageName);
+        code = data ? codeFromPkpass(data) : null;
+      } else if (r.walletUrl) code = codeFromGoogleWalletUrl(r.walletUrl);
+      if (!code) {
+        if (r.mimeType === 'application/vnd.apple.pkpass' || r.walletUrl) noWalletCode.add(r.id);
+        continue;
+      }
+      await ctx.db
+        .update(bookingTicket)
+        .set({ codeFormat: code.format, codeValue: code.value })
+        .where(and(eq(bookingTicket.id, r.id), isNull(bookingTicket.codeValue)));
+      found = true;
+    }
+    if (found) rows = await query();
     return rows.map(({ storageName, ...r }) => ({
       ...r,
       hasFile: !!storageName,
@@ -66,9 +92,19 @@ export const ticketsRouter = router({
     .mutation(async ({ ctx, input }) => {
       await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
       await checkMember(ctx, input.tripId, input.memberId);
+      // Dal link Google Wallet si ricava anche il codice, se non è stato indicato.
+      const walletCode =
+        !input.codeValue && input.walletUrl ? codeFromGoogleWalletUrl(input.walletUrl) : null;
       const [row] = await ctx.db
         .insert(bookingTicket)
-        .values({ ...input, memberId: input.memberId ?? null, createdBy: ctx.user.id })
+        .values({
+          ...input,
+          ...(walletCode
+            ? { codeFormat: walletCode.format as never, codeValue: walletCode.value }
+            : {}),
+          memberId: input.memberId ?? null,
+          createdBy: ctx.user.id,
+        })
         .returning({ id: bookingTicket.id });
       await notifyTrip(ctx.db, {
         tripId: input.tripId,
@@ -146,6 +182,8 @@ export const ticketsRouter = router({
       await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
       await checkMember(ctx, input.tripId, input.memberId);
       const { tripId, id, ...patch } = input;
+      // Un nuovo link Wallet va riletto per ricavarne il codice.
+      noWalletCode.delete(id);
       await ctx.db
         .update(bookingTicket)
         .set(patch)

@@ -2,7 +2,9 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { sql } from 'drizzle-orm';
 import { createTestApp } from './helpers.js';
+import { googleUrl, pkpass } from './wallet-fixtures.js';
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
 const run = DATABASE_URL ? describe : describe.skip;
@@ -50,6 +52,64 @@ run('booking tickets (integration)', () => {
       payload: body.payload,
     });
   }
+
+  it('reads the code from Apple and Google Wallet tickets', async () => {
+    const owner = (await t.signUp('owner@example.com', 'Owner')).cookie;
+    const { data: trip } = await t.trpc<{ id: string }>('trips.create', owner, {
+      title: 'Scozia',
+      currency: 'EUR',
+    });
+    const list = async () =>
+      (
+        await t.trpc<{ id: string; codeFormat: string | null; codeValue: string | null }[]>(
+          'tickets.list',
+          owner,
+          { tripId: trip.id },
+          'query',
+        )
+      ).data;
+
+    // File .pkpass: il codice si legge dal file, senza che serva indicarlo.
+    const up = await upload(
+      owner,
+      trip.id,
+      { bookingId: 'volo' },
+      {
+        name: 'imbarco.pkpass',
+        type: 'application/vnd.apple.pkpass',
+        data: pkpass({ barcodes: [{ format: 'PKBarcodeFormatQR', message: 'M1ROSSI/ANNA' }] }),
+      },
+    );
+    expect(up.statusCode).toBe(200);
+    expect(await list()).toEqual([
+      expect.objectContaining({ codeFormat: 'QRCode', codeValue: 'M1ROSSI/ANNA' }),
+    ]);
+
+    // Link Google Wallet: il codice è nel token del link.
+    await t.trpc('tickets.createCode', owner, {
+      tripId: trip.id,
+      bookingId: 'volo',
+      walletUrl: googleUrl({ flightObjects: [{ barcode: { type: 'AZTEC', value: 'G-12345' } }] }),
+    });
+    expect((await list()).map((x) => x.codeValue).sort()).toEqual(['G-12345', 'M1ROSSI/ANNA']);
+
+    // Un .pkpass già salvato senza codice (caricato prima) lo ottiene alla prima lettura.
+    const old = await upload(
+      owner,
+      trip.id,
+      { bookingId: 'treno' },
+      {
+        name: 'treno.pkpass',
+        type: 'application/vnd.apple.pkpass',
+        data: pkpass({ barcode: { format: 'PKBarcodeFormatPDF417', message: 'TRN-9' } }),
+      },
+    );
+    expect(old.statusCode).toBe(200);
+    await t.db.execute(
+      sql`update booking_ticket set code_format = null, code_value = null where booking_id = 'treno'`,
+    );
+    expect((await list()).find((x) => x.codeValue === 'TRN-9')?.codeFormat).toBe('PDF417');
+  });
 
   it('uploads tickets, assigns them and serves them only to members', async () => {
     const owner = (await t.signUp('owner@example.com', 'Owner')).cookie;

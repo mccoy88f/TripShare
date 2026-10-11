@@ -13,6 +13,7 @@ import sharp from 'sharp';
 import { readFile, stat } from 'node:fs/promises';
 import { bookingTicket, expense, memory, trip, tripMember, user } from '@tripshare/db';
 import { TICKET_CODE_FORMATS } from './routers/tickets.js';
+import { codeFromPkpass } from './services/wallet-pass.js';
 import { tripDocumentJsonSchema } from '@tripshare/shared/trip-format';
 import { notifyTrip } from './services/events.js';
 import {
@@ -264,6 +265,8 @@ export async function buildServer(
           ? codeFormat
           : null;
 
+      // Un biglietto Apple Wallet porta il suo codice: lo si legge dal file se non è già indicato.
+      const passCode = ext === 'pkpass' && !field('codeValue') ? codeFromPkpass(buffer) : null;
       const storageName = await storage.savePrivate(buffer, ext);
       const [row] = await services.db
         .insert(bookingTicket)
@@ -276,8 +279,9 @@ export async function buildServer(
           storageName,
           mimeType: mime,
           size: buffer.length,
-          codeFormat: format,
-          codeValue: format ? (field('codeValue')?.slice(0, 4000) ?? null) : null,
+          codeFormat: passCode?.format ?? format,
+          codeValue:
+            passCode?.value ?? (format ? (field('codeValue')?.slice(0, 4000) ?? null) : null),
           createdBy: session.user.id,
         })
         .returning({ id: bookingTicket.id });
