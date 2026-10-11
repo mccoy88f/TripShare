@@ -147,15 +147,42 @@ export async function searchWeb(
   return out;
 }
 
+const STOP_WORDS = new Set(['the', 'and', 'del', 'della', 'dei', 'delle', 'degli', 'dello', 'di']);
+
+const words = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length >= 3 && !STOP_WORDS.has(w));
+
 /**
- * Foto per un luogo: prima Wikimedia Commons (libere, con autore), poi il web via SearXNG se è
+ * Il titolo del file contiene le parole principali del nome del luogo? Commons cerca per parole
+ * sparse: senza questo controllo un ristorante può ricevere la foto di un piatto o di un'altra via.
+ */
+export function titleMatchesName(title: string, name: string): boolean {
+  const wanted = words(name);
+  if (wanted.length === 0) return true;
+  const have = new Set(words(title));
+  const found = wanted.filter((w) => have.has(w)).length;
+  return found >= Math.max(1, Math.ceil(wanted.length * 0.6));
+}
+
+/**
+ * Foto per un luogo: Wikimedia Commons (libere, con autore) e il web via SearXNG, se è
  * configurato. Una fonte che non risponde non blocca l'altra.
+ *
+ * - `name`: se dato, le foto di Commons si tengono solo se il titolo corrisponde al luogo.
+ * - `webFirst`: i risultati del web vengono prima di quelli di Commons (ristoranti, negozi…).
  */
 export async function searchPhotos(opts: {
   query: string;
   appName: string;
   searxngUrl?: string;
   fetch?: typeof fetch;
+  name?: string;
+  webFirst?: boolean;
   /** Quanti risultati restituire al massimo. */
   limit?: number;
 }): Promise<PhotoResult[]> {
@@ -164,9 +191,11 @@ export async function searchPhotos(opts: {
     opts.searxngUrl ? searchWeb(opts.query, opts.searxngUrl, opts.fetch) : Promise.resolve([]),
   ]);
   if (commons.status === 'rejected' && web.status === 'rejected') throw commons.reason;
-  const all = [
-    ...(commons.status === 'fulfilled' ? commons.value : []),
-    ...(web.status === 'fulfilled' ? web.value : []),
-  ];
+  const name = opts.name;
+  const fromCommons = (commons.status === 'fulfilled' ? commons.value : []).filter(
+    (p) => !name || titleMatchesName(p.title, name),
+  );
+  const fromWeb = web.status === 'fulfilled' ? web.value : [];
+  const all = opts.webFirst ? [...fromWeb, ...fromCommons] : [...fromCommons, ...fromWeb];
   return all.slice(0, opts.limit ?? 30);
 }

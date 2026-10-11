@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { searchPhotos, searchWeb } from '../src/photo-search.js';
+import { searchPhotos, searchWeb, titleMatchesName } from '../src/photo-search.js';
 
 const searx = {
   results: [
@@ -81,5 +81,67 @@ describe('searchPhotos', () => {
       [],
     );
     expect(calls).toBe(1);
+  });
+});
+
+describe('titleMatchesName', () => {
+  it('requires the main words of the name in the file title', () => {
+    expect(titleMatchesName('Trattoria da Mario - Firenze', 'Trattoria da Mario')).toBe(true);
+    expect(titleMatchesName('Edinburgh Castle from Princes Street', 'Edinburgh Castle')).toBe(true);
+    expect(titleMatchesName('Piatto di pasta', 'Trattoria da Mario')).toBe(false);
+    expect(titleMatchesName('Caffè Florian', 'Caffe Florian')).toBe(true);
+    expect(titleMatchesName('qualsiasi', 'Il')).toBe(true);
+  });
+
+  it('filters Commons by name and can put the web first', async () => {
+    const commonsBody = {
+      query: {
+        pages: {
+          '1': {
+            index: 1,
+            title: 'File:Piatto di pasta.jpg',
+            imageinfo: [
+              {
+                thumburl: 'https://upload.wikimedia.org/a/960px-a.jpg',
+                mime: 'image/jpeg',
+                width: 960,
+              },
+            ],
+          },
+          '2': {
+            index: 2,
+            title: 'File:Trattoria da Mario.jpg',
+            imageinfo: [
+              {
+                thumburl: 'https://upload.wikimedia.org/b/960px-b.jpg',
+                mime: 'image/jpeg',
+                width: 960,
+              },
+            ],
+          },
+        },
+      },
+    };
+    const fake = (async (url: string | URL | Request) =>
+      String(url).includes('commons') ? json(commonsBody) : json(searx)) as typeof fetch;
+    const base = {
+      query: 'Trattoria da Mario Firenze',
+      appName: 'TripShare',
+      searxngUrl: 'http://searxng:8080',
+      fetch: fake,
+      name: 'Trattoria da Mario',
+    };
+    const commonsFirst = await searchPhotos(base);
+    expect(commonsFirst.map((p) => p.title)).toEqual([
+      'Trattoria da Mario',
+      'Castello di Edimburgo',
+      '',
+    ]);
+    const webFirst = await searchPhotos({ ...base, webFirst: true });
+    expect(webFirst.map((p) => p.source)).toEqual([
+      'example.org',
+      'example.net',
+      'commons.wikimedia.org',
+    ]);
   });
 });

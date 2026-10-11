@@ -832,6 +832,8 @@ JSON Schema: ${JSON.stringify(schemaOf(PackingResultSchema))}`,
   return { count: value.packing.length + value.tips.length };
 }
 
+const WEB_FIRST_KINDS = new Set<string>(['restaurant', 'cafe', 'bar', 'shop', 'other']);
+
 /** Foto (Commons e, se c'è, SearXNG) per i luoghi del programma, senza chiedere nulla all'AI. */
 async function stepPhotos(
   ctx: RunCtx,
@@ -861,6 +863,9 @@ async function stepPhotos(
         appName: ctx.deps.appName,
         searxngUrl: ctx.deps.searxngUrl,
         fetch: ctx.deps.httpFetch,
+        // Commons copre poco ristoranti e negozi: per loro conta prima il web.
+        name: p.name,
+        webFirst: WEB_FIRST_KINDS.has(p.kind),
         limit: 8,
       });
       for (const hit of hits) {
