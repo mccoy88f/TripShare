@@ -9,6 +9,7 @@ import {
   Save,
   Send,
   Trash2,
+  X,
   XCircle,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -370,11 +371,12 @@ function ProfileRow({
         value={value}
         allowAuto={auto}
         placeholder={placeholder}
+        compact
         onChange={onPick}
       />
     ) : (
       <Input
-        className="font-mono text-xs"
+        className="h-8 px-2.5 font-mono text-xs"
         value={value ?? ''}
         placeholder={placeholder}
         onChange={(e) => onPick(e.target.value)}
@@ -383,7 +385,7 @@ function ProfileRow({
 
   return (
     <tr className={cn('align-top', !item.enabled && 'opacity-60')}>
-      <td className="px-2 py-2">
+      <td className="px-2 py-1.5">
         <div className="flex flex-col items-center gap-0.5">
           <Badge variant="outline" className="tabular">
             {index + 1}
@@ -412,7 +414,7 @@ function ProfileRow({
           </Button>
         </div>
       </td>
-      <td className="px-2 py-2">
+      <td className="px-2 py-1.5">
         <div className="grid grid-cols-1 gap-1.5">
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant="default">{PROVIDER_NAME[item.provider]}</Badge>
@@ -420,7 +422,7 @@ function ProfileRow({
           </div>
           <Input
             aria-label={t('admin.profiles.name')}
-            className="h-8"
+            className="h-7 px-2 text-xs"
             maxLength={60}
             value={item.name}
             onChange={(e) => onChange({ name: e.target.value })}
@@ -428,7 +430,7 @@ function ProfileRow({
           {changingKey ? (
             <Input
               aria-label={t('admin.profiles.key')}
-              className="h-8"
+              className="h-7 px-2 text-xs"
               type="password"
               autoComplete="off"
               autoFocus
@@ -439,7 +441,7 @@ function ProfileRow({
           ) : (
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <KeyRound className="size-3.5" />
-              <span className="font-mono">{item.keyPreview ?? '••••'}</span>
+              <span className="min-w-0 flex-1 truncate font-mono">{item.keyPreview ?? '••••'}</span>
               {item.saved && (
                 <button
                   type="button"
@@ -453,32 +455,38 @@ function ProfileRow({
           )}
         </div>
       </td>
-      <td className="px-2 py-2">{picker(item.model, (id) => onChange({ model: id }))}</td>
-      <td className="px-2 py-2">
-        <div className="grid grid-cols-1 gap-1">
-          {picker(
-            item.backupModel || null,
-            (id) => onChange({ backupModel: id }),
-            t('admin.profiles.noBackup'),
-          )}
+      <td className="px-2 py-1.5">{picker(item.model, (id) => onChange({ model: id }))}</td>
+      <td className="px-2 py-1.5">
+        <div className="flex items-center gap-1">
+          <div className="min-w-0 flex-1">
+            {picker(
+              item.backupModel || null,
+              (id) => onChange({ backupModel: id }),
+              t('admin.profiles.noBackup'),
+            )}
+          </div>
           {item.backupModel && (
-            <button
+            <Button
               type="button"
-              className="justify-self-start text-xs text-muted-foreground hover:underline"
+              size="icon"
+              variant="ghost"
+              className="size-7 shrink-0"
+              aria-label={t('admin.profiles.removeBackup')}
+              title={t('admin.profiles.removeBackup')}
               onClick={() => onChange({ backupModel: '' })}
             >
-              {t('admin.profiles.removeBackup')}
-            </button>
+              <X />
+            </Button>
           )}
         </div>
       </td>
-      <td className="px-2 py-2">
+      <td className="px-2 py-1.5">
         <div className="grid grid-cols-1 gap-1.5">
           <Button
             type="button"
             size="sm"
             variant="outline"
-            className="justify-self-start"
+            className="h-7 justify-self-start px-2.5 text-xs"
             disabled={test.isPending || !item.model.trim()}
             onClick={runTest}
           >
@@ -489,7 +497,7 @@ function ProfileRow({
           {results?.backup && <Result label={t('admin.profiles.backupShort')} r={results.backup} />}
         </div>
       </td>
-      <td className="px-2 py-2">
+      <td className="px-2 py-1.5">
         <div className="flex flex-col items-center gap-1">
           <Switch checked={item.enabled} onCheckedChange={(v) => onChange({ enabled: v })} />
           <Button

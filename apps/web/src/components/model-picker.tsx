@@ -74,6 +74,7 @@ export function ModelPicker({
   allowAuto = true,
   id,
   placeholder,
+  compact = false,
 }: {
   models: ModelOption[];
   value: string | null;
@@ -83,6 +84,8 @@ export function ModelPicker({
   allowAuto?: boolean;
   id?: string;
   placeholder?: string;
+  /** Una sola riga bassa (per le tabelle): i dettagli restano nell'elenco. */
+  compact?: boolean;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -135,13 +138,19 @@ export function ModelPicker({
         <button
           id={id}
           type="button"
-          className="flex min-h-11 w-full items-center gap-2 rounded-md border border-input bg-card px-3.5 py-2 text-left outline-none focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/20"
+          title={compact ? (selected?.id ?? value ?? undefined) : undefined}
+          className={cn(
+            'flex w-full items-center gap-2 rounded-md border border-input bg-card text-left outline-none focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/20',
+            compact ? 'h-8 px-2.5' : 'min-h-11 px-3.5 py-2',
+          )}
         >
           <span className="min-w-0 flex-1">
-            {value === AUTO_ID ? (
+            {compact && selected && value !== AUTO_ID ? (
+              <span className="block truncate text-xs font-medium">{selected.name}</span>
+            ) : value === AUTO_ID ? (
               <span className="inline-flex items-center gap-1.5 text-sm font-medium">
                 <Sparkles className="size-4 text-accent" />
-                {t('models.auto')}
+                {compact ? <span className="text-xs">{t('models.auto')}</span> : t('models.auto')}
               </span>
             ) : selected ? (
               <>
@@ -149,7 +158,9 @@ export function ModelPicker({
                 <ModelInfo model={selected} />
               </>
             ) : value ? (
-              <span className="block truncate font-mono text-sm">{value}</span>
+              <span className={cn('block truncate font-mono', compact ? 'text-xs' : 'text-sm')}>
+                {value}
+              </span>
             ) : (
               <span className="text-sm text-muted-foreground">
                 {placeholder ?? t('models.choose')}
