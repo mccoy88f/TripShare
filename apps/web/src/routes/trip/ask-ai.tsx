@@ -59,10 +59,15 @@ export function AskAiButton({
   return (
     <>
       {quick ? (
-        <Button type="button" variant="accent" onClick={() => setOpen(true)}>
-          <Sparkles />
+        // Come una riga di testo (es. sulla galleria nera): scritta chiara e icona gialla.
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-2 rounded-md py-1 text-left text-sm font-medium text-white outline-none hover:underline focus-visible:ring-4 focus-visible:ring-white/30"
+        >
+          <Sparkles className="size-4 shrink-0 text-amber-400" />
           {quick.label}
-        </Button>
+        </button>
       ) : (
         <Button
           type="button"

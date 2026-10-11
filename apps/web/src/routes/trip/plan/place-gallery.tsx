@@ -177,23 +177,25 @@ export function PlaceGallery({
               </div>
             )
           )}
-          <div className="flex flex-wrap items-center gap-3">
-            {current && !current.current && (
-              <span className="rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium">
-                {t('placePhoto.gallery.auto')}
-              </span>
-            )}
-            {slides.length === 0 && !loading && (
-              <span className="text-white/80">{t('placePhoto.gallery.none')}</span>
-            )}
-            <span className="flex-1" />
-            {canEdit && current && !current.current && (
-              <Button type="button" disabled={download.isPending} onClick={() => use(current)}>
-                {download.isPending ? <Loader2 className="animate-spin" /> : <Check />}
-                {t('placePhoto.gallery.use')}
-              </Button>
-            )}
-          </div>
+          {slides.length === 0 && !loading && (
+            <p className="text-white/80">{t('placePhoto.gallery.none')}</p>
+          )}
+          {current && !current.current && (
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs text-white/70">{t('placePhoto.gallery.auto')}</span>
+              {canEdit && (
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={download.isPending}
+                  onClick={() => use(current)}
+                >
+                  {download.isPending ? <Loader2 className="animate-spin" /> : <Check />}
+                  {t('placePhoto.gallery.use')}
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       }
     />
