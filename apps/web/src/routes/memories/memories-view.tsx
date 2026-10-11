@@ -329,10 +329,8 @@ function MemoriesView() {
           index={open}
           onIndex={(i) => setOpenId(nav[i]!.id)}
           onClose={() => setOpenId(null)}
-          onEdit={(m) => {
-            setOpenId(null);
-            setEditing(m);
-          }}
+          // La modifica si apre sopra la foto: chiudendola si resta nella galleria.
+          onEdit={(m) => setEditing(m)}
         />
       )}
       {editing && (
