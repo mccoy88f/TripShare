@@ -356,16 +356,19 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
             key={m.id}
             className={cn('flex items-start gap-1', mine ? 'justify-end' : 'justify-start')}
           >
-            <button
-              type="button"
-              onClick={() => void retry(m)}
-              disabled={running || retryMessage.isPending}
-              aria-label={t('ai.chat.retry')}
-              title={t('ai.chat.retry')}
-              className="mt-1.5 shrink-0 rounded-full p-1.5 text-muted-foreground/70 transition hover:bg-muted hover:text-foreground disabled:opacity-40"
-            >
-              <RotateCcw className="size-4" />
-            </button>
+            {/* "Ripeti" è sulla domanda: toglie la risposta e la rifà. */}
+            {mine && (
+              <button
+                type="button"
+                onClick={() => void retry(m)}
+                disabled={running || retryMessage.isPending}
+                aria-label={t('ai.chat.retry')}
+                title={t('ai.chat.retry')}
+                className="mt-1.5 shrink-0 rounded-full p-1.5 text-muted-foreground/70 transition hover:bg-muted hover:text-foreground disabled:opacity-40"
+              >
+                <RotateCcw className="size-4" />
+              </button>
+            )}
             <div
               className={cn(
                 'max-w-[85%] rounded-2xl px-4 py-2.5 text-sm break-words',
