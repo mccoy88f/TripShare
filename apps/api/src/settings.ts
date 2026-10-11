@@ -16,8 +16,9 @@ const MODEL_ID = z.string().min(1).max(200);
 export const AiProfileSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]{3,40}$/),
   name: z.string().trim().min(1).max(60),
-  provider: z.enum(['openrouter', 'gemini', 'groq']),
-  apiKey: z.string().min(10).max(300),
+  provider: z.enum(['openrouter', 'gemini', 'groq', 'llm7']),
+  // LLM7 funziona anche senza chiave (segnaposto breve): per gli altri la UI chiede almeno 10 caratteri.
+  apiKey: z.string().min(1).max(300),
   model: MODEL_ID,
   backupModel: MODEL_ID.nullable(),
   enabled: z.boolean(),

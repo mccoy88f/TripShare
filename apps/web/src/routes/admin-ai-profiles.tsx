@@ -24,7 +24,7 @@ import { Switch } from '@/components/ui/switch';
 import { useTRPC } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
-type Provider = 'openrouter' | 'gemini' | 'groq';
+type Provider = 'openrouter' | 'gemini' | 'groq' | 'llm7';
 type Catalog = React.ComponentProps<typeof ModelPicker>['models'];
 
 interface Item {
@@ -47,13 +47,17 @@ const PROVIDER_NAME: Record<Provider, string> = {
   openrouter: 'OpenRouter',
   gemini: 'Google Gemini',
   groq: 'Groq',
+  llm7: 'LLM7',
 };
 /** Modello proposto all'inizio, se il provider lo elenca (altrimenti il primo dell'elenco). */
 const PREFERRED_MODEL: Record<Provider, string> = {
   openrouter: 'openrouter/auto',
   gemini: 'gemini-flash-latest',
   groq: 'llama-3.3-70b-versatile',
+  llm7: 'gpt-4.1-nano-2025-04-14',
 };
+/** LLM7 funziona anche senza chiave: si invia questo segnaposto. */
+const LLM7_NO_KEY = 'unused';
 
 interface TestResult {
   ok: boolean;
@@ -239,7 +243,7 @@ function AddProfile({ onAdd }: { onAdd: (item: Item) => void }) {
   const verify = useMutation(trpc.admin.aiProfiles.verify.mutationOptions());
 
   const add = async () => {
-    const apiKey = key.trim();
+    const apiKey = key.trim() || (provider === 'llm7' ? LLM7_NO_KEY : '');
     const result = await verify.mutateAsync({ provider, apiKey }).catch(() => null);
     if (!result) return;
     const models = result.models;
@@ -282,14 +286,22 @@ function AddProfile({ onAdd }: { onAdd: (item: Item) => void }) {
           className="min-w-48 flex-1"
           type="password"
           autoComplete="off"
-          placeholder={t('admin.profiles.keyPlaceholder')}
+          placeholder={
+            provider === 'llm7'
+              ? t('admin.profiles.keyOptional')
+              : t('admin.profiles.keyPlaceholder')
+          }
           value={key}
           onChange={(e) => {
             setKey(e.target.value);
             verify.reset();
           }}
         />
-        <Button type="button" disabled={key.trim().length < 10 || verify.isPending} onClick={add}>
+        <Button
+          type="button"
+          disabled={(provider !== 'llm7' && key.trim().length < 10) || verify.isPending}
+          onClick={add}
+        >
           {verify.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
           {t('admin.profiles.verifyAdd')}
         </Button>

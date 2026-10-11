@@ -402,7 +402,12 @@ function GeneralSettings() {
   );
 }
 
-const PROVIDER_LABEL = { openrouter: 'OpenRouter', gemini: 'Gemini', groq: 'Groq' } as const;
+const PROVIDER_LABEL = {
+  openrouter: 'OpenRouter',
+  gemini: 'Gemini',
+  groq: 'Groq',
+  llm7: 'LLM7',
+} as const;
 
 function AiSettings() {
   const { t } = useTranslation();

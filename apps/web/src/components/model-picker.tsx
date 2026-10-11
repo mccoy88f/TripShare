@@ -114,20 +114,31 @@ export function ModelPicker({
     setQuery('');
   };
 
+  /** Una riga bassa: nome a sinistra, in piccolo a destra gratis/prezzo, immagini e contesto. */
   const Row = ({ m }: { m: ModelOption }) => (
     <button
       type="button"
       onClick={() => pick(m.id)}
+      title={m.id}
       className={cn(
-        'flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted',
+        'flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left hover:bg-muted',
         m.id === value && 'bg-primary/10',
       )}
     >
-      <Check className={cn('mt-0.5 size-4 shrink-0 text-primary', m.id !== value && 'invisible')} />
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium">{m.name}</span>
-        <span className="block truncate font-mono text-[11px] text-muted-foreground">{m.id}</span>
-        <ModelInfo model={m} />
+      <Check className={cn('size-3.5 shrink-0 text-primary', m.id !== value && 'invisible')} />
+      <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{m.name}</span>
+      <span className="flex shrink-0 items-center gap-1.5 text-[11px] text-muted-foreground">
+        {m.free ? (
+          <span className="rounded bg-success/15 px-1 font-semibold text-success">
+            {t('models.free')}
+          </span>
+        ) : m.promptPerM !== null || m.completionPerM !== null ? (
+          <span className="tabular">
+            {price(m.promptPerM)}/{price(m.completionPerM)}
+          </span>
+        ) : null}
+        {m.imageInput && <ImageIcon className="size-3" aria-label={t('models.imageInput')} />}
+        {context(m.contextLength) && <span className="tabular">{context(m.contextLength)}</span>}
       </span>
     </button>
   );
@@ -170,27 +181,27 @@ export function ModelPicker({
           <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-[min(92vw,30rem)] p-0">
-        <div className="grid grid-cols-1 gap-2 border-b p-3">
-          <div className="flex items-center gap-2 rounded-md bg-muted px-3">
+      <PopoverContent className="w-[min(92vw,26rem)] p-0">
+        <div className="grid grid-cols-1 gap-1.5 border-b p-2">
+          <div className="flex items-center gap-2 rounded-md bg-muted px-2.5">
             <Search className="size-4 text-muted-foreground" />
             <input
               autoFocus
-              className="h-9 flex-1 bg-transparent text-sm outline-none"
+              className="h-8 flex-1 bg-transparent text-sm outline-none"
               placeholder={t('models.search')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex rounded-full bg-muted p-1">
+            <div className="inline-flex rounded-full bg-muted p-0.5">
               {(['all', 'free', 'paid'] as const).map((f) => (
                 <button
                   key={f}
                   type="button"
                   onClick={() => setPriceFilter(f)}
                   className={cn(
-                    'rounded-full px-3 py-1 text-xs font-semibold',
+                    'rounded-full px-2.5 py-0.5 text-xs font-semibold',
                     priceFilter === f ? 'bg-card shadow-sm' : 'text-muted-foreground',
                   )}
                 >
@@ -216,33 +227,28 @@ export function ModelPicker({
             </label>
           </div>
         </div>
-        <div className="max-h-[50vh] overflow-y-auto p-1.5">
+        <div className="max-h-[50vh] overflow-y-auto p-1">
           {allowAuto && (
             <button
               type="button"
               onClick={() => pick(AUTO_ID)}
+              title={t('models.autoHint')}
               className={cn(
-                'flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-muted',
+                'flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left hover:bg-muted',
                 value === AUTO_ID && 'bg-primary/10',
               )}
             >
               <Check
-                className={cn(
-                  'mt-0.5 size-4 shrink-0 text-primary',
-                  value !== AUTO_ID && 'invisible',
-                )}
+                className={cn('size-3.5 shrink-0 text-primary', value !== AUTO_ID && 'invisible')}
               />
-              <span>
-                <span className="inline-flex items-center gap-1.5 text-sm font-medium">
-                  <Sparkles className="size-4 text-accent" />
-                  {t('models.auto')}
-                </span>
-                <span className="block text-xs text-muted-foreground">{t('models.autoHint')}</span>
+              <Sparkles className="size-3.5 text-accent" />
+              <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
+                {t('models.auto')}
               </span>
             </button>
           )}
           {free.length > 0 && (
-            <p className="px-2.5 pt-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            <p className="px-2 pt-2 pb-0.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
               {t('models.groupFree', { count: free.length })}
             </p>
           )}
@@ -250,7 +256,7 @@ export function ModelPicker({
             <Row key={m.id} m={m} />
           ))}
           {paid.length > 0 && (
-            <p className="px-2.5 pt-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            <p className="px-2 pt-2 pb-0.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
               {t('models.groupPaid', { count: paid.length })}
             </p>
           )}

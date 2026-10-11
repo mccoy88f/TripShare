@@ -289,7 +289,8 @@
       "keyPlaceholder": "Incolla la chiave API",
       "verifyAdd": "Verifica e aggiungi",
       "unsaved": "da salvare",
-      "changeKey": "Cambia"
+      "changeKey": "Cambia",
+      "keyOptional": "Chiave facoltativa (senza: limiti gratuiti)"
     }
   },
   "legal": {

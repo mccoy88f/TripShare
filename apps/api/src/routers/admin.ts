@@ -5,6 +5,7 @@ import { TRPCError } from '@trpc/server';
 import { complete } from '../ai/client.js';
 import { checkGeminiKey, clearGeminiCache, listGeminiModels } from '../gemini.js';
 import { clearGroqCache, listGroqModels } from '../groq.js';
+import { clearLlm7Cache, listLlm7Models } from '../llm7.js';
 import { checkKey, clearModelsCache, listModels } from '../openrouter.js';
 import { clearCooldowns } from '../ai/access.js';
 import { maskSecret } from '../crypto.js';
@@ -28,7 +29,14 @@ async function audit(
   });
 }
 
-const PROVIDERS = ['openrouter', 'gemini', 'groq'] as const;
+const PROVIDERS = ['openrouter', 'gemini', 'groq', 'llm7'] as const;
+
+/** Le chiavi dei provider sono lunghe; solo LLM7 funziona anche con un segnaposto. */
+function requireKey(provider: string, apiKey: string | undefined | null) {
+  if (!apiKey || (provider !== 'llm7' && apiKey.length < 10))
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'AI_KEY_REQUIRED' });
+  return apiKey;
+}
 
 async function savedProfile(ctx: Context, id: string) {
   const profile = (await ctx.settings.get('ai.profiles')).find((p) => p.id === id);
@@ -138,7 +146,7 @@ export const adminRouter = router({
           profiles: z
             .array(
               AiProfileSchema.omit({ apiKey: true }).extend({
-                apiKey: z.string().min(10).max(300).optional(),
+                apiKey: z.string().min(1).max(300).optional(),
               }),
             )
             .max(12),
@@ -147,8 +155,7 @@ export const adminRouter = router({
       .mutation(async ({ ctx, input }) => {
         const saved = new Map((await ctx.settings.get('ai.profiles')).map((p) => [p.id, p]));
         const next = input.profiles.map((p) => {
-          const apiKey = p.apiKey ?? saved.get(p.id)?.apiKey;
-          if (!apiKey) throw new TRPCError({ code: 'BAD_REQUEST', message: 'AI_KEY_REQUIRED' });
+          const apiKey = requireKey(p.provider, p.apiKey ?? saved.get(p.id)?.apiKey);
           return { ...p, apiKey };
         });
         if (new Set(next.map((p) => p.id)).size !== next.length)
@@ -157,6 +164,7 @@ export const adminRouter = router({
         clearModelsCache();
         clearGeminiCache();
         clearGroqCache();
+        clearLlm7Cache();
         clearCooldowns();
         await audit(ctx, 'settings.update', {
           key: 'ai.profiles',
@@ -206,6 +214,8 @@ export const adminRouter = router({
         try {
           if (profile.provider === 'groq')
             return await listGroqModels(profile.apiKey, ctx.httpFetch, input.refresh);
+          if (profile.provider === 'llm7')
+            return await listLlm7Models(profile.apiKey, ctx.httpFetch, input.refresh);
           return profile.provider === 'gemini'
             ? await listGeminiModels(profile.apiKey, ctx.httpFetch, input.refresh)
             : await listModels(profile.apiKey, ctx.httpFetch, input.refresh);
@@ -222,11 +232,14 @@ export const adminRouter = router({
      * dei modelli disponibili, da cui scegliere il modello e la riserva.
      */
     verify: superadminProcedure
-      .input(z.object({ provider: z.enum(PROVIDERS), apiKey: z.string().min(10).max(300) }))
+      .input(z.object({ provider: z.enum(PROVIDERS), apiKey: z.string().min(1).max(300) }))
       .mutation(async ({ ctx, input }) => {
+        requireKey(input.provider, input.apiKey);
         try {
           if (input.provider === 'groq')
             return await listGroqModels(input.apiKey, ctx.httpFetch, true);
+          if (input.provider === 'llm7')
+            return await listLlm7Models(input.apiKey, ctx.httpFetch, true);
           if (input.provider === 'gemini')
             return await listGeminiModels(input.apiKey, ctx.httpFetch, true);
           // OpenRouter elenca i modelli anche senza chiave: la chiave si controlla a parte.
@@ -249,7 +262,7 @@ export const adminRouter = router({
         z.object({
           id: z.string().optional(),
           provider: z.enum(PROVIDERS),
-          apiKey: z.string().min(10).max(300).optional(),
+          apiKey: z.string().min(1).max(300).optional(),
           model: z.string().min(1).max(200),
         }),
       )

@@ -1,11 +1,12 @@
 /**
- * Chiamata al modello: OpenRouter e Groq (API compatibili OpenAI) oppure Google Gemini (API nativa).
+ * Chiamata al modello: OpenRouter, Groq e LLM7 (API compatibili OpenAI) oppure Google Gemini (API nativa).
  * Restituisce testo, modello effettivo, token e costi.
  */
 import { geminiBase } from '../gemini.js';
 import { groqBase } from '../groq.js';
+import { llm7Base } from '../llm7.js';
 
-export type AiProvider = 'openrouter' | 'gemini' | 'groq';
+export type AiProvider = 'openrouter' | 'gemini' | 'groq' | 'llm7';
 
 export type ContentPart =
   | { type: 'text'; text: string }
@@ -83,7 +84,8 @@ async function* sseData(res: Response): AsyncGenerator<string> {
 
 export async function complete(req: CompletionRequest): Promise<CompletionResult> {
   if (req.provider === 'gemini') return completeGemini(req);
-  if (req.provider === 'groq') return completeGroq(req);
+  if (req.provider === 'groq') return completeCompatible(req, 'Groq', groqBase(), true);
+  if (req.provider === 'llm7') return completeCompatible(req, 'LLM7', llm7Base(), false);
   return completeOpenRouter(req);
 }
 
@@ -195,15 +197,23 @@ async function readOpenRouterStream(
   };
 }
 
-// ─── Groq ───────────────────────────────────────────────────────────────────
+// ─── Provider compatibili OpenAI (Groq, LLM7) ───────────────────────────────
 
-/** Groq: stessa API di OpenAI, ma i modelli di riserva si provano uno alla volta. */
-async function completeGroq(req: CompletionRequest): Promise<CompletionResult> {
+/**
+ * Provider con la stessa API di OpenAI: i modelli di riserva si provano uno alla volta.
+ * `jsonMode` chiede al provider un JSON valido (la struttura vera è nel prompt).
+ */
+async function completeCompatible(
+  req: CompletionRequest,
+  provider: string,
+  baseUrl: string,
+  jsonMode: boolean,
+): Promise<CompletionResult> {
   const models = [req.model, ...(req.fallbacks ?? [])].filter((m, i, a) => m && a.indexOf(m) === i);
   let lastError: AiError | null = null;
   for (const model of models) {
     try {
-      return await callGroq(req, model);
+      return await callCompatible(req, model, provider, baseUrl, jsonMode);
     } catch (err) {
       if (!(err instanceof AiError)) throw err;
       lastError = err;
@@ -218,20 +228,25 @@ async function completeGroq(req: CompletionRequest): Promise<CompletionResult> {
   throw lastError ?? new AiError('AI_PROVIDER_ERROR');
 }
 
-async function callGroq(req: CompletionRequest, model: string): Promise<CompletionResult> {
-  // Groq non legge i PDF in linea: il lavoro passa a un'altra configurazione.
+async function callCompatible(
+  req: CompletionRequest,
+  model: string,
+  provider: string,
+  baseUrl: string,
+  jsonMode: boolean,
+): Promise<CompletionResult> {
+  // Questi provider non leggono i PDF in linea: il lavoro passa a un'altra configurazione.
   const hasFile = req.messages.some(
     (m) => Array.isArray(m.content) && m.content.some((p) => p.type === 'file'),
   );
-  if (hasFile) throw new AiError('AI_UNSUPPORTED_INPUT: PDF non supportati da Groq');
+  if (hasFile) throw new AiError(`AI_UNSUPPORTED_INPUT: PDF non supportati da ${provider}`);
   const body = {
     model,
     messages: req.messages,
-    // La struttura vera è nel prompt: qui basta chiedere un JSON valido.
-    ...(req.jsonSchema ? { response_format: { type: 'json_object' } } : {}),
+    ...(jsonMode && req.jsonSchema ? { response_format: { type: 'json_object' } } : {}),
     ...(req.onDelta ? { stream: true } : {}),
   };
-  const res = await (req.fetchImpl ?? fetch)(`${groqBase()}/chat/completions`, {
+  const res = await (req.fetchImpl ?? fetch)(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: { authorization: `Bearer ${req.apiKey}`, 'content-type': 'application/json' },
     body: JSON.stringify(body),
@@ -243,10 +258,11 @@ async function callGroq(req: CompletionRequest, model: string): Promise<Completi
     model?: string;
     choices?: { message?: { content?: string | null } }[];
     usage?: { prompt_tokens?: number; completion_tokens?: number };
-    error?: { message?: string; code?: string };
+    error?: { message?: string; code?: string } | string;
   } | null;
   if (!res.ok || !json || json.error) {
-    const message = json?.error?.message ?? `HTTP ${res.status}`;
+    const detail = typeof json?.error === 'string' ? json.error : json?.error?.message;
+    const message = detail ?? `HTTP ${res.status}`;
     if (res.status === 401) throw new AiError(`AI_INVALID_KEY: ${message}`.slice(0, 500), 401);
     if (res.status === 429) throw new AiError(`AI_RATE_LIMITED: ${message}`.slice(0, 500), 429);
     throw new AiError(`AI_PROVIDER_ERROR: ${message}`.slice(0, 500), res.status);
