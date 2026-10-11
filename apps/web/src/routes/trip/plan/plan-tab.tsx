@@ -578,7 +578,7 @@ function ActivityCard({
             {a.description && <p className="mt-1 text-sm text-muted-foreground">{a.description}</p>}
           </div>
         </div>
-        {(tr || a.cost || booking || onTickets) && (
+        {(tr || booking || onTickets) && (
           <div className="mt-2.5 flex flex-wrap gap-1.5 text-xs">
             {tr && (
               <span className="rounded-full bg-secondary px-2.5 py-1 font-medium text-secondary-foreground">
@@ -596,17 +596,6 @@ function ActivityCard({
                 {alt.cost ? ` · ${moneyLabel(alt.cost, t, fmt)}` : ''}
               </span>
             ))}
-            {a.cost &&
-              // Se è lo stesso importo della prenotazione collegata, basta quello della prenotazione.
-              !(
-                booking?.cost &&
-                booking.cost.amount === a.cost.amount &&
-                booking.cost.currency === a.cost.currency
-              ) && (
-                <span className="rounded-full bg-muted px-2.5 py-1 font-medium">
-                  💶 {moneyLabel(a.cost, t, fmt)}
-                </span>
-              )}
             {booking && (
               <span className="rounded-full bg-muted px-2.5 py-1 font-medium">
                 {BOOKING_EMOJI[booking.type]} {booking.title}
