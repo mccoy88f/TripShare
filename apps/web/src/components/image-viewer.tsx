@@ -3,6 +3,7 @@ import { Dialog as DialogPrimitive } from 'radix-ui';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ZoomImage } from '@/components/zoom-image';
+import { useBackClose } from '@/lib/back-close';
 import { cn } from '@/lib/utils';
 
 export interface ViewerSlide {
@@ -132,6 +133,7 @@ export function ImageViewer({
   const { t } = useTranslation();
   const scroller = useRef<HTMLDivElement>(null);
   const frame = useSwipeDownClose(onClose);
+  useBackClose(onClose);
   const [failed, setFailed] = useState<Set<string>>(new Set());
 
   const scrollTo = (i: number, behavior: ScrollBehavior = 'smooth') => {

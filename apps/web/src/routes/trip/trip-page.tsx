@@ -76,7 +76,7 @@ export function TripPage() {
         tab: next === 'plan' ? undefined : next,
         view: next === 'expenses' && nextView && nextView !== 'list' ? nextView : undefined,
       },
-      replace: true,
+      // Ogni cambio di scheda è una voce di cronologia: "indietro" torna alla scheda precedente.
     });
   const { data: trip, error } = useQuery(trpc.trips.get.queryOptions({ id: tripId }));
   // Aperto da una notifica: si evidenzia l'elemento e si toglie l'indicazione dall'indirizzo.

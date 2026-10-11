@@ -7,6 +7,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react';
+import { useBackClose } from '@/lib/back-close';
 import { cn } from '@/lib/utils';
 
 export const Dialog = DialogPrimitive.Root;
@@ -22,6 +23,8 @@ export function DialogContent({
 }: ComponentProps<typeof DialogPrimitive.Content> & { title: ReactNode; description?: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  // Il tasto indietro chiude la finestra.
+  useBackClose(() => closeRef.current?.click());
   /** Altezza del foglio senza ingrandimento (si misura quando si inizia a trascinare). */
   const natural = useRef(0);
   const drag = useRef<{

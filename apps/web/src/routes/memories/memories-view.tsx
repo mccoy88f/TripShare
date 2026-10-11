@@ -43,6 +43,7 @@ import { toast } from 'sonner';
 import { DIALOG_FOOTER } from '@/components/dialog-footer';
 import { UserAvatar } from '@/components/ui/avatar';
 import { useSwipeDownClose } from '@/components/image-viewer';
+import { useBackClose } from '@/lib/back-close';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Select } from '@/components/ui/input';
@@ -814,6 +815,7 @@ function Lightbox({
   const { t, i18n } = useTranslation();
   const scroller = useRef<HTMLDivElement>(null);
   const frame = useSwipeDownClose(onClose);
+  useBackClose(onClose);
   const [muted, setMuted] = useState(true);
   const m = memories[index]!;
   // Il file da condividere si prepara in anticipo (su iPhone la condivisione parte dal tocco).
