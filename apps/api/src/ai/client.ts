@@ -1,10 +1,11 @@
 /**
- * Chiamata al modello: OpenRouter (API compatibile OpenAI) oppure Google Gemini (API nativa).
+ * Chiamata al modello: OpenRouter e Groq (API compatibili OpenAI) oppure Google Gemini (API nativa).
  * Restituisce testo, modello effettivo, token e costi.
  */
 import { geminiBase } from '../gemini.js';
+import { groqBase } from '../groq.js';
 
-export type AiProvider = 'openrouter' | 'gemini';
+export type AiProvider = 'openrouter' | 'gemini' | 'groq';
 
 export type ContentPart =
   | { type: 'text'; text: string }
@@ -81,7 +82,9 @@ async function* sseData(res: Response): AsyncGenerator<string> {
 }
 
 export async function complete(req: CompletionRequest): Promise<CompletionResult> {
-  return req.provider === 'gemini' ? completeGemini(req) : completeOpenRouter(req);
+  if (req.provider === 'gemini') return completeGemini(req);
+  if (req.provider === 'groq') return completeGroq(req);
+  return completeOpenRouter(req);
 }
 
 async function completeOpenRouter(req: CompletionRequest): Promise<CompletionResult> {
@@ -159,6 +162,8 @@ async function readOpenRouterStream(
       model?: string;
       choices?: { delta?: { content?: string | null } }[];
       usage?: typeof usage;
+      /** Groq riporta i consumi qui, nell'ultimo pezzo. */
+      x_groq?: { usage?: typeof usage };
       error?: { message?: string; code?: number };
     };
     try {
@@ -173,7 +178,7 @@ async function readOpenRouterStream(
       throw new AiError(`AI_PROVIDER_ERROR: ${message}`.slice(0, 500), chunk.error.code);
     }
     model = chunk.model ?? model;
-    if (chunk.usage) usage = chunk.usage;
+    if (chunk.usage ?? chunk.x_groq?.usage) usage = chunk.usage ?? chunk.x_groq?.usage;
     const piece = chunk.choices?.[0]?.delta?.content;
     if (piece) {
       content += piece;
@@ -187,6 +192,73 @@ async function readOpenRouterStream(
     promptTokens: usage?.prompt_tokens ?? null,
     completionTokens: usage?.completion_tokens ?? null,
     cost: usage?.cost ?? null,
+  };
+}
+
+// ─── Groq ───────────────────────────────────────────────────────────────────
+
+/** Groq: stessa API di OpenAI, ma i modelli di riserva si provano uno alla volta. */
+async function completeGroq(req: CompletionRequest): Promise<CompletionResult> {
+  const models = [req.model, ...(req.fallbacks ?? [])].filter((m, i, a) => m && a.indexOf(m) === i);
+  let lastError: AiError | null = null;
+  for (const model of models) {
+    try {
+      return await callGroq(req, model);
+    } catch (err) {
+      if (!(err instanceof AiError)) throw err;
+      lastError = err;
+      // Chiave non valida o input non gestito: un altro modello non cambia nulla.
+      if (
+        err.message.startsWith('AI_INVALID_KEY') ||
+        err.message.startsWith('AI_UNSUPPORTED_INPUT')
+      )
+        throw err;
+    }
+  }
+  throw lastError ?? new AiError('AI_PROVIDER_ERROR');
+}
+
+async function callGroq(req: CompletionRequest, model: string): Promise<CompletionResult> {
+  // Groq non legge i PDF in linea: il lavoro passa a un'altra configurazione.
+  const hasFile = req.messages.some(
+    (m) => Array.isArray(m.content) && m.content.some((p) => p.type === 'file'),
+  );
+  if (hasFile) throw new AiError('AI_UNSUPPORTED_INPUT: PDF non supportati da Groq');
+  const body = {
+    model,
+    messages: req.messages,
+    // La struttura vera è nel prompt: qui basta chiedere un JSON valido.
+    ...(req.jsonSchema ? { response_format: { type: 'json_object' } } : {}),
+    ...(req.onDelta ? { stream: true } : {}),
+  };
+  const res = await (req.fetchImpl ?? fetch)(`${groqBase()}/chat/completions`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${req.apiKey}`, 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(req.timeoutMs ?? 240_000),
+  });
+  if (res.ok && req.onDelta && isEventStream(res))
+    return readOpenRouterStream(res, model, req.onDelta);
+  const json = (await res.json().catch(() => null)) as {
+    model?: string;
+    choices?: { message?: { content?: string | null } }[];
+    usage?: { prompt_tokens?: number; completion_tokens?: number };
+    error?: { message?: string; code?: string };
+  } | null;
+  if (!res.ok || !json || json.error) {
+    const message = json?.error?.message ?? `HTTP ${res.status}`;
+    if (res.status === 401) throw new AiError(`AI_INVALID_KEY: ${message}`.slice(0, 500), 401);
+    if (res.status === 429) throw new AiError(`AI_RATE_LIMITED: ${message}`.slice(0, 500), 429);
+    throw new AiError(`AI_PROVIDER_ERROR: ${message}`.slice(0, 500), res.status);
+  }
+  const content = json.choices?.[0]?.message?.content ?? '';
+  if (!content.trim()) throw new AiError('AI_EMPTY_RESPONSE');
+  return {
+    content,
+    model: json.model ?? model,
+    promptTokens: json.usage?.prompt_tokens ?? null,
+    completionTokens: json.usage?.completion_tokens ?? null,
+    cost: null,
   };
 }
 

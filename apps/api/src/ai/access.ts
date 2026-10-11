@@ -66,11 +66,15 @@ export function orderByCooldown(candidates: AiCandidate[]): AiCandidate[] {
  */
 export function failoverPause(err: unknown): number | null {
   if (err instanceof AiError) {
+    // Input che questo provider non gestisce (es. PDF): si passa oltre senza pausa.
+    if (err.message.startsWith('AI_UNSUPPORTED_INPUT')) return 0;
     const s = err.status ?? 0;
     if (s === 401 || s === 403 || err.message.startsWith('AI_INVALID_KEY')) return 10 * 60_000;
     if (s === 402 || err.message.startsWith('AI_NO_CREDIT')) return 10 * 60_000;
     if (s === 429 || err.message.startsWith('AI_RATE_LIMITED')) return 2 * 60_000;
     if (s === 404) return 5 * 60_000;
+    // Richiesta troppo grande per questo provider: tocca a un altro, senza metterlo in pausa.
+    if (s === 413) return 0;
     if (s === 408 || s >= 500) return 60_000;
     return null;
   }
@@ -193,6 +197,7 @@ export async function resolveAiAccess(
 
 /** Modello e riserva per un provider: quelli del primo profilo attivo, altrimenti le impostazioni storiche. */
 async function modelsFor(settings: SettingsService, provider: AiProvider, purpose: AiPurpose) {
+  if (provider === 'groq') return { model: 'llama-3.3-70b-versatile', fallbacks: [] as string[] };
   const profile = (await settings.get('ai.profiles')).find(
     (p) => p.enabled && p.provider === provider,
   );

@@ -402,6 +402,8 @@ function GeneralSettings() {
   );
 }
 
+const PROVIDER_LABEL = { openrouter: 'OpenRouter', gemini: 'Gemini', groq: 'Groq' } as const;
+
 function AiSettings() {
   const { t } = useTranslation();
   const { settings, value, save } = useSettings();
@@ -534,7 +536,7 @@ function AiUsage() {
                   <span className="block truncate text-xs text-muted-foreground">{r.email}</span>
                 </span>
                 <Badge variant="outline">
-                  {r.provider === 'gemini' ? 'Gemini' : 'OpenRouter'} ·{' '}
+                  {PROVIDER_LABEL[r.provider as keyof typeof PROVIDER_LABEL] ?? r.provider} ·{' '}
                   {r.keySource === 'user' ? t('admin.ownKey') : t('admin.centralKey')}
                 </Badge>
                 <span className="tabular text-muted-foreground">
@@ -556,7 +558,7 @@ function AiUsage() {
               <div key={e.id} className="rounded-lg bg-destructive/10 px-3 py-2 text-xs">
                 <span className="font-semibold">
                   {new Date(e.createdAt).toLocaleString()} · {e.kind} ·{' '}
-                  {e.provider === 'gemini' ? 'Gemini' : 'OpenRouter'}
+                  {PROVIDER_LABEL[e.provider as keyof typeof PROVIDER_LABEL] ?? e.provider}
                   {e.model && ` · ${e.model}`}
                 </span>
                 <span className="block break-words text-destructive">{e.error}</span>

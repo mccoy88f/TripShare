@@ -4,6 +4,7 @@ import { aiJob, auditLog, user } from '@tripshare/db';
 import { TRPCError } from '@trpc/server';
 import { complete } from '../ai/client.js';
 import { checkGeminiKey, clearGeminiCache, listGeminiModels } from '../gemini.js';
+import { clearGroqCache, listGroqModels } from '../groq.js';
 import { checkKey, clearModelsCache, listModels } from '../openrouter.js';
 import { clearCooldowns } from '../ai/access.js';
 import { maskSecret } from '../crypto.js';
@@ -153,6 +154,7 @@ export const adminRouter = router({
         await ctx.settings.set('ai.profiles', next, ctx.session!.user.id);
         clearModelsCache();
         clearGeminiCache();
+        clearGroqCache();
         clearCooldowns();
         await audit(ctx, 'settings.update', {
           key: 'ai.profiles',
@@ -200,6 +202,8 @@ export const adminRouter = router({
       .query(async ({ ctx, input }) => {
         const profile = await savedProfile(ctx, input.id);
         try {
+          if (profile.provider === 'groq')
+            return await listGroqModels(profile.apiKey, ctx.httpFetch, input.refresh);
           return profile.provider === 'gemini'
             ? await listGeminiModels(profile.apiKey, ctx.httpFetch, input.refresh)
             : await listModels(profile.apiKey, ctx.httpFetch, input.refresh);

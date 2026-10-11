@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { useTRPC } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
-type Provider = 'openrouter' | 'gemini';
+type Provider = 'openrouter' | 'gemini' | 'groq';
 
 interface Item {
   id: string;
@@ -31,10 +31,12 @@ interface Item {
 const DEFAULT_MODEL: Record<Provider, string> = {
   openrouter: 'openrouter/auto',
   gemini: 'gemini-flash-latest',
+  groq: 'llama-3.3-70b-versatile',
 };
 const PROVIDER_NAME: Record<Provider, string> = {
   openrouter: 'OpenRouter',
   gemini: 'Google Gemini',
+  groq: 'Groq',
 };
 
 /**
@@ -175,6 +177,10 @@ export function AiProfiles() {
           <Button type="button" size="sm" variant="outline" onClick={() => add('gemini')}>
             <Plus />
             Gemini
+          </Button>
+          <Button type="button" size="sm" variant="outline" onClick={() => add('groq')}>
+            <Plus />
+            Groq
           </Button>
           <span className="flex-1" />
           {dirty && (
