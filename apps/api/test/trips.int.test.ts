@@ -134,6 +134,53 @@ run('trips, invitations, expenses and balances (integration)', () => {
     expect(members.find((m) => m.id === lucaPlaceholder)!.removed).toBe(true);
   });
 
+  it('shows email invitations in my trips, to accept or decline', async () => {
+    const { marco, tripId } = await setupTrip();
+    const sara = (await t.signUp('sara@example.com', 'Sara')).cookie;
+    const mine = () =>
+      t.trpc<
+        { id: string; token: string; tripId: string; title: string; inviter: string | null }[]
+      >('invitations.mine', sara, undefined, 'query');
+    expect((await mine()).data).toEqual([]);
+
+    // Un link generico (senza email) non finisce nei miei inviti.
+    await t.trpc('invitations.create', marco, { tripId });
+    expect((await mine()).data).toEqual([]);
+
+    await t.trpc('invitations.create', marco, { tripId, email: 'Sara@Example.com' });
+    const [invite] = (await mine()).data;
+    expect(invite).toMatchObject({ tripId, title: 'Scozia', inviter: 'Marco' });
+    // L'invito di un altro indirizzo non è visibile.
+    const luca = (await t.signUp('luca@example.com', 'Luca')).cookie;
+    const other = await t.trpc<unknown[]>('invitations.mine', luca, undefined, 'query');
+    expect(other.data).toEqual([]);
+    expect((await t.trpc('invitations.decline', luca, { id: invite!.id })).error).toBeDefined();
+
+    // Accettando entro nel viaggio e l'invito sparisce.
+    expect((await t.trpc('invitations.accept', sara, { token: invite!.token })).status).toBe(200);
+    expect((await mine()).data).toEqual([]);
+    const list = await t.trpc<{ id: string }[]>('trips.list', sara, undefined, 'query');
+    expect(list.data.map((x) => x.id)).toEqual([tripId]);
+
+    // Rifiutando, l'invito sparisce e la persona non risulta più invitata.
+    await t.trpc('invitations.create', marco, { tripId, email: 'luca@example.com' });
+    const [forLuca] = (await t.trpc<{ id: string }[]>('invitations.mine', luca, undefined, 'query'))
+      .data;
+    expect((await t.trpc('invitations.decline', luca, { id: forLuca!.id })).status).toBe(200);
+    expect((await t.trpc<unknown[]>('invitations.mine', luca, undefined, 'query')).data).toEqual(
+      [],
+    );
+    const members = (
+      await t.trpc<{ members: { name: string; invitedEmail: string | null }[] }>(
+        'trips.get',
+        marco,
+        { id: tripId },
+        'query',
+      )
+    ).data.members;
+    expect(members.some((m) => m.invitedEmail === 'luca@example.com')).toBe(false);
+  });
+
   it('creates a trip with the owner as member', async () => {
     const { marco, tripId } = await setupTrip();
     const list = await t.trpc<{ id: string; role: string; members: unknown[] }[]>(

@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { Bell, CalendarDays, Plus } from 'lucide-react';
+import { Bell, CalendarDays, Loader2, Mail, Plus } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -50,6 +50,90 @@ export function BalancePill({
   );
 }
 
+/**
+ * Inviti via email ancora da accettare: compaiono tra i miei viaggi con "Accetta" e "Rifiuta",
+ * senza dover cercare il link nell'email.
+ */
+function PendingInvitations() {
+  const { t } = useTranslation();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { data: invitations } = useQuery({
+    ...trpc.invitations.mine.queryOptions(),
+    staleTime: 15_000,
+    refetchInterval: 60_000,
+  });
+  const refresh = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: trpc.invitations.mine.queryKey() }),
+      queryClient.invalidateQueries({ queryKey: trpc.trips.list.queryKey() }),
+    ]);
+  const accept = useMutation(
+    trpc.invitations.accept.mutationOptions({
+      onSuccess: async (res) => {
+        await refresh();
+        toast.success(t('invite.joined'));
+        void navigate({ to: '/app/trips/$tripId', params: { tripId: res.tripId } });
+      },
+      onError: (err) =>
+        toast.error(t(`invite.errors.${err.message}`, { defaultValue: t('common.error') })),
+    }),
+  );
+  const decline = useMutation(
+    trpc.invitations.decline.mutationOptions({
+      onSuccess: refresh,
+      onError: () => toast.error(t('common.error')),
+    }),
+  );
+  if (!invitations?.length) return null;
+  return (
+    <section className="mt-8 grid gap-3" aria-label={t('invite.pendingTitle')}>
+      <h2 className="flex items-center gap-2 text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+        <Mail className="size-4" />
+        {t('invite.pendingTitle')}
+      </h2>
+      {invitations.map((inv) => (
+        <div
+          key={inv.id}
+          className="flex flex-wrap items-center gap-3 rounded-xl border border-accent/40 bg-accent/5 p-4"
+        >
+          <span className="text-3xl">{inv.emoji ?? '🧳'}</span>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">{inv.title}</p>
+            <p className="text-sm text-muted-foreground">
+              {inv.inviter
+                ? t('invite.invitedBy', { name: inv.inviter })
+                : t('invite.invitedGeneric')}
+              {inv.startDate ? ` · ${dateRange(inv.startDate, inv.endDate)}` : ''}
+              {inv.destination ? ` · ${inv.destination}` : ''}
+            </p>
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="ghost"
+              disabled={accept.isPending || decline.isPending}
+              onClick={() => decline.mutate({ id: inv.id })}
+            >
+              {t('invite.decline')}
+            </Button>
+            <Button
+              variant="accent"
+              disabled={accept.isPending || decline.isPending}
+              onClick={() => accept.mutate({ token: inv.token })}
+            >
+              {accept.isPending && accept.variables?.token === inv.token && (
+                <Loader2 className="animate-spin" />
+              )}
+              {t('invite.accept')}
+            </Button>
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 export function TripsPage() {
   const { t } = useTranslation();
   const trpc = useTRPC();
@@ -85,6 +169,8 @@ export function TripsPage() {
           </Link>
         </Button>
       </div>
+
+      <PendingInvitations />
 
       {trips && trips.length === 0 && (
         <motion.div

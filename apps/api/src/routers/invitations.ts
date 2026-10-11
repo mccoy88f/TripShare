@@ -214,6 +214,82 @@ export const invitationsRouter = router({
       return { ok: true };
     }),
 
+  /**
+   * Inviti via email indirizzati a me che non ho ancora accettato: compaiono tra i miei viaggi
+   * (oltre che nell'email), così si può entrare senza cercare il messaggio.
+   */
+  mine: authedProcedure.query(async ({ ctx }) => {
+    const email = ctx.user.email.toLowerCase();
+    const rows = await ctx.db
+      .select({
+        id: tripInvitation.id,
+        token: tripInvitation.token,
+        role: tripInvitation.role,
+        createdAt: tripInvitation.createdAt,
+        tripId: trip.id,
+        title: trip.title,
+        emoji: trip.emoji,
+        destination: trip.destination,
+        startDate: trip.startDate,
+        endDate: trip.endDate,
+        coverImage: trip.coverImage,
+        coverColor: trip.coverColor,
+        inviter: user.name,
+      })
+      .from(tripInvitation)
+      .innerJoin(trip, eq(trip.id, tripInvitation.tripId))
+      .leftJoin(user, eq(user.id, tripInvitation.createdBy))
+      .where(
+        and(
+          sql`lower(${tripInvitation.email}) = ${email}`,
+          isNull(tripInvitation.revokedAt),
+          gt(tripInvitation.expiresAt, new Date()),
+          sql`(${tripInvitation.maxUses} is null or ${tripInvitation.uses} < ${tripInvitation.maxUses})`,
+          // Se sono già nel viaggio non serve più.
+          sql`not exists (
+            select 1 from ${tripMember}
+            where ${tripMember.tripId} = ${tripInvitation.tripId}
+              and ${tripMember.userId} = ${ctx.user.id}
+              and ${tripMember.removedAt} is null
+          )`,
+        ),
+      )
+      .orderBy(desc(tripInvitation.createdAt));
+    return rows;
+  }),
+
+  /** Rifiuta un invito ricevuto: non compare più e il segnaposto non risulta più "invitato". */
+  decline: authedProcedure.input(z.object({ id: z.uuid() })).mutation(async ({ ctx, input }) => {
+    const email = ctx.user.email.toLowerCase();
+    const [invitation] = await ctx.db
+      .select()
+      .from(tripInvitation)
+      .where(
+        and(
+          eq(tripInvitation.id, input.id),
+          sql`lower(${tripInvitation.email}) = ${email}`,
+          isNull(tripInvitation.revokedAt),
+        ),
+      );
+    if (!invitation) throw new TRPCError({ code: 'NOT_FOUND', message: 'INVITATION_INVALID' });
+    await ctx.db
+      .update(tripInvitation)
+      .set({ revokedAt: new Date() })
+      .where(eq(tripInvitation.id, invitation.id));
+    if (invitation.memberId)
+      await ctx.db
+        .update(tripMember)
+        .set({ invitedEmail: null })
+        .where(
+          and(
+            eq(tripMember.id, invitation.memberId),
+            isNull(tripMember.userId),
+            eq(tripMember.invitedEmail, email),
+          ),
+        );
+    return { ok: true };
+  }),
+
   /** Anteprima pubblica dell'invito, mostrata prima della registrazione o dell'accesso. */
   preview: publicProcedure
     .input(z.object({ token: z.string().min(10).max(64) }))

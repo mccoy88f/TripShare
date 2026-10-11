@@ -424,7 +424,12 @@
       "INVITATION_OTHER_EMAIL": "Questo invito è per un altro indirizzo email. Accedi con l'account giusto.",
       "INVITATION_INVALID": "Invito non più valido.",
       "PLACEHOLDER_TAKEN": "Questo nome è già stato preso da qualcun altro."
-    }
+    },
+    "pendingTitle": "Inviti ricevuti",
+    "accept": "Accetta",
+    "decline": "Rifiuta",
+    "invitedBy": "Sei stato invitato da {{name}}",
+    "invitedGeneric": "Sei stato invitato"
   },
   "members": {
     "placeholder": "Senza account",
