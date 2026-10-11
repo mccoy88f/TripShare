@@ -109,7 +109,7 @@ export function ActivityDialog({
   const linkedBooking = plan.bookings.find((b) => b.id === d.bookingId);
   const { data: expenses } = useQuery({
     ...trpc.expenses.list.queryOptions({ tripId }),
-    enabled: !!linkedBooking?.cost,
+    enabled: !!linkedBooking,
   });
   const linkedExpense = linkedBooking
     ? expenses?.find((e) => e.bookingId === linkedBooking.id)
@@ -444,7 +444,10 @@ export function ActivityDialog({
               <div className="grid grid-cols-1 gap-1 rounded-xl border bg-muted/40 px-3.5 py-3">
                 <span className="text-sm font-medium">{t('plan.activity.cost')}</span>
                 <span className="text-lg font-semibold">
-                  {moneyLabel(linkedBooking.cost, t, money)}
+                  {/* Il valore reale: l'importo della spesa se c'è, altrimenti quello della prenotazione. */}
+                  {linkedExpense
+                    ? money(linkedExpense.amount, linkedExpense.currency)
+                    : moneyLabel(linkedBooking.cost, t, money)}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {t('plan.activity.costFromBooking', { title: linkedBooking.title })}

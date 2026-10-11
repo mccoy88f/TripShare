@@ -7,6 +7,7 @@ export * from './ops.js';
 export * from './budget.js';
 export * from './reconcile.js';
 export * from './brief.js';
+export * from './booking-expense.js';
 
 export interface TripFormatIssue {
   path: string;

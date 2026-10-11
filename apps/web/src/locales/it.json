@@ -1260,7 +1260,8 @@
     "zipStarted": "Preparo il file ZIP…",
     "downloadStarted": "Download avviato",
     "shareRetry": "File pronti: tocca di nuovo Condividi.",
-    "shareUnsupported": "Questo dispositivo non può condividere i file: usa Scarica."
+    "shareUnsupported": "Questo dispositivo non può condividere i file: usa Scarica.",
+    "by": "Di {{name}}"
   },
   "generation": {
     "title": {

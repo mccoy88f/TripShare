@@ -924,8 +924,7 @@ function Lightbox({
             <div className="pointer-events-auto min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">{when}</p>
               <p className="flex items-center gap-1.5 truncate text-xs text-white/75">
-                {m.owner.name}
-                {m.tripTitle && <span>· {m.tripTitle}</span>}
+                {m.tripTitle && <span>{m.tripTitle}</span>}
                 {m.mine && !m.shared && <Lock className="size-3" />}
                 <span className="ml-1">
                   {index + 1} / {memories.length}
@@ -1013,6 +1012,9 @@ function Lightbox({
                 </p>
               )}
               {m.caption && <p className="whitespace-pre-wrap">{m.caption}</p>}
+              <p className="mt-1 text-xs text-white/70">
+                {t('memories.by', { name: m.owner.name })}
+              </p>
               {hasPoint(m) && (
                 <a
                   className="mt-1 flex items-center gap-1 text-xs text-white/80 underline"

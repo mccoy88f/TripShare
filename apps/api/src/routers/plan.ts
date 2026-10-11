@@ -12,6 +12,7 @@ import {
 } from '../services/plan.js';
 import { downloadImage, ImageDownloadError } from '../image-download.js';
 import { broadcastChange, diffPlan, notifyTrip } from '../services/events.js';
+import { syncBookingExpenses } from './booking-expenses.js';
 import { searchPhotos, WEB_FIRST_KINDS } from '../photo-search.js';
 import { requireMember } from '../services/trips.js';
 import { authedProcedure, router } from '../trpc/init.js';
@@ -152,6 +153,8 @@ export const planRouter = router({
           }
           return { version: updated!.version, snapshotId };
         });
+        // Le prenotazioni con un costo hanno la loro spesa (da pagare o pagata).
+        if (before && after) await syncBookingExpenses(ctx, input.tripId, before, after);
         await removeOrphanPhotos(ctx.storage, before, after);
         if (before && after)
           for (const change of diffPlan(before, after))

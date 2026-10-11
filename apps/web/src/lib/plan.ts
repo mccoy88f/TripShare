@@ -110,6 +110,8 @@ export function usePlanOps(tripId: string) {
         return Promise.all([
           queryClient.invalidateQueries({ queryKey: trpc.plan.get.queryKey({ tripId }) }),
           queryClient.invalidateQueries({ queryKey: trpc.trips.get.queryKey({ id: tripId }) }),
+          // Le prenotazioni con un costo creano o aggiornano la loro spesa.
+          queryClient.invalidateQueries({ queryKey: trpc.expenses.list.queryKey({ tripId }) }),
         ]);
       },
       onError: (err) =>

@@ -1260,7 +1260,8 @@
     "zipStarted": "Preparing the ZIP file…",
     "downloadStarted": "Download started",
     "shareRetry": "Files ready: tap Share again.",
-    "shareUnsupported": "This device cannot share files: use Download."
+    "shareUnsupported": "This device cannot share files: use Download.",
+    "by": "By {{name}}"
   },
   "generation": {
     "title": {

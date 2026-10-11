@@ -3,9 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { Loader2, Receipt, Ticket as TicketIcon } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { isCurrencyCode, type CurrencyCode, type ExpenseCategory } from '@tripshare/shared';
-import { BOOKING_TYPES, type Booking, type TripDocument } from '@tripshare/shared/trip-format';
-import { moneyToTripMinor } from '@tripshare/shared/trip-format/budget';
+import { isCurrencyCode, type CurrencyCode } from '@tripshare/shared';
+import {
+  BOOKING_EXPENSE_CATEGORY,
+  BOOKING_TYPES,
+  bookingExpenseAmount,
+  type Booking,
+  type TripDocument,
+} from '@tripshare/shared/trip-format';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -41,46 +46,19 @@ import {
 } from './fields';
 import { searchId } from '@/lib/search-focus';
 
-const CATEGORY_OF: Record<Booking['type'], ExpenseCategory> = {
-  flight: 'flights',
-  lodging: 'lodging',
-  car_rental: 'car',
-  parking: 'parking',
-  train: 'transport',
-  bus: 'transport',
-  ferry: 'transport',
-  tour: 'activities',
-  ticket: 'tickets',
-  insurance: 'insurance',
-  other: 'other',
-};
-
-function nights(b: Booking) {
-  if (!b.end?.date) return 1;
-  return Math.max(1, Math.round((Date.parse(b.end.date) - Date.parse(b.start.date)) / 86_400_000));
-}
-
 /** Spesa precompilata da una prenotazione (importo totale nella valuta della prenotazione). */
 function expenseFromBooking(b: Booking, travelers: number): ExpensePreset {
-  const currency = b.cost && isCurrencyCode(b.cost.currency) ? b.cost.currency : undefined;
-  const amount =
-    b.cost && currency
-      ? moneyToTripMinor(
-          b.cost,
-          { tripCurrency: currency, travelers, days: 1, rates: {} },
-          nights(b),
-        )
-      : null;
+  const total = bookingExpenseAmount(b, travelers);
   return {
     title: b.title,
     emoji: BOOKING_EMOJI[b.type],
-    category: CATEGORY_OF[b.type],
+    category: BOOKING_EXPENSE_CATEGORY[b.type],
     date: b.start.date,
     bookingId: b.id,
     // Se la prenotazione non risulta pagata la spesa nasce "da pagare": conta nel budget ma
     // non nei saldi finché qualcuno non la segna come pagata.
     status: b.paid === true ? 'paid' : 'planned',
-    ...(amount && currency ? { amount, currency } : {}),
+    ...(total ? total : {}),
   };
 }
 
