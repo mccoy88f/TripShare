@@ -45,7 +45,7 @@ export function Field({
   className?: string;
 }) {
   return (
-    <div className={cn('grid min-w-0 grid-cols-1 gap-1.5', className)}>
+    <div data-field className={cn('grid min-w-0 grid-cols-1 gap-1.5', className)}>
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
       {error ? (

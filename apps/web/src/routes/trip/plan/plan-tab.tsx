@@ -1,3 +1,4 @@
+import { useHideEmptyFields } from '@/lib/hide-empty';
 import { DeleteButton, DetailFooter } from '@/components/detail-footer';
 import { PlaceGallery } from './place-gallery';
 import { useQuery } from '@tanstack/react-query';
@@ -710,6 +711,8 @@ function DayDialog({
 }) {
   const { t } = useTranslation();
   const detail = useDetailMode(true, `${open}${day.date}`);
+  const formRef = useRef<HTMLFormElement>(null);
+  useHideEmptyFields(detail.readOnly, formRef);
   const { apply, pending } = usePlanOps(tripId);
   const [title, setTitle] = useState(day.title);
   const [route, setRoute] = useState(day.route.join(', '));
@@ -749,7 +752,7 @@ function DayDialog({
         title={detail.readOnly ? t('common.detail') : t('plan.editDay')}
         description={longDate(day.date)}
       >
-        <form onSubmit={submit} className="grid grid-cols-1 gap-4 pt-2">
+        <form ref={formRef} onSubmit={submit} className="grid grid-cols-1 gap-4 pt-2">
           <fieldset disabled={detail.readOnly} className="contents">
             <Field label={t('plan.dayTitle')} htmlFor="day-title">
               <Input
@@ -837,6 +840,8 @@ function TipDialog({
 }) {
   const { t } = useTranslation();
   const detail = useDetailMode(!!tip, tip?.title);
+  const formRef = useRef<HTMLFormElement>(null);
+  useHideEmptyFields(detail.readOnly, formRef);
   const [title, setTitle] = useState(tip?.title ?? '');
   const [text, setText] = useState(tip?.text ?? '');
   return (
@@ -845,6 +850,7 @@ function TipDialog({
         title={detail.readOnly ? t('common.detail') : tip ? t('plan.tip.edit') : t('plan.tip.add')}
       >
         <form
+          ref={formRef}
           className="grid grid-cols-1 gap-4 pt-2"
           onSubmit={(e) => {
             e.preventDefault();

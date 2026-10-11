@@ -300,41 +300,48 @@ export function ActivityDialog({
             </Field>
           </Step>
           <Step title={t('plan.activity.stepWhere')}>
-            <div className="grid grid-cols-1 gap-2">
-              <span className="text-sm font-medium">{t('plan.activity.places')}</span>
-              {plan.places.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {plan.places.map((p) => {
-                    const on = d.placeIds.includes(p.id);
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() =>
-                          set(
-                            'placeIds',
-                            on ? d.placeIds.filter((x) => x !== p.id) : [...d.placeIds, p.id],
-                          )
-                        }
-                        className={cn(
-                          'rounded-full border px-3 py-1 text-sm',
-                          on
-                            ? 'border-primary bg-primary/10 font-semibold text-primary'
-                            : 'hover:bg-muted',
-                        )}
-                      >
-                        {PLACE_KIND_EMOJI[p.kind]} {p.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              <Input
-                placeholder={t('plan.activity.newPlace')}
-                value={newPlace}
-                onChange={(e) => setNewPlace(e.target.value)}
-              />
-            </div>
+            {/* In dettaglio (non in modifica) si vedono solo i luoghi collegati. */}
+            {(!detail.readOnly || d.placeIds.length > 0) && (
+              <div className="grid grid-cols-1 gap-2">
+                <span className="text-sm font-medium">{t('plan.activity.places')}</span>
+                {plan.places.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {plan.places
+                      .filter((p) => !detail.readOnly || d.placeIds.includes(p.id))
+                      .map((p) => {
+                        const on = d.placeIds.includes(p.id);
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() =>
+                              set(
+                                'placeIds',
+                                on ? d.placeIds.filter((x) => x !== p.id) : [...d.placeIds, p.id],
+                              )
+                            }
+                            className={cn(
+                              'rounded-full border px-3 py-1 text-sm',
+                              on
+                                ? 'border-primary bg-primary/10 font-semibold text-primary'
+                                : 'hover:bg-muted',
+                            )}
+                          >
+                            {PLACE_KIND_EMOJI[p.kind]} {p.name}
+                          </button>
+                        );
+                      })}
+                  </div>
+                )}
+                {!detail.readOnly && (
+                  <Input
+                    placeholder={t('plan.activity.newPlace')}
+                    value={newPlace}
+                    onChange={(e) => setNewPlace(e.target.value)}
+                  />
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {plan.bookings.length > 0 && (

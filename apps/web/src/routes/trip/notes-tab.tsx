@@ -1,7 +1,8 @@
+import { useHideEmptyFields } from '@/lib/hide-empty';
 import { DeleteButton, DetailFooter } from '@/components/detail-footer';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Globe, Loader2, Lock, Pin, Trash2 } from 'lucide-react';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { UserAvatar } from '@/components/ui/avatar';
@@ -162,6 +163,8 @@ function NoteDialog({
   const refresh = useRefreshNotes(trip.id);
   const [draft, setDraft] = useState(initial);
   const detail = useDetailMode(!!initial.id, initial.id);
+  const formRef = useRef<HTMLFormElement>(null);
+  useHideEmptyFields(detail.readOnly, formRef);
   useEffect(() => {
     setDraft(initial);
   }, [initial]);
@@ -192,7 +195,7 @@ function NoteDialog({
           detail.readOnly ? t('common.detail') : draft.id ? t('notes.editTitle') : t('notes.add')
         }
       >
-        <form onSubmit={submit} className="grid grid-cols-1 gap-3 pt-2">
+        <form ref={formRef} onSubmit={submit} className="grid grid-cols-1 gap-3 pt-2">
           <fieldset disabled={detail.readOnly} className="contents">
             <Input
               placeholder={t('notes.titlePlaceholder')}

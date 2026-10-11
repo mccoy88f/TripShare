@@ -1,7 +1,8 @@
+import { useHideEmptyFields } from '@/lib/hide-empty';
 import { DeleteButton, DetailFooter } from '@/components/detail-footer';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check, Loader2, Plus, Sparkles } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PackingItem } from '@tripshare/shared/trip-format';
 import { UserAvatar } from '@/components/ui/avatar';
@@ -358,11 +359,14 @@ function PackingDialog({
 }) {
   const { t } = useTranslation();
   const detail = useDetailMode(true, item.id);
+  const formRef = useRef<HTMLFormElement>(null);
+  useHideEmptyFields(detail.readOnly, formRef);
   const [draft, setDraft] = useState(item);
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent title={detail.readOnly ? t('common.detail') : t('packing.editTitle')}>
         <form
+          ref={formRef}
           className="grid grid-cols-1 gap-4 pt-2"
           onSubmit={(e) => {
             e.preventDefault();

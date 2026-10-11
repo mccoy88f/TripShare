@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DIALOG_FOOTER } from '@/components/dialog-footer';
+import { useHideEmptyFields } from '@/lib/hide-empty';
 import { Button } from '@/components/ui/button';
 import { DialogClose } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
@@ -63,6 +64,9 @@ export function StepForm({
   const refs = useRef<(HTMLDivElement | null)[]>([]);
   const last = index === steps.length - 1;
 
+  const form = useRef<HTMLFormElement>(null);
+  useHideEmptyFields(readOnly, form);
+
   const invalidField = (i: number) =>
     [
       ...(refs.current[i]?.querySelectorAll<
@@ -83,6 +87,7 @@ export function StepForm({
 
   return (
     <form
+      ref={form}
       noValidate
       onSubmit={(e) => {
         if (!last) {
