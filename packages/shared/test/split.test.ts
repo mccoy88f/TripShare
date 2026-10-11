@@ -1,6 +1,12 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { allocate, computeBalances, computeShares, simplifyDebts } from '../src/split.js';
+import {
+  allocate,
+  computeBalances,
+  computeShares,
+  memberBreakdown,
+  simplifyDebts,
+} from '../src/split.js';
 
 describe('allocate', () => {
   it('distributes the remainder deterministically', () => {
@@ -95,5 +101,57 @@ describe('balances and simplification', () => {
         expect(Object.values(after).every((v) => v === 0)).toBe(true);
       }),
     );
+  });
+});
+
+describe('memberBreakdown', () => {
+  const expenses = [
+    {
+      id: 'e1',
+      title: 'Cena',
+      date: '2026-10-12',
+      amountTrip: 1000,
+      payers: [{ memberId: 'a', amount: 1000 }],
+      shares: [
+        { memberId: 'a', amount: 334 },
+        { memberId: 'b', amount: 333 },
+        { memberId: 'c', amount: 333 },
+      ],
+    },
+    {
+      id: 'e2',
+      title: 'Taxi',
+      date: '2026-10-13',
+      amountTrip: 600,
+      payers: [{ memberId: 'b', amount: 600 }],
+      shares: [
+        { memberId: 'b', amount: 300 },
+        { memberId: 'c', amount: 300 },
+      ],
+    },
+  ];
+  const settlements = [{ id: 's1', date: '2026-10-14', from: 'c', to: 'a', amount: 200 }];
+
+  it('adds up exactly to the balance of computeBalances', () => {
+    const balances = computeBalances(
+      [
+        { paid: { a: 1000 }, owed: { a: 334, b: 333, c: 333 } },
+        { paid: { b: 600 }, owed: { b: 300, c: 300 } },
+      ],
+      [{ from: 'c', to: 'a', amount: 200 }],
+    );
+    for (const id of ['a', 'b', 'c'])
+      expect(memberBreakdown(id, expenses, settlements).total).toBe(balances[id]);
+  });
+
+  it('lists each expense and settlement with its effect, skipping unrelated ones', () => {
+    const a = memberBreakdown('a', expenses, settlements);
+    expect(a.items).toEqual([
+      expect.objectContaining({ type: 'expense', id: 'e1', paid: 1000, owed: 334, delta: 666 }),
+      { type: 'settlement', id: 's1', date: '2026-10-14', other: 'c', delta: -200 },
+    ]);
+    const b = memberBreakdown('b', expenses, settlements);
+    expect(b.items.map((i) => i.id)).toEqual(['e1', 'e2']);
+    expect(memberBreakdown('z', expenses, settlements)).toEqual({ items: [], total: 0 });
   });
 });

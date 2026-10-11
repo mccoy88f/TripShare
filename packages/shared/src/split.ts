@@ -112,6 +112,95 @@ export function computeBalances(
   return balances;
 }
 
+/** Una spesa come arriva dal server: totale nella valuta del viaggio, chi ha pagato e le quote. */
+export interface BreakdownExpense {
+  id: string;
+  title: string;
+  date: string;
+  emoji?: string | null;
+  amountTrip: number;
+  payers: readonly { memberId: MemberId; amount: number }[];
+  shares: readonly { memberId: MemberId; amount: number }[];
+}
+
+export interface BreakdownSettlement {
+  id: string;
+  date: string;
+  from: MemberId;
+  to: MemberId;
+  amount: number;
+}
+
+export type BreakdownItem =
+  | {
+      type: 'expense';
+      id: string;
+      title: string;
+      date: string;
+      emoji?: string | null;
+      /** Quanto ha anticipato questa persona. */
+      paid: number;
+      /** La sua quota della spesa. */
+      owed: number;
+      /** paid - owed: positivo = deve ricevere. */
+      delta: number;
+    }
+  | {
+      type: 'settlement';
+      id: string;
+      date: string;
+      /** L'altra persona del rimborso. */
+      other: MemberId;
+      /** Positivo se questa persona ha dato soldi, negativo se li ha ricevuti. */
+      delta: number;
+    };
+
+/** Ripartisce `total` in proporzione agli importi di chi ha pagato o deve (come nel saldo). */
+function spreadByAmount(total: number, rows: readonly { memberId: MemberId; amount: number }[]) {
+  const parts = rows.some((r) => r.amount > 0)
+    ? allocate(
+        total,
+        rows.map((r) => r.amount),
+      )
+    : rows.map(() => 0);
+  return new Map(rows.map((r, i) => [r.memberId, parts[i]!]));
+}
+
+/**
+ * Da quali voci nasce il saldo di una persona: per ogni spesa quanto ha anticipato e quanto
+ * gli spetta, e i rimborsi già registrati. La somma dei `delta` è esattamente il suo saldo
+ * (vedi `computeBalances`). Le voci a zero (spese a cui non ha partecipato) si omettono.
+ */
+export function memberBreakdown(
+  memberId: MemberId,
+  expenses: readonly BreakdownExpense[],
+  settlements: readonly BreakdownSettlement[] = [],
+): { items: BreakdownItem[]; total: number } {
+  const items: BreakdownItem[] = [];
+  for (const e of expenses) {
+    const paid = spreadByAmount(e.amountTrip, e.payers).get(memberId) ?? 0;
+    const owed = spreadByAmount(e.amountTrip, e.shares).get(memberId) ?? 0;
+    if (paid === 0 && owed === 0) continue;
+    items.push({
+      type: 'expense',
+      id: e.id,
+      title: e.title,
+      date: e.date,
+      emoji: e.emoji,
+      paid,
+      owed,
+      delta: paid - owed,
+    });
+  }
+  for (const s of settlements) {
+    if (s.from === memberId)
+      items.push({ type: 'settlement', id: s.id, date: s.date, other: s.to, delta: s.amount });
+    else if (s.to === memberId)
+      items.push({ type: 'settlement', id: s.id, date: s.date, other: s.from, delta: -s.amount });
+  }
+  return { items, total: items.reduce((a, i) => a + i.delta, 0) };
+}
+
 /**
  * Propone i trasferimenti per azzerare i saldi con pochi movimenti: abbina ogni volta chi deve
  * di più con chi deve ricevere di più. Al massimo n-1 trasferimenti.

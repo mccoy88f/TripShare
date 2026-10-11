@@ -13,6 +13,7 @@ import { useTRPC } from '@/lib/trpc';
 import type { TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { confirmDialog } from '@/components/confirm';
+import { BalanceDetail } from './balance-detail';
 
 type Transfer = TripDetail['ledger']['transfers'][number];
 
@@ -22,6 +23,7 @@ export function BalancesTab({ trip }: { trip: TripDetail }) {
   const queryClient = useQueryClient();
   const { data: settlements } = useQuery(trpc.settlements.list.queryOptions({ tripId: trip.id }));
   const [paypalPending, setPaypalPending] = useState<Transfer | null>(null);
+  const [detail, setDetail] = useState<string | null>(null);
   const members = Object.fromEntries(trip.members.map((m) => [m.id, m]));
   const nameOf = (id: string) =>
     id === trip.myMemberId ? t('expense.you') : (members[id]?.name ?? '?');
@@ -63,7 +65,13 @@ export function BalancesTab({ trip }: { trip: TripDetail }) {
     <div className="grid grid-cols-1 gap-6 pb-8">
       <Card className="p-2">
         {balances.map(({ member, amount }) => (
-          <div key={member.id} className="flex items-center gap-3 rounded-lg px-3 py-2.5">
+          <button
+            key={member.id}
+            type="button"
+            onClick={() => setDetail(member.id)}
+            title={t('balance.detailOpen')}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition outline-none hover:bg-muted/50 focus-visible:ring-4 focus-visible:ring-ring/20"
+          >
             <UserAvatar user={member} size="sm" />
             <span className="w-28 truncate text-sm font-medium sm:w-40">{nameOf(member.id)}</span>
             <div className="relative h-2 flex-1 rounded-full bg-muted">
@@ -89,7 +97,7 @@ export function BalancesTab({ trip }: { trip: TripDetail }) {
               {amount > 0 ? '+' : ''}
               {money(amount, trip.currency)}
             </span>
-          </div>
+          </button>
         ))}
       </Card>
 
@@ -204,6 +212,16 @@ export function BalancesTab({ trip }: { trip: TripDetail }) {
             ))}
           </div>
         </section>
+      )}
+
+      {detail && members[detail] && (
+        <BalanceDetail
+          trip={trip}
+          member={members[detail]!}
+          balance={trip.ledger.balances[detail] ?? 0}
+          nameOf={nameOf}
+          onClose={() => setDetail(null)}
+        />
       )}
 
       <Dialog open={!!paypalPending} onOpenChange={(open) => !open && setPaypalPending(null)}>

@@ -11,10 +11,7 @@
     },
     "language": {
       "type": "string",
-      "enum": [
-        "it",
-        "en"
-      ],
+      "enum": ["it", "en"],
       "description": "Lingua dei testi del documento."
     },
     "trip": {
@@ -51,9 +48,7 @@
               }
             }
           },
-          "required": [
-            "name"
-          ]
+          "required": ["name"]
         },
         "startDate": {
           "description": "Primo giorno del viaggio. Obbligatorio se le date sono note.",
@@ -129,12 +124,7 @@
           "maxLength": 120
         }
       },
-      "required": [
-        "title",
-        "destination",
-        "currency",
-        "travelers"
-      ]
+      "required": ["title", "destination", "currency", "travelers"]
     },
     "places": {
       "default": [],
@@ -196,10 +186,7 @@
                 "maximum": 180
               }
             },
-            "required": [
-              "lat",
-              "lng"
-            ]
+            "required": ["lat", "lng"]
           },
           "openingHours": {
             "description": "Orari in testo libero per le date del viaggio, es. \"9:30–17:00, ultimo ingresso 16:00\".",
@@ -256,13 +243,7 @@
                 "default": "total",
                 "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
                 "type": "string",
-                "enum": [
-                  "total",
-                  "per_person",
-                  "per_night",
-                  "per_vehicle",
-                  "per_day"
-                ]
+                "enum": ["total", "per_person", "per_night", "per_vehicle", "per_day"]
               },
               "quantity": {
                 "description": "Numero di unità (es. 3 biglietti): si moltiplica per l'importo, oltre a \"basis\". Facoltativo, 1 se manca.",
@@ -281,10 +262,7 @@
                 "maxLength": 200
               }
             },
-            "required": [
-              "amount",
-              "currency"
-            ]
+            "required": ["amount", "currency"]
           },
           "priceLevel": {
             "description": "Fascia di prezzo da 1 (economico) a 4 (caro), utile per ristoranti.",
@@ -297,12 +275,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [
-                "breakfast",
-                "lunch",
-                "dinner",
-                "snack"
-              ]
+              "enum": ["breakfast", "lunch", "dinner", "snack"]
             }
           },
           "description": {
@@ -333,10 +306,7 @@
             "properties": {
               "status": {
                 "type": "string",
-                "enum": [
-                  "verified",
-                  "unverified"
-                ],
+                "enum": ["verified", "unverified"],
                 "description": "\"verified\" solo se l'informazione è stata letta su una fonte ufficiale citata."
               },
               "checkedAt": {
@@ -361,17 +331,12 @@
                       "format": "uri"
                     }
                   },
-                  "required": [
-                    "title",
-                    "url"
-                  ],
+                  "required": ["title", "url"],
                   "description": "Link esterno utile: sito ufficiale, biglietti, guida."
                 }
               }
             },
-            "required": [
-              "status"
-            ],
+            "required": ["status"],
             "description": "Affidabilità di orari e prezzi."
           },
           "links": {
@@ -390,19 +355,12 @@
                   "format": "uri"
                 }
               },
-              "required": [
-                "title",
-                "url"
-              ],
+              "required": ["title", "url"],
               "description": "Link esterno utile: sito ufficiale, biglietti, guida."
             }
           }
         },
-        "required": [
-          "id",
-          "name",
-          "kind"
-        ],
+        "required": ["id", "name", "kind"],
         "description": "Luogo citato dal programma: attrazione, ristorante, alloggio, aeroporto…"
       }
     },
@@ -441,11 +399,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "booked",
-              "to_book",
-              "optional"
-            ],
+            "enum": ["booked", "to_book", "optional"],
             "description": "\"booked\" se già prenotato, \"to_book\" se va prenotato, \"optional\" se facoltativo."
           },
           "provider": {
@@ -471,9 +425,7 @@
                 "description": "Orario locale HH:MM a 24 ore, es. \"08:15\"."
               }
             },
-            "required": [
-              "date"
-            ],
+            "required": ["date"],
             "description": "Inizio: partenza, check-in, ritiro."
           },
           "end": {
@@ -492,9 +444,7 @@
                 "description": "Orario locale HH:MM a 24 ore, es. \"08:15\"."
               }
             },
-            "required": [
-              "date"
-            ]
+            "required": ["date"]
           },
           "placeId": {
             "description": "Luogo principale (alloggio, parcheggio, punto di ritiro).",
@@ -518,11 +468,7 @@
                 "maxLength": 80
               }
             },
-            "required": [
-              "number",
-              "from",
-              "to"
-            ]
+            "required": ["number", "from", "to"]
           },
           "cost": {
             "type": "object",
@@ -573,13 +519,7 @@
                 "default": "total",
                 "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
                 "type": "string",
-                "enum": [
-                  "total",
-                  "per_person",
-                  "per_night",
-                  "per_vehicle",
-                  "per_day"
-                ]
+                "enum": ["total", "per_person", "per_night", "per_vehicle", "per_day"]
               },
               "quantity": {
                 "description": "Numero di unità (es. 3 biglietti): si moltiplica per l'importo, oltre a \"basis\". Facoltativo, 1 se manca.",
@@ -598,10 +538,7 @@
                 "maxLength": 200
               }
             },
-            "required": [
-              "amount",
-              "currency"
-            ],
+            "required": ["amount", "currency"],
             "description": "Importo con valuta."
           },
           "paid": {
@@ -628,21 +565,12 @@
                   "format": "uri"
                 }
               },
-              "required": [
-                "title",
-                "url"
-              ],
+              "required": ["title", "url"],
               "description": "Link esterno utile: sito ufficiale, biglietti, guida."
             }
           }
         },
-        "required": [
-          "id",
-          "type",
-          "title",
-          "status",
-          "start"
-        ],
+        "required": ["id", "type", "title", "status", "start"],
         "description": "Prenotazione: volo, alloggio, noleggio, parcheggio, biglietto…"
       }
     },
@@ -834,13 +762,7 @@
                           "default": "total",
                           "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
                           "type": "string",
-                          "enum": [
-                            "total",
-                            "per_person",
-                            "per_night",
-                            "per_vehicle",
-                            "per_day"
-                          ]
+                          "enum": ["total", "per_person", "per_night", "per_vehicle", "per_day"]
                         },
                         "quantity": {
                           "description": "Numero di unità (es. 3 biglietti): si moltiplica per l'importo, oltre a \"basis\". Facoltativo, 1 se manca.",
@@ -859,10 +781,7 @@
                           "maxLength": 200
                         }
                       },
-                      "required": [
-                        "amount",
-                        "currency"
-                      ],
+                      "required": ["amount", "currency"],
                       "description": "Importo con valuta."
                     },
                     "notes": {
@@ -982,10 +901,7 @@
                                 "maxLength": 200
                               }
                             },
-                            "required": [
-                              "amount",
-                              "currency"
-                            ],
+                            "required": ["amount", "currency"],
                             "description": "Importo con valuta."
                           },
                           "notes": {
@@ -993,15 +909,11 @@
                             "maxLength": 300
                           }
                         },
-                        "required": [
-                          "mode"
-                        ]
+                        "required": ["mode"]
                       }
                     }
                   },
-                  "required": [
-                    "mode"
-                  ],
+                  "required": ["mode"],
                   "description": "Spostamento associato all'attività."
                 },
                 "cost": {
@@ -1054,13 +966,7 @@
                       "default": "total",
                       "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
                       "type": "string",
-                      "enum": [
-                        "total",
-                        "per_person",
-                        "per_night",
-                        "per_vehicle",
-                        "per_day"
-                      ]
+                      "enum": ["total", "per_person", "per_night", "per_vehicle", "per_day"]
                     },
                     "quantity": {
                       "description": "Numero di unità (es. 3 biglietti): si moltiplica per l'importo, oltre a \"basis\". Facoltativo, 1 se manca.",
@@ -1079,10 +985,7 @@
                       "maxLength": 200
                     }
                   },
-                  "required": [
-                    "amount",
-                    "currency"
-                  ]
+                  "required": ["amount", "currency"]
                 },
                 "warnings": {
                   "default": [],
@@ -1117,19 +1020,12 @@
                         "format": "uri"
                       }
                     },
-                    "required": [
-                      "title",
-                      "url"
-                    ],
+                    "required": ["title", "url"],
                     "description": "Link esterno utile: sito ufficiale, biglietti, guida."
                   }
                 }
               },
-              "required": [
-                "id",
-                "type",
-                "title"
-              ],
+              "required": ["id", "type", "title"],
               "description": "Voce del programma di un giorno."
             }
           },
@@ -1340,10 +1236,7 @@
                                 "maxLength": 200
                               }
                             },
-                            "required": [
-                              "amount",
-                              "currency"
-                            ],
+                            "required": ["amount", "currency"],
                             "description": "Importo con valuta."
                           },
                           "notes": {
@@ -1463,10 +1356,7 @@
                                       "maxLength": 200
                                     }
                                   },
-                                  "required": [
-                                    "amount",
-                                    "currency"
-                                  ],
+                                  "required": ["amount", "currency"],
                                   "description": "Importo con valuta."
                                 },
                                 "notes": {
@@ -1474,15 +1364,11 @@
                                   "maxLength": 300
                                 }
                               },
-                              "required": [
-                                "mode"
-                              ]
+                              "required": ["mode"]
                             }
                           }
                         },
-                        "required": [
-                          "mode"
-                        ],
+                        "required": ["mode"],
                         "description": "Spostamento associato all'attività."
                       },
                       "cost": {
@@ -1535,13 +1421,7 @@
                             "default": "total",
                             "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
                             "type": "string",
-                            "enum": [
-                              "total",
-                              "per_person",
-                              "per_night",
-                              "per_vehicle",
-                              "per_day"
-                            ]
+                            "enum": ["total", "per_person", "per_night", "per_vehicle", "per_day"]
                           },
                           "quantity": {
                             "description": "Numero di unità (es. 3 biglietti): si moltiplica per l'importo, oltre a \"basis\". Facoltativo, 1 se manca.",
@@ -1560,10 +1440,7 @@
                             "maxLength": 200
                           }
                         },
-                        "required": [
-                          "amount",
-                          "currency"
-                        ]
+                        "required": ["amount", "currency"]
                       },
                       "warnings": {
                         "default": [],
@@ -1598,19 +1475,12 @@
                               "format": "uri"
                             }
                           },
-                          "required": [
-                            "title",
-                            "url"
-                          ],
+                          "required": ["title", "url"],
                           "description": "Link esterno utile: sito ufficiale, biglietti, guida."
                         }
                       }
                     },
-                    "required": [
-                      "id",
-                      "type",
-                      "title"
-                    ],
+                    "required": ["id", "type", "title"],
                     "description": "Voce del programma di un giorno."
                   }
                 },
@@ -1620,20 +1490,12 @@
                   "maxLength": 400
                 }
               },
-              "required": [
-                "id",
-                "title",
-                "replacesActivityIds",
-                "activities"
-              ],
+              "required": ["id", "title", "replacesActivityIds", "activities"],
               "description": "Piano alternativo per una parte del giorno."
             }
           }
         },
-        "required": [
-          "date",
-          "title"
-        ],
+        "required": ["date", "title"],
         "description": "Giorno del viaggio."
       }
     },
@@ -1683,11 +1545,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "booked",
-              "pending",
-              "estimate"
-            ],
+            "enum": ["booked", "pending", "estimate"],
             "description": "\"booked\" prenotato con importo noto, \"pending\" prenotato ma importo da inserire, \"estimate\" stima."
           },
           "amount": {
@@ -1740,13 +1598,7 @@
                 "default": "total",
                 "description": "A cosa si riferisce l'importo. \"per_person\" viene moltiplicato per i viaggiatori.",
                 "type": "string",
-                "enum": [
-                  "total",
-                  "per_person",
-                  "per_night",
-                  "per_vehicle",
-                  "per_day"
-                ]
+                "enum": ["total", "per_person", "per_night", "per_vehicle", "per_day"]
               },
               "quantity": {
                 "description": "Numero di unità (es. 3 biglietti): si moltiplica per l'importo, oltre a \"basis\". Facoltativo, 1 se manca.",
@@ -1765,10 +1617,7 @@
                 "maxLength": 200
               }
             },
-            "required": [
-              "amount",
-              "currency"
-            ]
+            "required": ["amount", "currency"]
           },
           "included": {
             "default": true,
@@ -1785,12 +1634,7 @@
             "maxLength": 400
           }
         },
-        "required": [
-          "id",
-          "title",
-          "category",
-          "status"
-        ],
+        "required": ["id", "title", "category", "status"],
         "description": "Voce di budget prevista per il viaggio."
       }
     },
@@ -1812,15 +1656,7 @@
           },
           "group": {
             "type": "string",
-            "enum": [
-              "documents",
-              "clothing",
-              "electronics",
-              "health",
-              "gear",
-              "food",
-              "other"
-            ],
+            "enum": ["documents", "clothing", "electronics", "health", "gear", "food", "other"],
             "description": "\"documents\" include anche prenotazioni e check-in da fare prima di partire."
           },
           "perPerson": {
@@ -1833,10 +1669,7 @@
             "maxLength": 300
           }
         },
-        "required": [
-          "item",
-          "group"
-        ],
+        "required": ["item", "group"],
         "description": "Cosa portare o preparare."
       }
     },
@@ -1858,10 +1691,7 @@
             "maxLength": 600
           }
         },
-        "required": [
-          "title",
-          "text"
-        ]
+        "required": ["title", "text"]
       }
     },
     "exchangeRates": {
@@ -1928,11 +1758,7 @@
       }
     }
   },
-  "required": [
-    "formatVersion",
-    "language",
-    "trip"
-  ],
+  "required": ["formatVersion", "language", "trip"],
   "title": "TripShare Trip Format v1",
   "description": "Documento standard di un viaggio TripShare: programma, luoghi, prenotazioni, budget e lista.",
   "$id": "https://tripshare.app/schema/trip.v1.schema.json"

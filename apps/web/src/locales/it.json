@@ -320,7 +320,17 @@
     "paypalDoneTitle": "Hai completato il pagamento?",
     "paypalDoneText": "PayPal non avvisa TripShare. Se hai inviato {{amount}} a {{to}}, registralo qui.",
     "notYet": "Non ancora",
-    "yesPaid": "Sì, ho pagato"
+    "yesPaid": "Sì, ho pagato",
+    "detailOpen": "Vedi da cosa nasce questo saldo",
+    "detailTitle": "Saldo di {{name}}",
+    "detailGetsBack": "Deve ricevere",
+    "detailOwes": "Deve dare",
+    "detailHint": "Il saldo è la somma di tutte le spese pagate: quanto ha anticipato meno la sua quota. Le spese non si saldano una per una: un rimborso registrato riduce il totale.",
+    "detailEmpty": "Nessuna spesa o rimborso per questa persona.",
+    "detailGave": "Ha dato a {{name}}",
+    "detailReceived": "Ha ricevuto da {{name}}",
+    "detailPaidOwed": "anticipato {{paid}} · quota {{owed}}",
+    "detailTotal": "Totale"
   },
   "expense": {
     "add": "Aggiungi spesa",

@@ -320,7 +320,17 @@
     "paypalDoneTitle": "Did you complete the payment?",
     "paypalDoneText": "PayPal doesn't notify TripShare. If you sent {{amount}} to {{to}}, record it here.",
     "notYet": "Not yet",
-    "yesPaid": "Yes, I paid"
+    "yesPaid": "Yes, I paid",
+    "detailOpen": "See where this balance comes from",
+    "detailTitle": "{{name}}'s balance",
+    "detailGetsBack": "Gets back",
+    "detailOwes": "Owes",
+    "detailHint": "The balance is the sum of all paid expenses: what they advanced minus their share. Expenses are not settled one by one: a recorded repayment reduces the total.",
+    "detailEmpty": "No expenses or repayments for this person.",
+    "detailGave": "Gave to {{name}}",
+    "detailReceived": "Received from {{name}}",
+    "detailPaidOwed": "advanced {{paid}} · share {{owed}}",
+    "detailTotal": "Total"
   },
   "expense": {
     "add": "Add expense",
