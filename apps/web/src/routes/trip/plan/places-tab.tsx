@@ -68,7 +68,7 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
   const { apply } = usePlanOps(trip.id);
   const [verifying, setVerifying] = useState<string | null>(null);
   const [scheduling, setScheduling] = useState<Place | null>(null);
-  const [gallery, setGallery] = useState<Place | null>(null);
+  const [gallery, setGallery] = useState<{ place: Place; descriptionOpen: boolean } | null>(null);
   const verify = async (p: Place) => {
     setVerifying(p.id);
     try {
@@ -144,7 +144,7 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
                   title={t('placePhoto.view', { name: p.name })}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setGallery(p);
+                    setGallery({ place: p, descriptionOpen: false });
                   }}
                   onKeyDown={(e) => e.stopPropagation()}
                   className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-xl outline-none transition hover:scale-110 focus-visible:ring-4 focus-visible:ring-ring/30"
@@ -181,7 +181,22 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
                   {p.priceLevel ? ` ${'€'.repeat(p.priceLevel)}` : ''}
                 </p>
               )}
-              {p.description && <p className="text-sm text-muted-foreground">{p.description}</p>}
+              {p.description && (
+                // Poche righe (al massimo metà scheda): toccando il testo si apre la galleria
+                // con la descrizione completa; il resto della scheda apre i dettagli.
+                <button
+                  type="button"
+                  aria-label={t('placePhoto.view', { name: p.name })}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setGallery({ place: p, descriptionOpen: true });
+                  }}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  className="line-clamp-3 w-full cursor-pointer text-left text-sm text-muted-foreground outline-none focus-visible:ring-4 focus-visible:ring-ring/30"
+                >
+                  {p.description}
+                </button>
+              )}
               {p.tips.map((tip, i) => (
                 <p key={i} className="text-sm text-muted-foreground">
                   💡 {tip}
@@ -257,7 +272,8 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
       {gallery && (
         <PlaceGallery
           tripId={trip.id}
-          place={gallery}
+          place={gallery.place}
+          descriptionOpen={gallery.descriptionOpen}
           destination={plan.trip.destination.name || undefined}
           canEdit={canEdit}
           onClose={() => setGallery(null)}

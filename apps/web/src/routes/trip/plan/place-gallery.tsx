@@ -33,12 +33,15 @@ export function PlaceGallery({
   place,
   destination,
   canEdit,
+  descriptionOpen,
   onClose,
 }: {
   tripId: string;
   place: Place;
   destination?: string;
   canEdit?: boolean;
+  /** Apre la galleria con la descrizione già allargata. */
+  descriptionOpen?: boolean;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -60,7 +63,7 @@ export function PlaceGallery({
       : [],
   );
   const [index, setIndex] = useState(0);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(descriptionOpen ?? false);
   const [description, setDescription] = useState(place.description ?? '');
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
