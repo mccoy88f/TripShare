@@ -1,10 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Loader2, RefreshCw, Send, X, XCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, Send, XCircle } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useMe } from '@/components/layouts/app-layout';
-import { ModelInfo, ModelPicker } from '@/components/model-picker';
 import { UserAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,7 @@ import { Field, Input, Select } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTRPC } from '@/lib/trpc';
-import { cn } from '@/lib/utils';
+import { AiProfiles } from './admin-ai-profiles';
 
 type SettingsMap = Record<
   string,
@@ -403,87 +402,6 @@ function GeneralSettings() {
   );
 }
 
-const MODEL_KEYS = ['vision', 'planner', 'chat', 'web', 'light'] as const;
-type ModelKey = (typeof MODEL_KEYS)[number];
-type Models = Record<ModelKey, string> & { fallbacks: string[] };
-/** Scopi che ricevono immagini in input (scontrini, screenshot). */
-const IMAGE_PURPOSES: ModelKey[] = ['vision'];
-
-type Provider = 'openrouter' | 'gemini';
-
-function KeyStatus({ hasKey, provider }: { hasKey: boolean; provider: Provider }) {
-  const { t } = useTranslation();
-  const trpc = useTRPC();
-  const checkOr = useMutation(trpc.admin.openrouter.checkKey.mutationOptions());
-  const checkGemini = useMutation(trpc.admin.gemini.checkKey.mutationOptions());
-  const test = useMutation(trpc.admin.aiTest.mutationOptions());
-  if (!hasKey) return null;
-  const check = provider === 'gemini' ? checkGemini : checkOr;
-  const usd = (n: number | null) => (n === null ? '∞' : `$${n.toFixed(2)}`);
-  return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl bg-muted/60 px-4 py-3 text-sm">
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        disabled={check.isPending}
-        onClick={() => check.mutate()}
-      >
-        {check.isPending ? <Loader2 className="animate-spin" /> : <CheckCircle2 />}
-        {t('admin.checkKey')}
-      </Button>
-      {checkOr.data && provider === 'openrouter' && (
-        <span className="text-success">
-          {t('admin.keyOk', {
-            usage: usd(checkOr.data.usage),
-            limit: usd(checkOr.data.limit),
-            remaining: usd(checkOr.data.limitRemaining),
-          })}
-          {checkOr.data.freeTier && ` · ${t('admin.freeTier')}`}
-        </span>
-      )}
-      {checkGemini.data && provider === 'gemini' && (
-        <span className="text-success">
-          {t('admin.geminiKeyOk', { count: checkGemini.data.models })}
-        </span>
-      )}
-      {check.error && (
-        <span className="text-destructive">
-          {t(`admin.openrouterErrors.${check.error.message}`, {
-            defaultValue: check.error.message,
-          })}
-        </span>
-      )}
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        disabled={test.isPending}
-        onClick={() => test.mutate({ provider })}
-      >
-        {test.isPending ? <Loader2 className="animate-spin" /> : <Send />}
-        {t('admin.aiTest')}
-      </Button>
-      {test.data && (
-        <span
-          className={cn(
-            'w-full text-xs break-words',
-            test.data.ok ? 'text-success' : 'text-destructive',
-          )}
-        >
-          {test.data.ok
-            ? t('admin.aiTestOk', {
-                model: test.data.model,
-                ms: test.data.ms,
-                content: test.data.content,
-              })
-            : t('admin.aiTestError', { model: test.data.model, error: test.data.error })}
-        </span>
-      )}
-    </div>
-  );
-}
-
 function AiSettings() {
   const { t } = useTranslation();
   const { settings, value, save } = useSettings();
@@ -495,11 +413,6 @@ function AiSettings() {
     setRequests(String(value<number>('ai.monthlyRequests') ?? 300));
   }, [settings]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!settings) return <Loader2 className="mx-auto mt-10 animate-spin text-muted-foreground" />;
-  const hasKey = (key: string) => {
-    const s = settings[key];
-    return !!s?.secret && s.set;
-  };
-  const central = value<Provider>('ai.provider') ?? 'openrouter';
 
   return (
     <div className="grid grid-cols-1 gap-6">
@@ -522,21 +435,13 @@ function AiSettings() {
               ))}
             </Select>
           </Field>
-          <Field
-            label={t('admin.centralProvider')}
-            htmlFor="ai-provider"
-            hint={t('admin.centralProviderHint')}
-            error={!hasKey(`${central}.apiKey`) ? t('admin.centralProviderNoKey') : null}
-          >
-            <Select
-              id="ai-provider"
-              value={central}
-              onChange={(e) => save('ai.provider', e.target.value)}
-            >
-              <option value="openrouter">OpenRouter</option>
-              <option value="gemini">Google Gemini</option>
-            </Select>
-          </Field>
+          <label className="flex items-center justify-between gap-4">
+            <span className="font-medium">{t('admin.denyDataCollection')}</span>
+            <Switch
+              checked={value<boolean>('openrouter.denyDataCollection')}
+              onCheckedChange={(v) => save('openrouter.denyDataCollection', v)}
+            />
+          </label>
           <label className="flex items-center justify-between gap-4">
             <span>
               <span className="font-medium">{t('admin.ocrReceipts')}</span>
@@ -580,211 +485,10 @@ function AiSettings() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            OpenRouter
-            {central === 'openrouter' && <Badge variant="success">{t('admin.centralBadge')}</Badge>}
-          </CardTitle>
-          <CardDescription>{t('admin.openrouterHint')}</CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-5">
-          <SecretField
-            label={t('admin.apiKey')}
-            settingKey="openrouter.apiKey"
-            settings={settings}
-            save={save}
-          />
-          <KeyStatus hasKey={hasKey('openrouter.apiKey')} provider="openrouter" />
-          <label className="flex items-center justify-between gap-4">
-            <span className="font-medium">{t('admin.denyDataCollection')}</span>
-            <Switch
-              checked={value<boolean>('openrouter.denyDataCollection')}
-              onCheckedChange={(v) => save('openrouter.denyDataCollection', v)}
-            />
-          </label>
-        </CardContent>
-      </Card>
-      <ModelsCard provider="openrouter" />
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            Google Gemini
-            {central === 'gemini' && <Badge variant="success">{t('admin.centralBadge')}</Badge>}
-          </CardTitle>
-          <CardDescription>{t('admin.geminiHint')}</CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-5">
-          <SecretField
-            label={t('admin.geminiKey')}
-            settingKey="gemini.apiKey"
-            settings={settings}
-            save={save}
-          />
-          <KeyStatus hasKey={hasKey('gemini.apiKey')} provider="gemini" />
-        </CardContent>
-      </Card>
-      {hasKey('gemini.apiKey') && <ModelsCard provider="gemini" />}
+      <AiProfiles />
 
       <AiUsage />
     </div>
-  );
-}
-
-/** Modelli per ogni compito, scelti dall'elenco del provider. */
-function ModelsCard({ provider }: { provider: Provider }) {
-  const { t } = useTranslation();
-  const trpc = useTRPC();
-  const { settings, value, save } = useSettings();
-  const settingKey = `${provider}.models`;
-  const [models, setModels] = useState<Models | null>(null);
-  const [refresh, setRefresh] = useState(false);
-  const orCatalog = useQuery({
-    ...trpc.admin.openrouter.models.queryOptions({ refresh }),
-    staleTime: 3600_000,
-    retry: false,
-    enabled: provider === 'openrouter',
-  });
-  const geminiCatalog = useQuery({
-    ...trpc.admin.gemini.models.queryOptions({ refresh }),
-    staleTime: 3600_000,
-    retry: false,
-    enabled: provider === 'gemini',
-  });
-  const catalog = provider === 'gemini' ? geminiCatalog : orCatalog;
-  useEffect(() => {
-    if (!settings) return;
-    const m = value<Models>(settingKey);
-    if (m) setModels(m);
-  }, [settings]); // eslint-disable-line react-hooks/exhaustive-deps
-  if (!models) return null;
-
-  const list = catalog.data?.models ?? [];
-  const byId = new Map(list.map((m) => [m.id, m]));
-  const warning = (k: ModelKey) => {
-    const m = byId.get(models[k]);
-    if (!m) return null;
-    if (IMAGE_PURPOSES.includes(k) && !m.imageInput) return t('admin.needsImages');
-    if (k === 'planner' && !m.structuredOutput) return t('admin.noStructured');
-    return null;
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="grid grid-cols-1 gap-1">
-            <CardTitle>
-              {t('admin.models')} · {provider === 'gemini' ? 'Gemini' : 'OpenRouter'}
-            </CardTitle>
-            <CardDescription>
-              {provider === 'gemini' ? t('admin.geminiModelHint') : t('admin.modelHint')}
-            </CardDescription>
-          </div>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            disabled={catalog.isFetching}
-            onClick={() => (refresh ? void catalog.refetch() : setRefresh(true))}
-          >
-            {catalog.isFetching ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-            {t('admin.refreshModels')}
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="grid grid-cols-1 gap-5">
-        {catalog.isError && (
-          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {t('admin.modelsUnavailable')} ({catalog.error.message})
-          </p>
-        )}
-        {catalog.data && (
-          <p className="text-xs text-muted-foreground">
-            {t('admin.modelsCount', {
-              count: list.length,
-              free: list.filter((m) => m.free).length,
-              images: list.filter((m) => m.imageInput).length,
-            })}
-          </p>
-        )}
-        {MODEL_KEYS.map((k) => (
-          <Field
-            key={k}
-            label={
-              <span className="flex flex-wrap items-center gap-2">
-                {t(`admin.modelNames.${k}`)}
-                {IMAGE_PURPOSES.includes(k) ? (
-                  <Badge variant="outline">🖼️ {t('admin.textAndImages')}</Badge>
-                ) : (
-                  <Badge variant="outline">📝 {t('admin.textOnly')}</Badge>
-                )}
-              </span>
-            }
-            hint={t(`admin.modelPurposes.${k}`)}
-            error={warning(k)}
-          >
-            {catalog.isError ? (
-              <Input
-                className="font-mono text-sm"
-                value={models[k]}
-                onChange={(e) => setModels({ ...models, [k]: e.target.value })}
-              />
-            ) : (
-              <ModelPicker
-                models={list}
-                value={models[k]}
-                allowAuto={provider === 'openrouter'}
-                requireImage={IMAGE_PURPOSES.includes(k)}
-                onChange={(id) => setModels({ ...models, [k]: id })}
-              />
-            )}
-          </Field>
-        ))}
-        <Field label={t('admin.fallbacks')} hint={t('admin.fallbacksHint')}>
-          <div className="grid grid-cols-1 gap-2">
-            {models.fallbacks.map((id) => (
-              <div key={id} className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2">
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">
-                    {byId.get(id)?.name ?? id}
-                  </span>
-                  {byId.get(id) && <ModelInfo model={byId.get(id)!} />}
-                </span>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="size-8"
-                  aria-label={t('admin.remove')}
-                  onClick={() =>
-                    setModels({ ...models, fallbacks: models.fallbacks.filter((f) => f !== id) })
-                  }
-                >
-                  <X />
-                </Button>
-              </div>
-            ))}
-            {models.fallbacks.length < 5 && !catalog.isError && (
-              <ModelPicker
-                models={list.filter((m) => !models.fallbacks.includes(m.id))}
-                value={null}
-                allowAuto={provider === 'openrouter'}
-                placeholder={t('admin.addFallback')}
-                onChange={(id) =>
-                  !models.fallbacks.includes(id) &&
-                  setModels({ ...models, fallbacks: [...models.fallbacks, id] })
-                }
-              />
-            )}
-          </div>
-        </Field>
-        <Button type="button" className="justify-self-end" onClick={() => save(settingKey, models)}>
-          {t('common.save')}
-        </Button>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -856,6 +560,14 @@ function AiUsage() {
                   {e.model && ` · ${e.model}`}
                 </span>
                 <span className="block break-words text-destructive">{e.error}</span>
+                {(
+                  e.attempts as
+                    { profile: string; model: string; ms: number; error: string }[] | null
+                )?.map((a, i) => (
+                  <span key={i} className="block break-words text-muted-foreground">
+                    ↳ {a.profile} · {a.model} · {a.ms} ms · {a.error}
+                  </span>
+                ))}
               </div>
             ))}
           </div>
