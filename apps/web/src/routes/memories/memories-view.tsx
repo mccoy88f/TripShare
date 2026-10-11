@@ -42,7 +42,7 @@ import { Dialog as DialogPrimitive } from 'radix-ui';
 import { toast } from 'sonner';
 import { DIALOG_FOOTER } from '@/components/dialog-footer';
 import { UserAvatar } from '@/components/ui/avatar';
-import { useSwipeDownClose } from '@/components/image-viewer';
+import { useSwipeDownClose, useTapToggle } from '@/components/image-viewer';
 import { useBackClose } from '@/lib/back-close';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -816,6 +816,7 @@ function Lightbox({
   const scroller = useRef<HTMLDivElement>(null);
   const frame = useSwipeDownClose(onClose);
   useBackClose(onClose);
+  const { visible, onTap } = useTapToggle();
   const [muted, setMuted] = useState(true);
   const m = memories[index]!;
   // Il file da condividere si prepara in anticipo (su iPhone la condivisione parte dal tocco).
@@ -878,6 +879,7 @@ function Lightbox({
           <div
             ref={scroller}
             onScroll={onScroll}
+            onClick={onTap}
             className="flex h-dvh snap-x snap-mandatory overflow-x-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {memories.map((mem, i) => (
@@ -916,63 +918,65 @@ function Lightbox({
             ))}
           </div>
 
-          <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-3 bg-gradient-to-b from-black/70 to-transparent p-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
-            <div className="pointer-events-auto min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold">{when}</p>
-              <p className="flex items-center gap-1.5 truncate text-xs text-white/75">
-                {m.owner.name}
-                {m.tripTitle && <span>· {m.tripTitle}</span>}
-                {m.mine && !m.shared && <Lock className="size-3" />}
-                <span className="ml-1">
-                  {index + 1} / {memories.length}
-                </span>
-              </p>
+          {visible && (
+            <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-3 bg-gradient-to-b from-black/70 to-transparent p-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
+              <div className="pointer-events-auto min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold">{when}</p>
+                <p className="flex items-center gap-1.5 truncate text-xs text-white/75">
+                  {m.owner.name}
+                  {m.tripTitle && <span>· {m.tripTitle}</span>}
+                  {m.mine && !m.shared && <Lock className="size-3" />}
+                  <span className="ml-1">
+                    {index + 1} / {memories.length}
+                  </span>
+                </p>
+              </div>
+              {m.kind === 'video' && (
+                <button
+                  type="button"
+                  onClick={() => setMuted((v) => !v)}
+                  aria-label={t(muted ? 'memories.soundOn' : 'memories.soundOff')}
+                  className={cn(iconButton, 'pointer-events-auto')}
+                >
+                  {muted ? <VolumeX /> : <Volume2 />}
+                </button>
+              )}
+              {canShareFiles() && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const r = await shareMemories([m]);
+                    if (r === 'retry') toast.message(t('memories.shareRetry'));
+                    else if (r === 'unsupported' || r === 'failed') {
+                      toast.error(t('memories.shareUnsupported'));
+                    }
+                  }}
+                  aria-label={t('memories.share')}
+                  className={cn(iconButton, 'pointer-events-auto')}
+                >
+                  <Share2 />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => downloadMemories([m])}
+                aria-label={t('memories.download')}
+                className={cn(iconButton, 'pointer-events-auto')}
+              >
+                <Download />
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label={t('common.close')}
+                className={cn(iconButton, 'pointer-events-auto')}
+              >
+                <X />
+              </button>
             </div>
-            {m.kind === 'video' && (
-              <button
-                type="button"
-                onClick={() => setMuted((v) => !v)}
-                aria-label={t(muted ? 'memories.soundOn' : 'memories.soundOff')}
-                className={cn(iconButton, 'pointer-events-auto')}
-              >
-                {muted ? <VolumeX /> : <Volume2 />}
-              </button>
-            )}
-            {canShareFiles() && (
-              <button
-                type="button"
-                onClick={async () => {
-                  const r = await shareMemories([m]);
-                  if (r === 'retry') toast.message(t('memories.shareRetry'));
-                  else if (r === 'unsupported' || r === 'failed') {
-                    toast.error(t('memories.shareUnsupported'));
-                  }
-                }}
-                aria-label={t('memories.share')}
-                className={cn(iconButton, 'pointer-events-auto')}
-              >
-                <Share2 />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => downloadMemories([m])}
-              aria-label={t('memories.download')}
-              className={cn(iconButton, 'pointer-events-auto')}
-            >
-              <Download />
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={t('common.close')}
-              className={cn(iconButton, 'pointer-events-auto')}
-            >
-              <X />
-            </button>
-          </div>
+          )}
 
-          {index > 0 && (
+          {visible && index > 0 && (
             <button
               type="button"
               onClick={() => go(-1)}
@@ -982,7 +986,7 @@ function Lightbox({
               <ChevronLeft />
             </button>
           )}
-          {index < memories.length - 1 && (
+          {visible && index < memories.length - 1 && (
             <button
               type="button"
               onClick={() => go(1)}
@@ -996,37 +1000,39 @@ function Lightbox({
             </button>
           )}
 
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end gap-3 bg-gradient-to-t from-black/75 to-transparent p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-            <div className="pointer-events-auto min-w-0 flex-1 text-sm">
-              {m.status !== 'ready' && (
-                <p className="mb-1 text-amber-300">
-                  {t(m.status === 'processing' ? 'memories.processing' : 'memories.failed')}
-                </p>
-              )}
-              {m.caption && <p className="whitespace-pre-wrap">{m.caption}</p>}
-              {hasPoint(m) && (
-                <a
-                  className="mt-1 flex items-center gap-1 text-xs text-white/80 underline"
-                  href={`https://www.openstreetmap.org/?mlat=${m.lat}&mlon=${m.lon}#map=16/${m.lat}/${m.lon}`}
-                  target="_blank"
-                  rel="noreferrer"
+          {visible && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end gap-3 bg-gradient-to-t from-black/75 to-transparent p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+              <div className="pointer-events-auto min-w-0 flex-1 text-sm">
+                {m.status !== 'ready' && (
+                  <p className="mb-1 text-amber-300">
+                    {t(m.status === 'processing' ? 'memories.processing' : 'memories.failed')}
+                  </p>
+                )}
+                {m.caption && <p className="whitespace-pre-wrap">{m.caption}</p>}
+                {hasPoint(m) && (
+                  <a
+                    className="mt-1 flex items-center gap-1 text-xs text-white/80 underline"
+                    href={`https://www.openstreetmap.org/?mlat=${m.lat}&mlon=${m.lon}#map=16/${m.lat}/${m.lon}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <MapPin className="size-3" />
+                    {m.placeName ?? t('memories.openMap')}
+                  </a>
+                )}
+              </div>
+              {m.mine && (
+                <button
+                  type="button"
+                  onClick={() => onEdit(m)}
+                  aria-label={t('common.edit')}
+                  className={cn(iconButton, 'pointer-events-auto')}
                 >
-                  <MapPin className="size-3" />
-                  {m.placeName ?? t('memories.openMap')}
-                </a>
+                  <Pencil />
+                </button>
               )}
             </div>
-            {m.mine && (
-              <button
-                type="button"
-                onClick={() => onEdit(m)}
-                aria-label={t('common.edit')}
-                className={cn(iconButton, 'pointer-events-auto')}
-              >
-                <Pencil />
-              </button>
-            )}
-          </div>
+          )}
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

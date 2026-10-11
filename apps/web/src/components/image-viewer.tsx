@@ -100,6 +100,30 @@ export function useSwipeDownClose(onClose: () => void) {
 }
 
 /**
+ * Toccando la foto la barra in alto, le frecce e il piede spariscono o riappaiono. Il doppio
+ * tocco (zoom) non conta: il tocco singolo scatta dopo una breve attesa.
+ */
+export function useTapToggle() {
+  const [visible, setVisible] = useState(true);
+  const timer = useRef<number | undefined>(undefined);
+  const onTap = (e: { target: EventTarget | null }) => {
+    // I controlli del video (e qualsiasi pulsante) non nascondono l'interfaccia.
+    const el = e.target as HTMLElement | null;
+    if (el?.closest('video, button, a')) return;
+    if (timer.current !== undefined) {
+      window.clearTimeout(timer.current);
+      timer.current = undefined;
+      return;
+    }
+    timer.current = window.setTimeout(() => {
+      timer.current = undefined;
+      setVisible((v) => !v);
+    }, 260);
+  };
+  return { visible, onTap };
+}
+
+/**
  * Anteprima a schermo intero di una o più immagini, con lo stesso aspetto di quella dei ricordi:
  * fondo nero, barra in alto con titolo, contatore e pulsanti, scorrimento di lato, zoom a pizzico
  * e frecce su computer. Il contenuto della barra e del piede lo decide chi la usa.
@@ -134,6 +158,7 @@ export function ImageViewer({
   const scroller = useRef<HTMLDivElement>(null);
   const frame = useSwipeDownClose(onClose);
   useBackClose(onClose);
+  const { visible, onTap } = useTapToggle();
   const [failed, setFailed] = useState<Set<string>>(new Set());
 
   const scrollTo = (i: number, behavior: ScrollBehavior = 'smooth') => {
@@ -181,6 +206,7 @@ export function ImageViewer({
           <div
             ref={scroller}
             onScroll={onScroll}
+            onClick={onTap}
             className="flex h-dvh snap-x snap-mandatory overflow-x-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {slides.map((s, i) => (
@@ -207,32 +233,34 @@ export function ImageViewer({
             )}
           </div>
 
-          <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-3 bg-gradient-to-b from-black/70 to-transparent p-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
-            <div className="pointer-events-auto min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold">{title}</p>
-              <p className="flex items-center gap-1.5 truncate text-xs text-white/75">
-                {subtitle}
-                {slides.length > 0 && (
-                  <span className={cn(subtitle && 'ml-1')}>
-                    {index + 1} / {slides.length}
-                    {hasMore && '+'}
-                  </span>
-                )}
-                {loadingMore && slides.length > 0 && <Loader2 className="size-3 animate-spin" />}
-              </p>
+          {visible && (
+            <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-3 bg-gradient-to-b from-black/70 to-transparent p-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
+              <div className="pointer-events-auto min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold">{title}</p>
+                <p className="flex items-center gap-1.5 truncate text-xs text-white/75">
+                  {subtitle}
+                  {slides.length > 0 && (
+                    <span className={cn(subtitle && 'ml-1')}>
+                      {index + 1} / {slides.length}
+                      {hasMore && '+'}
+                    </span>
+                  )}
+                  {loadingMore && slides.length > 0 && <Loader2 className="size-3 animate-spin" />}
+                </p>
+              </div>
+              {actions}
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label={t('common.close')}
+                className={cn(viewerButton, 'pointer-events-auto')}
+              >
+                <X />
+              </button>
             </div>
-            {actions}
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={t('common.close')}
-              className={cn(viewerButton, 'pointer-events-auto')}
-            >
-              <X />
-            </button>
-          </div>
+          )}
 
-          {index > 0 && (
+          {visible && index > 0 && (
             <button
               type="button"
               onClick={() => go(-1)}
@@ -245,7 +273,7 @@ export function ImageViewer({
               <ChevronLeft />
             </button>
           )}
-          {index < slides.length - 1 && (
+          {visible && index < slides.length - 1 && (
             <button
               type="button"
               onClick={() => go(1)}
@@ -259,7 +287,7 @@ export function ImageViewer({
             </button>
           )}
 
-          {footer && (
+          {visible && footer && (
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end gap-3 bg-gradient-to-t from-black/75 to-transparent p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
               <div className="pointer-events-auto min-w-0 flex-1 text-sm">{footer}</div>
             </div>
