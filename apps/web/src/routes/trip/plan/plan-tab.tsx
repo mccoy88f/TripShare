@@ -599,7 +599,6 @@ function ActivityCard({
             {booking && (
               <span className="rounded-full bg-muted px-2.5 py-1 font-medium">
                 {BOOKING_EMOJI[booking.type]} {booking.title}
-                {booking.cost && ` · ${moneyLabel(booking.cost, t, fmt)}`}
                 {booking.status === 'to_book' && ` · ${t('plan.bookingStatus.to_book')}`}
               </span>
             )}

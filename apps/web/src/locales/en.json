@@ -625,7 +625,9 @@
       "confirmDelete": "Delete this activity?",
       "stepWhat": "Activity",
       "stepWhere": "Places and travel",
-      "stepMore": "Costs and tips"
+      "stepMore": "Costs and tips",
+      "costFromBooking": "from the booking “{{title}}”",
+      "noExpenseYet": "expense not recorded yet"
     },
     "activityTypes": {
       "travel": "Transfer",

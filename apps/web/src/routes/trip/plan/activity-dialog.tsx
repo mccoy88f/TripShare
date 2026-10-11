@@ -9,7 +9,10 @@ import {
   type Activity,
   type TripDocument,
 } from '@tripshare/shared/trip-format';
+import { useQuery } from '@tanstack/react-query';
 import { useDetailMode } from '@/lib/detail-mode';
+import { useTRPC } from '@/lib/trpc';
+import { money } from '@/lib/format';
 import { AskAiButton } from '../ask-ai';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Step, StepForm } from '@/components/ui/steps';
@@ -26,6 +29,7 @@ import {
   moneyDraft,
   MoneyFields,
   moneyFromDraft,
+  moneyLabel,
   parseLinks,
   textareaClass,
   type MoneyDraft,
@@ -100,6 +104,16 @@ export function ActivityDialog({
   const currency = isCurrencyCode(plan.trip.currency) ? plan.trip.currency : 'EUR';
   const [d, setD] = useState(() => toDraft(activity, date, currency));
   const [pickerOpen, setPickerOpen] = useState(false);
+  // Con una prenotazione collegata il costo è quello della prenotazione (e della sua spesa).
+  const trpc = useTRPC();
+  const linkedBooking = plan.bookings.find((b) => b.id === d.bookingId);
+  const { data: expenses } = useQuery({
+    ...trpc.expenses.list.queryOptions({ tripId }),
+    enabled: !!linkedBooking?.cost,
+  });
+  const linkedExpense = linkedBooking
+    ? expenses?.find((e) => e.bookingId === linkedBooking.id)
+    : undefined;
   const [newPlace, setNewPlace] = useState('');
   const { apply, pending } = usePlanOps(tripId);
 
@@ -426,12 +440,36 @@ export function ActivityDialog({
             </div>
           </Step>
           <Step title={t('plan.activity.stepMore')}>
-            <MoneyFields
-              idPrefix="cost"
-              label={t('plan.activity.cost')}
-              value={d.cost}
-              onChange={(v) => set('cost', v)}
-            />
+            {linkedBooking?.cost ? (
+              <div className="grid grid-cols-1 gap-1 rounded-xl border bg-muted/40 px-3.5 py-3">
+                <span className="text-sm font-medium">{t('plan.activity.cost')}</span>
+                <span className="text-lg font-semibold">
+                  {moneyLabel(linkedBooking.cost, t, money)}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {t('plan.activity.costFromBooking', { title: linkedBooking.title })}
+                  {' · '}
+                  {linkedExpense
+                    ? linkedExpense.status === 'planned'
+                      ? `⏳ ${t('expense.planned')}`
+                      : `✅ ${t('expense.paidStatus')}`
+                    : linkedBooking.paid === true
+                      ? `✅ ${t('expense.paidStatus')}`
+                      : linkedBooking.paid === false
+                        ? t('plan.booking.payOnSite')
+                        : t('plan.activity.noExpenseYet')}
+                </span>
+              </div>
+            ) : (
+              (!detail.readOnly || d.cost.amount.trim() !== '') && (
+                <MoneyFields
+                  idPrefix="cost"
+                  label={t('plan.activity.cost')}
+                  value={d.cost}
+                  onChange={(v) => set('cost', v)}
+                />
+              )
+            )}
             <LinesField
               id="act-warn"
               label={`⚠️ ${t('plan.activity.warnings')}`}

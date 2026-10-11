@@ -625,7 +625,9 @@
       "confirmDelete": "Eliminare questa attività?",
       "stepWhat": "Attività",
       "stepWhere": "Luoghi e spostamenti",
-      "stepMore": "Costi e consigli"
+      "stepMore": "Costi e consigli",
+      "costFromBooking": "dalla prenotazione «{{title}}»",
+      "noExpenseYet": "spesa non ancora registrata"
     },
     "activityTypes": {
       "travel": "Spostamento",
