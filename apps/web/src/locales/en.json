@@ -1091,6 +1091,13 @@
     "ask": "Ask Nina"
   },
   "placePhoto": {
+    "gallery": {
+      "use": "Use as the place photo",
+      "used": "Place photo updated.",
+      "none": "No photos found for this place.",
+      "prev": "Previous photo",
+      "next": "Next photo"
+    },
     "none": "No photo",
     "upload": "Upload",
     "search": "Search",

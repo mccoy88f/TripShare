@@ -1091,6 +1091,13 @@
     "ask": "Chiedi a Nina"
   },
   "placePhoto": {
+    "gallery": {
+      "use": "Usa come foto del luogo",
+      "used": "Foto del luogo aggiornata.",
+      "none": "Nessuna foto trovata per questo luogo.",
+      "prev": "Foto precedente",
+      "next": "Foto successiva"
+    },
     "none": "Nessuna foto",
     "upload": "Carica",
     "search": "Cerca",

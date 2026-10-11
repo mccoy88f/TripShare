@@ -27,7 +27,7 @@ import {
 } from '@tripshare/shared/trip-format';
 import { downloadImageFromAnyUrl } from '../image-download.js';
 import { searchPlaces } from '../nominatim.js';
-import { searchPhotos } from '../photo-search.js';
+import { searchPhotos, WEB_FIRST_KINDS } from '../photo-search.js';
 import { listMembers } from '../services/members.js';
 import { prepareForStorage, readPlan } from '../services/plan.js';
 import type { AiAccess } from './access.js';
@@ -831,8 +831,6 @@ JSON Schema: ${JSON.stringify(schemaOf(PackingResultSchema))}`,
   await savePlan(ctx);
   return { count: value.packing.length + value.tips.length };
 }
-
-const WEB_FIRST_KINDS = new Set<string>(['restaurant', 'cafe', 'bar', 'shop', 'other']);
 
 /** Foto (Commons e, se c'è, SearXNG) per i luoghi del programma, senza chiedere nulla all'AI. */
 async function stepPhotos(

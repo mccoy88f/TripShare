@@ -41,6 +41,7 @@ export async function searchCommons(
   query: string,
   appName: string,
   fetchImpl: typeof fetch = fetch,
+  paging: { limit?: number; offset?: number } = {},
 ): Promise<PhotoResult[]> {
   const params = new URLSearchParams({
     action: 'query',
@@ -48,7 +49,8 @@ export async function searchCommons(
     generator: 'search',
     gsrsearch: query,
     gsrnamespace: '6',
-    gsrlimit: '30',
+    gsrlimit: String(paging.limit ?? 30),
+    gsroffset: String(paging.offset ?? 0),
     prop: 'imageinfo',
     iiprop: 'url|mime|size|extmetadata',
     // Wikimedia genera le miniature solo per larghezze fisse (330, 960…): altre danno errore.
@@ -117,12 +119,14 @@ export async function searchWeb(
   query: string,
   baseUrl: string,
   fetchImpl: typeof fetch = fetch,
+  page = 0,
 ): Promise<PhotoResult[]> {
   const params = new URLSearchParams({
     q: query,
     format: 'json',
     categories: 'images',
     safesearch: '1',
+    pageno: String(page + 1),
   });
   const res = await fetchImpl(`${baseUrl.replace(/\/+$/, '')}/search?${params}`, {
     headers: { accept: 'application/json' },
@@ -147,6 +151,13 @@ export async function searchWeb(
   return out;
 }
 
+/** Foto per pagina della galleria, e quante di queste si chiedono a Commons. */
+const PAGE_SIZE = 10;
+const PAGE_COMMONS = 5;
+
+/** Tipi di luogo che Commons copre poco: per loro il web viene prima. */
+export const WEB_FIRST_KINDS = new Set<string>(['restaurant', 'cafe', 'bar', 'shop', 'other']);
+
 const STOP_WORDS = new Set(['the', 'and', 'del', 'della', 'dei', 'delle', 'degli', 'dello', 'di']);
 
 const words = (value: string) =>
@@ -170,6 +181,19 @@ export function titleMatchesName(title: string, name: string): boolean {
 }
 
 /**
+ * Ripulisce il testo da cercare: `&`, `!`, `:`, virgolette e simili hanno un significato per i
+ * motori (operatori, "bang" di SearXNG come `!g` o `:it`) e rovinerebbero i risultati.
+ */
+export function cleanQuery(query: string): string {
+  return query
+    .replace(/&/g, ' e ')
+    .replace(/[^\p{L}\p{N}\s'.,-]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120);
+}
+
+/**
  * Foto per un luogo: Wikimedia Commons (libere, con autore) e il web via SearXNG, se è
  * configurato. Una fonte che non risponde non blocca l'altra.
  *
@@ -183,12 +207,27 @@ export async function searchPhotos(opts: {
   fetch?: typeof fetch;
   name?: string;
   webFirst?: boolean;
+  /**
+   * Pagina (da 0) per la galleria: ogni pagina dà al massimo 10 foto, circa metà da Commons e il
+   * resto dal web. Senza, si restituisce un elenco unico più lungo.
+   */
+  page?: number;
   /** Quanti risultati restituire al massimo. */
   limit?: number;
 }): Promise<PhotoResult[]> {
+  const paged = opts.page !== undefined;
+  const query = cleanQuery(opts.query);
+  if (query.length < 2) return [];
   const [commons, web] = await Promise.allSettled([
-    searchCommons(opts.query, opts.appName, opts.fetch),
-    opts.searxngUrl ? searchWeb(opts.query, opts.searxngUrl, opts.fetch) : Promise.resolve([]),
+    searchCommons(
+      query,
+      opts.appName,
+      opts.fetch,
+      paged ? { limit: PAGE_COMMONS, offset: opts.page! * PAGE_COMMONS } : {},
+    ),
+    opts.searxngUrl
+      ? searchWeb(query, opts.searxngUrl, opts.fetch, opts.page ?? 0)
+      : Promise.resolve([]),
   ]);
   if (commons.status === 'rejected' && web.status === 'rejected') throw commons.reason;
   const name = opts.name;
@@ -197,5 +236,5 @@ export async function searchPhotos(opts: {
   );
   const fromWeb = web.status === 'fulfilled' ? web.value : [];
   const all = opts.webFirst ? [...fromWeb, ...fromCommons] : [...fromCommons, ...fromWeb];
-  return all.slice(0, opts.limit ?? 30);
+  return all.slice(0, opts.limit ?? (paged ? PAGE_SIZE : 30));
 }

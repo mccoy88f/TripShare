@@ -7,6 +7,7 @@ import {
   MapPin,
   CalendarCheck,
   CalendarPlus,
+  Images,
   Sparkles,
 } from 'lucide-react';
 import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
@@ -53,6 +54,7 @@ import {
   parseLinks,
   textareaClass,
 } from './fields';
+import { PlaceGallery } from './place-gallery';
 import { PlacePhotoField } from './place-photo';
 import { searchId } from '@/lib/search-focus';
 
@@ -67,6 +69,7 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
   const { apply } = usePlanOps(trip.id);
   const [verifying, setVerifying] = useState<string | null>(null);
   const [scheduling, setScheduling] = useState<Place | null>(null);
+  const [gallery, setGallery] = useState<Place | null>(null);
   const verify = async (p: Place) => {
     setVerifying(p.id);
     try {
@@ -128,12 +131,29 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
               {...searchId(`place:${p.id}`)}
               onClick={() => canEdit && setEditing(p)}
               className={cn(
-                'flex flex-col gap-2 p-4',
+                'relative flex flex-col gap-2 p-4',
                 p.photo && 'photo-card min-h-56 justify-end',
                 canEdit && 'cursor-pointer transition hover:bg-muted/40',
               )}
               style={p.photo ? ({ '--photo': `url("${p.photo}")` } as CSSProperties) : undefined}
             >
+              {p.photo && (
+                // Toccando la foto si apre la galleria, senza aprire la scheda del luogo.
+                <button
+                  type="button"
+                  aria-label={t('placePhoto.view', { name: p.name })}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setGallery(p);
+                  }}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  className="absolute inset-x-0 top-0 h-24 rounded-t-[inherit] outline-none focus-visible:ring-4 focus-visible:ring-ring/30"
+                >
+                  <span className="absolute top-3 right-3 grid size-8 place-items-center rounded-full bg-black/45 text-white">
+                    <Images className="size-4" />
+                  </span>
+                </button>
+              )}
               <div className="flex items-start gap-3">
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-xl">
                   {PLACE_KIND_EMOJI[p.kind]}
@@ -239,6 +259,15 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
           plan={plan}
           place={scheduling}
           onClose={() => setScheduling(null)}
+        />
+      )}
+      {gallery && (
+        <PlaceGallery
+          tripId={trip.id}
+          place={gallery}
+          destination={plan.trip.destination.name || undefined}
+          canEdit={canEdit}
+          onClose={() => setGallery(null)}
         />
       )}
       {editing && (

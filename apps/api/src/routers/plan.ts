@@ -12,7 +12,7 @@ import {
 } from '../services/plan.js';
 import { downloadImage, ImageDownloadError } from '../image-download.js';
 import { broadcastChange, diffPlan, notifyTrip } from '../services/events.js';
-import { searchPhotos } from '../photo-search.js';
+import { searchPhotos, WEB_FIRST_KINDS } from '../photo-search.js';
 import { requireMember } from '../services/trips.js';
 import { authedProcedure, router } from '../trpc/init.js';
 import { forecast, forecastWindow, geocode } from '../weather.js';
@@ -206,7 +206,16 @@ export const planRouter = router({
 
   /** Cerca foto di un luogo: Wikimedia Commons e, se configurato, il web tramite SearXNG. */
   placePhotoSearch: authedProcedure
-    .input(z.object({ tripId: z.uuid(), query: z.string().trim().min(2).max(120) }))
+    .input(
+      z.object({
+        tripId: z.uuid(),
+        query: z.string().trim().min(2).max(120),
+        /** Galleria di un luogo: pagina (da 0), nome e tipo per scegliere e ordinare le fonti. */
+        page: z.number().int().min(0).max(20).optional(),
+        name: z.string().trim().max(120).optional(),
+        kind: z.string().max(32).optional(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
       try {
@@ -215,6 +224,9 @@ export const planRouter = router({
           appName: (await ctx.settings.get('general.appName')) ?? ctx.env.APP_NAME,
           searxngUrl: ctx.env.SEARXNG_URL,
           fetch: ctx.httpFetch,
+          page: input.page,
+          name: input.name || undefined,
+          webFirst: input.kind ? WEB_FIRST_KINDS.has(input.kind) : undefined,
         });
       } catch (err) {
         throw new TRPCError({

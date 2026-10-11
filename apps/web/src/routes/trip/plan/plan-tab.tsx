@@ -1,4 +1,5 @@
 import { DeleteButton, DetailFooter } from '@/components/detail-footer';
+import { PlaceGallery } from './place-gallery';
 import { useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -402,6 +403,7 @@ function DayView({
         <ol className="relative grid grid-cols-1 gap-3 before:absolute before:top-3 before:bottom-3 before:left-[3.15rem] before:w-px before:bg-border">
           {day.activities.map((a) => (
             <ActivityCard
+              tripId={trip.id}
               key={a.id}
               plan={plan}
               activity={a}
@@ -438,6 +440,7 @@ function DayView({
           <ol className="mt-3 grid grid-cols-1 gap-2">
             {alt.activities.map((a) => (
               <ActivityCard
+                tripId={trip.id}
                 key={a.id}
                 plan={plan}
                 activity={a}
@@ -477,6 +480,7 @@ function DayView({
 }
 
 function ActivityCard({
+  tripId,
   plan,
   activity: a,
   ticketCount,
@@ -484,6 +488,7 @@ function ActivityCard({
   onEdit,
   compact,
 }: {
+  tripId: string;
   plan: TripDocument;
   activity: Activity;
   ticketCount?: number;
@@ -656,15 +661,13 @@ function ActivityCard({
         )}
       </div>
       {viewing && photoPlace?.photo && (
-        <Dialog open onOpenChange={(o) => !o && setViewing(false)}>
-          <DialogContent title={photoPlace.name} description={photoPlace.photoCredit}>
-            <img
-              src={photoPlace.photo}
-              alt={photoPlace.name}
-              className="max-h-[70dvh] w-full rounded-xl object-contain"
-            />
-          </DialogContent>
-        </Dialog>
+        <PlaceGallery
+          tripId={tripId}
+          place={photoPlace}
+          destination={plan.trip.destination.name || undefined}
+          canEdit={!!onEdit}
+          onClose={() => setViewing(false)}
+        />
       )}
     </li>
   );

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { searchPhotos, searchWeb, titleMatchesName } from '../src/photo-search.js';
+import { cleanQuery, searchPhotos, searchWeb, titleMatchesName } from '../src/photo-search.js';
 
 const searx = {
   results: [
@@ -143,5 +143,33 @@ describe('titleMatchesName', () => {
       'example.net',
       'commons.wikimedia.org',
     ]);
+  });
+});
+
+describe('cleanQuery', () => {
+  it('removes operators and special characters, keeping letters and accents', () => {
+    expect(cleanQuery('Pane & Vino (Firenze)')).toBe('Pane e Vino Firenze');
+    expect(cleanQuery('!g site:example.com "Caffè Florian"  ')).toBe(
+      'g site example.com Caffè Florian',
+    );
+    expect(cleanQuery("L'Osteria dell'Orso - Roma")).toBe("L'Osteria dell'Orso - Roma");
+    expect(cleanQuery('  ??  ')).toBe('');
+  });
+
+  it('sends the cleaned query to both sources', async () => {
+    const asked: string[] = [];
+    const fake = (async (url: string | URL | Request) => {
+      asked.push(decodeURIComponent(String(url).replace(/\+/g, ' ')));
+      return json(String(url).includes('commons') ? { query: { pages: {} } } : { results: [] });
+    }) as typeof fetch;
+    await searchPhotos({
+      query: '!bing Pane & Vino',
+      appName: 'TripShare',
+      searxngUrl: 'http://searxng:8080',
+      fetch: fake,
+    });
+    expect(asked).toHaveLength(2);
+    expect(asked.some((u) => u.includes('gsrsearch=bing Pane e Vino'))).toBe(true);
+    expect(asked.some((u) => u.includes('q=bing Pane e Vino'))).toBe(true);
   });
 });
