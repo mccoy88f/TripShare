@@ -880,7 +880,8 @@
     "orphansHint": "The booking of these tickets was removed from the plan. Open them to view or delete them.",
     "reference": "Booking reference",
     "copyReference": "Tap to copy",
-    "referenceCopied": "Reference copied"
+    "referenceCopied": "Reference copied",
+    "addToWallet": "Add to Wallet"
   },
   "notes": {
     "title": "Title",

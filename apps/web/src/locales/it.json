@@ -880,7 +880,8 @@
     "orphansHint": "La prenotazione di questi biglietti è stata tolta dal programma. Aprili per vederli o eliminarli.",
     "reference": "Numero di prenotazione",
     "copyReference": "Tocca per copiare",
-    "referenceCopied": "Numero copiato"
+    "referenceCopied": "Numero copiato",
+    "addToWallet": "Aggiungi al Wallet"
   },
   "notes": {
     "title": "Titolo",

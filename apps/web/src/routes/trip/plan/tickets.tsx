@@ -63,12 +63,6 @@ export function myTickets(tickets: Ticket[] | undefined, myMemberId: string, boo
   );
 }
 
-/** Dispositivo Apple (iPhone, iPad, Mac): lì si propone Apple Wallet, altrove Google Wallet. */
-const onApple = () =>
-  typeof navigator !== 'undefined' &&
-  (/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent) ||
-    /Mac|iPhone|iPad/.test(navigator.platform ?? ''));
-
 const isPkpass = (t: Ticket) => t.mimeType === 'application/vnd.apple.pkpass';
 const isImage = (t: Ticket) => !!t.mimeType?.startsWith('image/');
 
@@ -486,13 +480,10 @@ function TicketViewerBody({
     return () => void lock?.release();
   }, []);
 
-  // Apple Wallet e Google Wallet sono alternativi: si mostra quello del dispositivo; se il
-  // biglietto ha solo l'altro, si offre quello.
-  const hasApple = !!ticket.fileUrl && isPkpass(ticket);
-  const hasGoogle = !!ticket.walletUrl;
-  const apple = onApple();
-  const showApple = hasApple && (apple || !hasGoogle);
-  const showGoogle = hasGoogle && (!apple || !hasApple);
+  // Un solo pulsante "Aggiungi al Wallet", senza riconoscere il dispositivo: apre il file .pkpass
+  // (il telefono lo passa al suo Wallet); se il biglietto ha solo il link di Google Wallet, apre quello.
+  const walletHref = ticket.fileUrl && isPkpass(ticket) ? ticket.fileUrl : ticket.walletUrl;
+  const walletIsLink = !(ticket.fileUrl && isPkpass(ticket));
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -616,19 +607,14 @@ function TicketViewerBody({
               </Button>
             )}
             <div className="flex-1" />
-            {showApple && (
+            {walletHref && (
               <Button asChild className="bg-black text-white hover:bg-black/85">
-                <a href={ticket.fileUrl ?? undefined}>
+                <a
+                  href={walletHref}
+                  {...(walletIsLink ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                >
                   <Wallet />
-                  {t('tickets.appleWallet')}
-                </a>
-              </Button>
-            )}
-            {showGoogle && (
-              <Button asChild variant="outline">
-                <a href={ticket.walletUrl ?? undefined} target="_blank" rel="noopener noreferrer">
-                  <Wallet />
-                  {t('tickets.googleWallet')}
+                  {t('tickets.addToWallet')}
                 </a>
               </Button>
             )}
