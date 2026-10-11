@@ -9,6 +9,21 @@ import { decrypt, encrypt, maskSecret, type EncryptedValue } from './crypto.js';
  */
 const MODEL_ID = z.string().min(1).max(200);
 
+/**
+ * Una configurazione AI: un provider con la sua chiave, un modello e uno di riserva. Il routing
+ * le prova nell'ordine dell'elenco e passa alla successiva se una fallisce.
+ */
+export const AiProfileSchema = z.object({
+  id: z.string().regex(/^[a-z0-9-]{3,40}$/),
+  name: z.string().trim().min(1).max(60),
+  provider: z.enum(['openrouter', 'gemini']),
+  apiKey: z.string().min(10).max(300),
+  model: MODEL_ID,
+  backupModel: MODEL_ID.nullable(),
+  enabled: z.boolean(),
+});
+export type AiProfile = z.infer<typeof AiProfileSchema>;
+
 export const SETTINGS = {
   'general.appName': { schema: z.string().min(1).max(60).nullable(), default: null, secret: false },
   'registration.mode': {
@@ -21,7 +36,13 @@ export const SETTINGS = {
     default: [] as string[],
     secret: false,
   },
-  /** Provider usato con la chiave centrale. */
+  /** Configurazioni AI centrali in ordine di priorità (se vuoto valgono le impostazioni qui sotto). */
+  'ai.profiles': {
+    schema: z.array(AiProfileSchema).max(12),
+    default: [] as AiProfile[],
+    secret: true,
+  },
+  /** Provider usato con la chiave centrale (solo senza configurazioni in 'ai.profiles'). */
   'ai.provider': {
     schema: z.enum(['openrouter', 'gemini']),
     default: 'openrouter' as const,

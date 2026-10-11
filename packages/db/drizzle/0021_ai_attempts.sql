@@ -1,0 +1,1 @@
+ALTER TABLE "ai_job" ADD COLUMN "attempts" jsonb;

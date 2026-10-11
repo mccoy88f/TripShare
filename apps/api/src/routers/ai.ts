@@ -203,6 +203,7 @@ export const aiRouter = router({
         error: aiJob.error,
         model: aiJob.model,
         provider: aiJob.provider,
+        attempts: aiJob.attempts,
       })
       .from(aiJob)
       .where(and(eq(aiJob.id, input.id), eq(aiJob.userId, ctx.user.id)));

@@ -2,18 +2,85 @@ import { and, count, eq, gte, sql } from 'drizzle-orm';
 import { aiJob, userSecret, type Database } from '@tripshare/db';
 import { decrypt, type EncryptedValue } from '../crypto.js';
 import type { SettingsService } from '../settings.js';
-import type { AiProvider } from './client.js';
+import { AiError, type AiProvider } from './client.js';
 
 export type AiPurpose = 'vision' | 'planner' | 'chat' | 'web' | 'light';
 export const AI_PROVIDERS = ['openrouter', 'gemini'] as const;
 
+/** Una configurazione da provare: provider, chiave e modelli. */
+export interface AiCandidate {
+  /** Identificativo stabile (id del profilo, "legacy" o "user:<provider>"). */
+  id: string;
+  name: string;
+  provider: AiProvider;
+  apiKey: string;
+  model: string;
+  fallbacks: string[];
+}
+
 export interface AiAccess {
+  /** Come la prima di `candidates`: provider, chiave e modelli da provare per primi. */
   provider: AiProvider;
   apiKey: string;
   source: 'central' | 'user';
   model: string;
   fallbacks: string[];
+  /** Configurazioni in ordine: se una fallisce si passa alla successiva. */
+  candidates: AiCandidate[];
   denyDataCollection: boolean;
+}
+
+/** Un tentativo fallito, per il registro del lavoro. */
+export interface AiAttempt {
+  profile: string;
+  provider: string;
+  model: string;
+  error: string;
+  ms: number;
+}
+
+const cooldowns = new Map<string, number>();
+
+/** Mette una configurazione in pausa dopo un errore che dipende da lei. */
+export function coolDown(id: string, ms: number) {
+  cooldowns.set(id, Date.now() + ms);
+}
+
+/** Svuota le pause (dopo aver cambiato le configurazioni). */
+export function clearCooldowns() {
+  cooldowns.clear();
+}
+
+/** Le configurazioni non in pausa vengono prima; se sono tutte in pausa si provano comunque. */
+export function orderByCooldown(candidates: AiCandidate[]): AiCandidate[] {
+  const now = Date.now();
+  const ready = candidates.filter((c) => (cooldowns.get(c.id) ?? 0) <= now);
+  const waiting = candidates.filter((c) => (cooldowns.get(c.id) ?? 0) > now);
+  return [...ready, ...waiting];
+}
+
+/**
+ * L'errore dipende dalla configurazione (chiave, credito, limiti, rete, modello inesistente) e
+ * quindi ha senso provare la successiva? Una richiesta sbagliata (400) invece fallirebbe ovunque.
+ * Restituisce la durata della pausa, o null se non si deve passare oltre.
+ */
+export function failoverPause(err: unknown): number | null {
+  if (err instanceof AiError) {
+    const s = err.status ?? 0;
+    if (s === 401 || s === 403 || err.message.startsWith('AI_INVALID_KEY')) return 10 * 60_000;
+    if (s === 402 || err.message.startsWith('AI_NO_CREDIT')) return 10 * 60_000;
+    if (s === 429 || err.message.startsWith('AI_RATE_LIMITED')) return 2 * 60_000;
+    if (s === 404) return 5 * 60_000;
+    if (s === 408 || s >= 500) return 60_000;
+    return null;
+  }
+  // Rete irraggiungibile o tempo scaduto.
+  if (
+    err instanceof Error &&
+    /fetch failed|timeout|abort|network|ECONN|ENOTFOUND/i.test(err.name + err.message)
+  )
+    return 60_000;
+  return null;
 }
 
 export class AiAccessError extends Error {}
@@ -73,31 +140,35 @@ export async function resolveAiAccess(
 ): Promise<AiAccess> {
   const { settings } = deps;
   const mode = await settings.get('openrouter.mode');
-  let provider: AiProvider;
-  let apiKey: string | null;
+  let candidates: AiCandidate[];
   let source: AiAccess['source'];
 
   const own = mode === 'central' ? null : await userKeys(deps.db, deps.encryptionKey, userId);
-  const ownProvider = own
-    ? own[own.preferred]
-      ? own.preferred
-      : own.openrouter
-        ? 'openrouter'
-        : own.gemini
-          ? 'gemini'
-          : null
-    : null;
+  const ownProviders = own
+    ? (['openrouter', 'gemini'] as const)
+        .filter((p) => own[p])
+        .sort((a, b) => (a === own.preferred ? -1 : b === own.preferred ? 1 : 0))
+    : [];
 
-  if (own && ownProvider) {
-    provider = ownProvider;
-    apiKey = own[ownProvider];
+  if (own && ownProviders.length > 0) {
     source = 'user';
+    candidates = await Promise.all(
+      ownProviders.map(async (provider) => {
+        const m = await modelsFor(settings, provider, purpose);
+        return {
+          id: `user:${provider}`,
+          name: provider,
+          provider,
+          apiKey: own[provider]!,
+          ...m,
+        };
+      }),
+    );
   } else if (mode === 'per_user') {
     throw new AiAccessError('AI_KEY_REQUIRED');
   } else {
-    provider = await settings.get('ai.provider');
-    apiKey = await settings.get(provider === 'gemini' ? 'gemini.apiKey' : 'openrouter.apiKey');
-    if (!apiKey) throw new AiAccessError('AI_NOT_CONFIGURED');
+    candidates = await centralCandidates(settings, purpose);
+    if (candidates.length === 0) throw new AiAccessError('AI_NOT_CONFIGURED');
     const [quotaUsd, quotaRequests, usage] = await Promise.all([
       settings.get('openrouter.monthlyQuotaUsd'),
       settings.get('ai.monthlyRequests'),
@@ -108,13 +179,47 @@ export async function resolveAiAccess(
     source = 'central';
   }
 
-  const models = await settings.get(provider === 'gemini' ? 'gemini.models' : 'openrouter.models');
+  const first = candidates[0]!;
   return {
-    provider,
-    apiKey: apiKey!,
+    provider: first.provider,
+    apiKey: first.apiKey,
     source,
-    model: models[purpose],
-    fallbacks: models.fallbacks,
+    model: first.model,
+    fallbacks: first.fallbacks,
+    candidates,
     denyDataCollection: await settings.get('openrouter.denyDataCollection'),
   };
+}
+
+/** Modello e riserva per un provider: quelli del primo profilo attivo, altrimenti le impostazioni storiche. */
+async function modelsFor(settings: SettingsService, provider: AiProvider, purpose: AiPurpose) {
+  const profile = (await settings.get('ai.profiles')).find(
+    (p) => p.enabled && p.provider === provider,
+  );
+  if (profile)
+    return { model: profile.model, fallbacks: profile.backupModel ? [profile.backupModel] : [] };
+  const models = await settings.get(provider === 'gemini' ? 'gemini.models' : 'openrouter.models');
+  return { model: models[purpose], fallbacks: models.fallbacks };
+}
+
+/** Configurazioni centrali: l'elenco dell'admin, oppure (se vuoto) le impostazioni storiche. */
+async function centralCandidates(
+  settings: SettingsService,
+  purpose: AiPurpose,
+): Promise<AiCandidate[]> {
+  const profiles = (await settings.get('ai.profiles')).filter((p) => p.enabled);
+  if (profiles.length > 0)
+    return profiles.map((p) => ({
+      id: p.id,
+      name: p.name,
+      provider: p.provider,
+      apiKey: p.apiKey,
+      model: p.model,
+      fallbacks: p.backupModel ? [p.backupModel] : [],
+    }));
+  const provider = await settings.get('ai.provider');
+  const apiKey = await settings.get(provider === 'gemini' ? 'gemini.apiKey' : 'openrouter.apiKey');
+  if (!apiKey) return [];
+  const m = await modelsFor(settings, provider, purpose);
+  return [{ id: 'legacy', name: provider, provider, apiKey, ...m }];
 }

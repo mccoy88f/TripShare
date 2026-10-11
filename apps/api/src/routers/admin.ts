@@ -5,7 +5,9 @@ import { TRPCError } from '@trpc/server';
 import { complete } from '../ai/client.js';
 import { checkGeminiKey, clearGeminiCache, listGeminiModels } from '../gemini.js';
 import { checkKey, clearModelsCache, listModels } from '../openrouter.js';
-import { SETTINGS, isSettingKey, type SettingKey } from '../settings.js';
+import { clearCooldowns } from '../ai/access.js';
+import { maskSecret } from '../crypto.js';
+import { AiProfileSchema, SETTINGS, isSettingKey, type SettingKey } from '../settings.js';
 import { router, superadminProcedure } from '../trpc/init.js';
 import type { Context } from '../trpc/init.js';
 
@@ -23,6 +25,12 @@ async function audit(
     data: data ?? null,
     ip: ctx.ip,
   });
+}
+
+async function savedProfile(ctx: Context, id: string) {
+  const profile = (await ctx.settings.get('ai.profiles')).find((p) => p.id === id);
+  if (!profile) throw new TRPCError({ code: 'NOT_FOUND', message: 'PROFILE_NOT_FOUND' });
+  return profile;
 }
 
 async function check(
@@ -51,6 +59,9 @@ export const adminRouter = router({
         if (!isSettingKey(input.key))
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'UNKNOWN_SETTING' });
         const key: SettingKey = input.key;
+        // Le configurazioni AI hanno la loro rotta (le chiavi non tornano mai al client).
+        if (key === 'ai.profiles')
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'UNKNOWN_SETTING' });
         const parsed = SETTINGS[key].schema.safeParse(input.value);
         if (!parsed.success) {
           throw new TRPCError({
@@ -99,49 +110,148 @@ export const adminRouter = router({
     }),
   }),
 
-  /** Prova reale del provider con la chiave centrale: una piccola richiesta JSON. */
-  aiTest: superadminProcedure
-    .input(z.object({ provider: z.enum(['openrouter', 'gemini']) }))
-    .mutation(async ({ ctx, input }) => {
-      const gemini = input.provider === 'gemini';
+  /** Configurazioni AI centrali (provider, chiave, modello e riserva) in ordine di priorità. */
+  aiProfiles: router({
+    list: superadminProcedure.query(async ({ ctx }) => {
+      const profiles = await ctx.settings.get('ai.profiles');
+      const legacyProvider = await ctx.settings.get('ai.provider');
+      const legacyKey = await ctx.settings.get(
+        legacyProvider === 'gemini' ? 'gemini.apiKey' : 'openrouter.apiKey',
+      );
+      return {
+        profiles: profiles.map(({ apiKey, ...p }) => ({ ...p, keyPreview: maskSecret(apiKey) })),
+        // Con l'elenco vuoto valgono ancora le impostazioni storiche: si possono importare.
+        legacy: profiles.length === 0 && legacyKey ? { provider: legacyProvider } : null,
+      };
+    }),
+
+    /**
+     * Salva l'elenco nell'ordine ricevuto. Per le configurazioni già esistenti la chiave si può
+     * omettere: resta quella salvata.
+     */
+    save: superadminProcedure
+      .input(
+        z.object({
+          profiles: z
+            .array(
+              AiProfileSchema.omit({ apiKey: true }).extend({
+                apiKey: z.string().min(10).max(300).optional(),
+              }),
+            )
+            .max(12),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        const saved = new Map((await ctx.settings.get('ai.profiles')).map((p) => [p.id, p]));
+        const next = input.profiles.map((p) => {
+          const apiKey = p.apiKey ?? saved.get(p.id)?.apiKey;
+          if (!apiKey) throw new TRPCError({ code: 'BAD_REQUEST', message: 'AI_KEY_REQUIRED' });
+          return { ...p, apiKey };
+        });
+        if (new Set(next.map((p) => p.id)).size !== next.length)
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'DUPLICATE_ID' });
+        await ctx.settings.set('ai.profiles', next, ctx.session!.user.id);
+        clearModelsCache();
+        clearGeminiCache();
+        clearCooldowns();
+        await audit(ctx, 'settings.update', {
+          key: 'ai.profiles',
+          value: next.map((p) => ({
+            id: p.id,
+            name: p.name,
+            provider: p.provider,
+            model: p.model,
+            backupModel: p.backupModel,
+            enabled: p.enabled,
+          })),
+        });
+        return { ok: true };
+      }),
+
+    /** Crea la prima configurazione dalle impostazioni storiche (provider, chiave e modello). */
+    importLegacy: superadminProcedure.mutation(async ({ ctx }) => {
+      if ((await ctx.settings.get('ai.profiles')).length > 0) return { ok: true };
+      const provider = await ctx.settings.get('ai.provider');
+      const gemini = provider === 'gemini';
       const apiKey = await ctx.settings.get(gemini ? 'gemini.apiKey' : 'openrouter.apiKey');
       if (!apiKey) throw new TRPCError({ code: 'BAD_REQUEST', message: 'AI_NOT_CONFIGURED' });
       const models = await ctx.settings.get(gemini ? 'gemini.models' : 'openrouter.models');
-      const start = performance.now();
-      try {
-        const res = await complete({
-          provider: input.provider,
-          apiKey,
-          model: models.chat,
-          fallbacks: [],
-          messages: [
-            {
-              role: 'system',
-              content: 'Rispondi solo con JSON: {"ok": true, "saluto": "<una parola>"}',
-            },
-            { role: 'user', content: 'Prova di connessione da TripShare.' },
-          ],
-          jsonSchema: { name: 'tripshare_test', schema: { type: 'object' } },
-          appUrl: ctx.env.APP_URL,
-          appName: ctx.env.APP_NAME,
-          fetchImpl: ctx.httpFetch,
-          timeoutMs: 60_000,
-        });
-        return {
-          ok: true as const,
-          model: res.model,
-          ms: Math.round(performance.now() - start),
-          content: res.content.slice(0, 300),
-        };
-      } catch (err) {
-        return {
-          ok: false as const,
-          model: models.chat,
-          ms: Math.round(performance.now() - start),
-          error: err instanceof Error ? err.message : String(err),
-        };
-      }
+      await ctx.settings.set(
+        'ai.profiles',
+        [
+          {
+            id: 'principale',
+            name: gemini ? 'Gemini' : 'OpenRouter',
+            provider,
+            apiKey,
+            model: models.planner,
+            backupModel: models.fallbacks[0] ?? null,
+            enabled: true,
+          },
+        ],
+        ctx.session!.user.id,
+      );
+      return { ok: true };
     }),
+
+    /** Modelli disponibili per il provider e la chiave di una configurazione salvata. */
+    models: superadminProcedure
+      .input(z.object({ id: z.string(), refresh: z.boolean().optional() }))
+      .query(async ({ ctx, input }) => {
+        const profile = await savedProfile(ctx, input.id);
+        try {
+          return profile.provider === 'gemini'
+            ? await listGeminiModels(profile.apiKey, ctx.httpFetch, input.refresh)
+            : await listModels(profile.apiKey, ctx.httpFetch, input.refresh);
+        } catch (err) {
+          throw new TRPCError({
+            code: 'BAD_GATEWAY',
+            message: err instanceof Error ? err.message : 'AI_UNAVAILABLE',
+          });
+        }
+      }),
+
+    /** Prova reale di una configurazione: una piccola richiesta JSON con modello e riserva. */
+    test: superadminProcedure
+      .input(z.object({ id: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        const profile = await savedProfile(ctx, input.id);
+        const start = performance.now();
+        try {
+          const res = await complete({
+            provider: profile.provider,
+            apiKey: profile.apiKey,
+            model: profile.model,
+            fallbacks: profile.backupModel ? [profile.backupModel] : [],
+            messages: [
+              {
+                role: 'system',
+                content: 'Rispondi solo con JSON: {"ok": true, "saluto": "<una parola>"}',
+              },
+              { role: 'user', content: 'Prova di connessione da TripShare.' },
+            ],
+            jsonSchema: { name: 'tripshare_test', schema: { type: 'object' } },
+            appUrl: ctx.env.APP_URL,
+            appName: ctx.env.APP_NAME,
+            fetchImpl: ctx.httpFetch,
+            timeoutMs: 60_000,
+          });
+          return {
+            ok: true as const,
+            model: res.model,
+            ms: Math.round(performance.now() - start),
+            content: res.content.slice(0, 300),
+          };
+        } catch (err) {
+          return {
+            ok: false as const,
+            model: profile.model,
+            ms: Math.round(performance.now() - start),
+            error: err instanceof Error ? err.message : String(err),
+          };
+        }
+      }),
+  }),
 
   /** Ultimi errori dei lavori AI, per capire cosa non va. */
   aiErrors: superadminProcedure.query(async ({ ctx }) =>
@@ -152,6 +262,7 @@ export const adminRouter = router({
         provider: aiJob.provider,
         model: aiJob.model,
         error: aiJob.error,
+        attempts: aiJob.attempts,
         createdAt: aiJob.createdAt,
       })
       .from(aiJob)

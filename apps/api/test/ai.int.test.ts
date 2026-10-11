@@ -1,3 +1,4 @@
+import { clearCooldowns } from '../src/ai/access.js';
 import { sql } from 'drizzle-orm';
 import sharp from 'sharp';
 import { mkdtemp } from 'node:fs/promises';
@@ -27,6 +28,9 @@ interface Call {
 /** Chiamata a Gemini (anche in streaming, come nella chat). */
 const isGemini = (url: string) => /:(stream[Gg]|g)enerateContent/.test(url);
 
+/** Chiavi (intestazione di autorizzazione) per cui il finto provider risponde con un errore. */
+const failing = new Map<string, number>();
+
 /** Finto OpenRouter + Gemini: risponde in base al nome dello schema richiesto. */
 function fakeAi(calls: Call[], replies: Record<string, unknown[]>) {
   return (async (input: string | URL | Request, init?: RequestInit) => {
@@ -38,6 +42,14 @@ function fakeAi(calls: Call[], replies: Record<string, unknown[]>) {
       body,
       auth: headers.get('authorization') ?? headers.get('x-goog-api-key'),
     });
+    const failStatus = failing.get(
+      headers.get('authorization') ?? headers.get('x-goog-api-key') ?? '',
+    );
+    if (failStatus)
+      return Response.json(
+        { error: { message: `errore simulato ${failStatus}`, code: failStatus } },
+        { status: failStatus },
+      );
     // Foto che l'AI indica per un luogo: una scaricabile e grande, una piccola, una inesistente.
     if (url.startsWith('https://93.184.216.34/')) {
       const name = url.split('/').pop()!;
@@ -144,6 +156,8 @@ run('AI jobs (integration)', () => {
   beforeEach(async () => {
     await t.reset();
     calls.length = 0;
+    failing.clear();
+    clearCooldowns();
     for (const k of Object.keys(replies)) delete replies[k];
   });
   afterAll(async () => {
@@ -196,6 +210,82 @@ run('AI jobs (integration)', () => {
     expect(res.statusCode).toBe(200);
     return res.json() as { file: string; mime: string };
   }
+
+  it('routes to the next configuration when one fails, and records the attempts', async () => {
+    await t.settings.set('ai.profiles', [
+      {
+        id: 'prima',
+        name: 'Prima',
+        provider: 'openrouter',
+        apiKey: 'sk-or-first-key-123',
+        model: 'openrouter/auto',
+        backupModel: null,
+        enabled: true,
+      },
+      {
+        id: 'seconda',
+        name: 'Seconda',
+        provider: 'gemini',
+        apiKey: 'AIza-second-key-123',
+        model: 'gemini-flash-latest',
+        backupModel: null,
+        enabled: true,
+      },
+    ]);
+    const { marco, tripId } = await setup();
+    replies.tripshare_assistant = [{ reply: 'Ciao', actions: [] }];
+    const chat = async () => {
+      const started = await t.trpc<{ id: string }>('ai.start', marco, {
+        tripId,
+        input: { kind: 'chat', message: 'Ciao' },
+      });
+      return (
+        await t.trpc<{
+          status: string;
+          provider: string;
+          error: string | null;
+          attempts: { profile: string; error: string }[] | null;
+        }>('ai.job', marco, { id: started.data.id }, 'query')
+      ).data;
+    };
+
+    // La prima configurazione ha la quota esaurita: risponde la seconda.
+    failing.set('Bearer sk-or-first-key-123', 429);
+    const first = await chat();
+    expect(first).toMatchObject({ status: 'done', provider: 'gemini' });
+    expect(first.attempts).toHaveLength(1);
+    expect(first.attempts![0]).toMatchObject({ profile: 'Prima' });
+    expect(first.attempts![0]!.error).toContain('AI_RATE_LIMITED');
+    expect(calls.map((c) => (isGemini(c.url) ? 'gemini' : 'openrouter'))).toEqual([
+      'openrouter',
+      'gemini',
+    ]);
+
+    // La prima è in pausa: la richiesta successiva va diretta alla seconda.
+    calls.length = 0;
+    const second = await chat();
+    expect(second).toMatchObject({ status: 'done', provider: 'gemini' });
+    expect(second.attempts).toBeNull();
+    expect(calls).toHaveLength(1);
+
+    // Falliscono tutte: l'errore è dell'ultima e il registro ha entrambi i tentativi.
+    clearCooldowns();
+    failing.set('AIza-second-key-123', 401);
+    const none = await chat();
+    expect(none.status).toBe('error');
+    expect(none.error).toContain('AI_INVALID_KEY');
+    expect(none.attempts!.map((a) => a.profile)).toEqual(['Prima', 'Seconda']);
+
+    // Una richiesta sbagliata (400) non dipende dalla chiave: non si passa oltre.
+    clearCooldowns();
+    failing.clear();
+    failing.set('Bearer sk-or-first-key-123', 400);
+    calls.length = 0;
+    const bad = await chat();
+    expect(bad.status).toBe('error');
+    expect(bad.attempts).toHaveLength(1);
+    expect(calls).toHaveLength(1);
+  });
 
   it('reports AI as not configured without a key', async () => {
     const { marco, tripId } = await setup();

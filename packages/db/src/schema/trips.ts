@@ -261,6 +261,8 @@ export const aiJob = pgTable(
     keySource: text(),
     /** "openrouter" o "gemini". */
     provider: text(),
+    /** Tentativi falliti prima di quello riuscito (configurazione, errore, durata). */
+    attempts: jsonb(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     finishedAt: timestamp({ withTimezone: true }),
   },

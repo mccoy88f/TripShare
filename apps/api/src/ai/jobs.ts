@@ -9,7 +9,14 @@ import { activeMemberCount, readPlan } from '../services/plan.js';
 import { computeLedgers } from '../services/trips.js';
 import type { SettingsService } from '../settings.js';
 import type { FileStorage } from '../storage.js';
-import { AiAccessError, resolveAiAccess } from './access.js';
+import {
+  AiAccessError,
+  coolDown,
+  failoverPause,
+  orderByCooldown,
+  resolveAiAccess,
+  type AiAttempt,
+} from './access.js';
 import { AiError, complete, type ChatMessage } from './client.js';
 import { runGeneration } from './generation.js';
 import { replyFromPartialJson, throttleText } from './stream.js';
@@ -193,6 +200,8 @@ interface SpecRun {
   value: unknown;
   citations: { url: string; title?: string }[];
   model: string | null;
+  /** Provider della configurazione che ha risposto. */
+  provider: string;
   promptTokens: number;
   completionTokens: number;
   cost: number | null;
@@ -206,6 +215,8 @@ export async function runSpec(
   locale: Locale,
   /** Testo grezzo della risposta scritto finora (si ricomincia a ogni nuovo tentativo). */
   onText?: (text: string) => void,
+  /** Tentativi falliti delle configurazioni scartate (per il registro del lavoro). */
+  trail: AiAttempt[] = [],
 ): Promise<SpecRun> {
   const messages: ChatMessage[] = [...spec.messages];
   const out = { value: null as unknown, model: access.model as string | null };
@@ -213,21 +224,53 @@ export async function runSpec(
   let promptTokens = 0;
   let completionTokens = 0;
   let cost: number | null = null;
+
+  // Configurazioni in ordine; se una fallisce per colpa sua si passa alla successiva e si
+  // continua con quella (anche per le correzioni successive).
+  const order = orderByCooldown(access.candidates);
+  let current = 0;
+  const completeWithRouting = async () => {
+    for (;;) {
+      const c = order[current]!;
+      const started = performance.now();
+      try {
+        return await complete({
+          provider: c.provider,
+          apiKey: c.apiKey,
+          model: c.model,
+          fallbacks: c.fallbacks,
+          messages,
+          jsonSchema: { name: spec.schemaName, schema: spec.jsonSchema },
+          web: spec.web,
+          denyDataCollection: access.denyDataCollection,
+          appUrl: deps.appUrl,
+          appName: deps.appName,
+          fetchImpl: deps.httpFetch,
+          onDelta: onText,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        const pause = failoverPause(err);
+        trail.push({
+          profile: c.name,
+          provider: c.provider,
+          model: c.model,
+          error: message.slice(0, 500),
+          ms: Math.round(performance.now() - started),
+        });
+        deps.log?.(`[ai] configurazione "${c.name}" (${c.provider}, ${c.model}): ${message}`);
+        if (pause === null) throw err;
+        coolDown(c.id, pause);
+        if (current >= order.length - 1) throw err;
+        current++;
+        // Il testo mostrato finora apparteneva al tentativo fallito.
+        onText?.('');
+      }
+    }
+  };
+
   for (let attempt = 0; ; attempt++) {
-    const res = await complete({
-      provider: access.provider,
-      apiKey: access.apiKey,
-      model: access.model,
-      fallbacks: access.fallbacks,
-      messages,
-      jsonSchema: { name: spec.schemaName, schema: spec.jsonSchema },
-      web: spec.web,
-      denyDataCollection: access.denyDataCollection,
-      appUrl: deps.appUrl,
-      appName: deps.appName,
-      fetchImpl: deps.httpFetch,
-      onDelta: onText,
-    });
+    const res = await completeWithRouting();
     out.model = res.model;
     promptTokens += res.promptTokens ?? 0;
     completionTokens += res.completionTokens ?? 0;
@@ -246,6 +289,7 @@ export async function runSpec(
     value: out.value,
     citations,
     model: out.model,
+    provider: order[current]!.provider,
     promptTokens,
     completionTokens,
     cost,
@@ -356,6 +400,7 @@ async function runAiJob(deps: AiDeps, jobId: string) {
   let model: string | null = null;
   let provider: string | null = null;
   let keySource: string | null = null;
+  const trail: AiAttempt[] = [];
   try {
     const input = AiInputSchema.parse(job.input);
     const [owner] = await db
@@ -492,8 +537,9 @@ async function runAiJob(deps: AiDeps, jobId: string) {
             if (reply) deps.emit!({ userId: job.userId, jobId, phase: 'delta', text: reply });
           })
         : undefined;
-    const run = await runSpec(deps, access, spec, locale, streaming);
+    const run = await runSpec(deps, access, spec, locale, streaming, trail);
     model = run.model;
+    provider = run.provider;
     promptTokens += run.promptTokens;
     completionTokens += run.completionTokens;
     if (run.cost !== null) cost = (cost ?? 0) + run.cost;
@@ -566,6 +612,7 @@ async function runAiJob(deps: AiDeps, jobId: string) {
         model,
         provider,
         keySource,
+        attempts: trail.length ? trail : null,
         promptTokens,
         completionTokens,
         cost,
@@ -586,6 +633,7 @@ async function runAiJob(deps: AiDeps, jobId: string) {
         model,
         provider,
         keySource,
+        attempts: trail.length ? trail : null,
         promptTokens: promptTokens || null,
         completionTokens: completionTokens || null,
         cost,
