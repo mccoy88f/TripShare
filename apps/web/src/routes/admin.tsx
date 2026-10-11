@@ -537,6 +537,18 @@ function AiSettings() {
               <option value="gemini">Google Gemini</option>
             </Select>
           </Field>
+          <label className="flex items-center justify-between gap-4">
+            <span>
+              <span className="font-medium">{t('admin.ocrReceipts')}</span>
+              <span className="block text-[13px] text-muted-foreground">
+                {t('admin.ocrReceiptsHint')}
+              </span>
+            </span>
+            <Switch
+              checked={value<boolean>('ocr.receipts') ?? true}
+              onCheckedChange={(v) => save('ocr.receipts', v)}
+            />
+          </label>
           <SaveRow onSave={() => save('ai.monthlyRequests', Number(requests))}>
             <Field
               label={t('admin.requestsQuota')}

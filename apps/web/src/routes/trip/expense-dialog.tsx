@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Smile, Trash2 } from 'lucide-react';
+import { Loader2, Smile, Sparkles, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -27,11 +27,13 @@ import { Step, StepForm } from '@/components/ui/steps';
 import { EmojiPicker } from '@/components/ui/emoji-picker';
 import { Field, Input, Select } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useAiStatus, useAiTask } from '@/lib/ai';
 import { money, todayIso } from '@/lib/format';
 import { useTRPC } from '@/lib/trpc';
 import type { ExpenseT, TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import {
+  announceReceipt,
   ItemSplit,
   ReceiptScanButton,
   receiptItems,
@@ -208,6 +210,12 @@ export function ExpenseDialog({
   const queryClient = useQueryClient();
   const [s, setS] = useState<State>(() => initialState(trip, expense, preset));
   const [pickerOpen, setPickerOpen] = useState(false);
+  /** L'ultimo scontrino letto, per poterlo rileggere con l'AI. */
+  const [scan, setScan] = useState<{ file: string; mime: string; source: 'ocr' | 'ai' } | null>(
+    null,
+  );
+  const ai = useAiStatus();
+  const rescan = useAiTask();
   const tripCurrency = trip.currency as CurrencyCode;
 
   useEffect(() => {
@@ -356,7 +364,8 @@ export function ExpenseDialog({
     }));
   };
 
-  const onReceipt = (r: ReceiptResult, file: string) => {
+  const onReceipt = (r: ReceiptResult, file: string, mime: string) => {
+    setScan({ file, mime, source: r.source ?? 'ai' });
     const currency = isCurrencyCode(r.currency) ? r.currency : s.currency;
     const total = toMinor(r.total, currency);
     const inTrip =
@@ -445,6 +454,31 @@ export function ExpenseDialog({
               >
                 🧾 {expense ? t('ai.receipt.open') : t('ai.receipt.attached')}
               </a>
+            )}
+            {!expense && s.receipt && scan?.source === 'ocr' && ai.data?.available && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="justify-self-start"
+                disabled={rescan.running}
+                onClick={async () => {
+                  const result = await rescan.run<ReceiptResult>(trip.id, {
+                    kind: 'receipt',
+                    file: scan.file,
+                    mime: scan.mime,
+                    tripCurrency: trip.currency as CurrencyCode,
+                    engine: 'ai',
+                  });
+                  if (result) {
+                    onReceipt(result, scan.file, scan.mime);
+                    announceReceipt(result, t);
+                  }
+                }}
+              >
+                {rescan.running ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                {t('ai.receipt.rereadAi')}
+              </Button>
             )}
             <div className="flex items-end gap-3">
               <Popover open={pickerOpen} onOpenChange={setPickerOpen}>

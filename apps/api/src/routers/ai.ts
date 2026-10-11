@@ -54,6 +54,8 @@ export const aiRouter = router({
         gemini: keys.gemini ? maskSecret(keys.gemini) : null,
       },
       preferred: keys.preferred,
+      /** Gli scontrini si leggono anche senza AI (OCR sul server). */
+      ocr: await s.get('ocr.receipts'),
       usage: { ...usage, quotaUsd, quotaRequests },
     };
   }),

@@ -309,7 +309,9 @@
     "aiTestOk": "Working · {{model}} · {{ms}} ms · answer: {{content}}",
     "aiTestError": "Error with {{model}}: {{error}}",
     "aiErrors": "Latest errors",
-    "videoUploads": "Maximum size of memory videos (MB)"
+    "videoUploads": "Maximum size of memory videos (MB)",
+    "ocrReceipts": "Read receipts on the server (OCR)",
+    "ocrReceiptsHint": "Tries a free text reader first, with no AI and no quota; the AI only steps in when the reading is not reliable."
   },
   "legal": {
     "privacyTitle": "Privacy policy",
@@ -916,14 +918,16 @@
       "AI_FAILED": "Something went wrong with Nina. Try again."
     },
     "receipt": {
-      "scan": "Let Nina read the receipt",
+      "scan": "Read receipt from a photo",
       "reading": "Reading…",
       "read": "Receipt read: check the details before saving.",
       "lowConfidence": "Uncertain reading: double-check amount and date.",
       "open": "View receipt",
       "attached": "Receipt attached",
       "byItems": "Split by item ({{count}} lines)",
-      "itemsHint": "Tap who had each item; service, tips and taxes are shared proportionally."
+      "itemsHint": "Tap who had each item; service, tips and taxes are shared proportionally.",
+      "readOcr": "Receipt read without AI: check the details before saving.",
+      "rereadAi": "Doesn't look right? Read again with Nina"
     },
     "booking": {
       "fromScreenshot": "From screenshot or PDF",

@@ -15,12 +15,15 @@ import { searchCommons } from '../photo-search.js';
 import { AiError, complete, type ChatMessage } from './client.js';
 import { runGeneration } from './generation.js';
 import { replyFromPartialJson, throttleText } from './stream.js';
+import { ocrReceipt } from '../services/receipt-ocr.js';
+import type { ParsedReceipt } from '@tripshare/shared';
 import {
   AiInputSchema,
   buildRepairMessage,
   buildTask,
   checkResult,
   PURPOSE,
+  ReceiptResultSchema,
   type AiInput,
   type ChatResult,
   type PlacePhotoResult,
@@ -60,11 +63,17 @@ export async function startAiJob(
 ) {
   const parsed = AiInputSchema.parse(input);
   // Verifica subito chiave e quota, così l'errore arriva all'utente senza passare dal worker.
+  // Gli scontrini si leggono anche senza AI (OCR): lì un'AI non disponibile non blocca.
   try {
     await resolveAiAccess(deps, userId, PURPOSE[parsed.kind]);
   } catch (err) {
-    if (err instanceof AiAccessError) throw new AiJobError(err.message);
-    throw err;
+    const ocrCanServe =
+      parsed.kind === 'receipt' &&
+      parsed.engine !== 'ai' &&
+      parsed.mime !== 'application/pdf' &&
+      (await deps.settings.get('ocr.receipts'));
+    if (err instanceof AiAccessError && !ocrCanServe) throw new AiJobError(err.message);
+    if (!(err instanceof AiAccessError)) throw err;
   }
   const [active] = await deps.db
     .select({ n: count() })
@@ -243,6 +252,22 @@ export async function runSpec(
   };
 }
 
+/** Chiude un lavoro "scontrino" con il risultato dell'OCR: nessuna richiesta all'AI, nessuna quota. */
+async function finishWithOcr(db: Database, jobId: string, receipt: ParsedReceipt) {
+  const result = ReceiptResultSchema.parse(receipt);
+  await db
+    .update(aiJob)
+    .set({
+      status: 'done',
+      result: { ...result, source: 'ocr' },
+      provider: 'ocr',
+      model: 'tesseract',
+      keySource: null,
+      finishedAt: new Date(),
+    })
+    .where(eq(aiJob.id, jobId));
+}
+
 /** Gli ultimi messaggi di una chat (dal più vecchio), per dare contesto al modello. */
 async function loadChatHistory(
   db: Database,
@@ -302,7 +327,39 @@ async function runAiJob(deps: AiDeps, jobId: string) {
       .from(user)
       .where(eq(user.id, job.userId));
     const locale: Locale = owner?.locale && isLocale(owner.locale) ? owner.locale : 'it';
-    const access = await resolveAiAccess(deps, job.userId, PURPOSE[input.kind]);
+    // Scontrino: prima l'OCR (gratis, senza AI). Se il risultato è sicuro il lavoro finisce qui;
+    // altrimenti si passa all'AI e, se non c'è, si offre comunque la lettura incerta.
+    let ocrPartial: ParsedReceipt | null = null;
+    if (
+      input.kind === 'receipt' &&
+      input.engine !== 'ai' &&
+      input.mime !== 'application/pdf' &&
+      (await deps.settings.get('ocr.receipts'))
+    ) {
+      const data = await deps.storage?.readPrivate(input.file);
+      if (data) {
+        try {
+          const read = await ocrReceipt(data, { currency: input.tripCurrency });
+          if (read && read.receipt.confidence === 'high') {
+            await finishWithOcr(db, jobId, read.receipt);
+            return;
+          }
+          ocrPartial = read?.receipt ?? null;
+        } catch (err) {
+          deps.log?.(`[ocr] lavoro ${jobId}: ${String(err)}`);
+        }
+      }
+    }
+    let access: Awaited<ReturnType<typeof resolveAiAccess>>;
+    try {
+      access = await resolveAiAccess(deps, job.userId, PURPOSE[input.kind]);
+    } catch (err) {
+      if (ocrPartial && err instanceof AiAccessError) {
+        await finishWithOcr(db, jobId, ocrPartial);
+        return;
+      }
+      throw err;
+    }
     provider = access.provider;
     model = access.model;
     keySource = access.source;
@@ -409,7 +466,7 @@ async function runAiJob(deps: AiDeps, jobId: string) {
       if (v.sources.length === 0 && citations.length)
         v.sources = citations.slice(0, 5).map((c) => ({ title: c.title ?? c.url, url: c.url }));
     }
-    let result: unknown = value;
+    let result: unknown = input.kind === 'receipt' ? { ...(value as object), source: 'ai' } : value;
     if (input.kind === 'placePhoto')
       result = {
         candidates: await fetchPlacePhotos(deps, input.name, value as PlacePhotoResult),

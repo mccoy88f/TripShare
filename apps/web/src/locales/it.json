@@ -309,7 +309,9 @@
     "aiTestOk": "Funziona · {{model}} · {{ms}} ms · risposta: {{content}}",
     "aiTestError": "Errore con {{model}}: {{error}}",
     "aiErrors": "Ultimi errori",
-    "videoUploads": "Dimensione massima dei video dei ricordi (MB)"
+    "videoUploads": "Dimensione massima dei video dei ricordi (MB)",
+    "ocrReceipts": "Leggi gli scontrini sul server (OCR)",
+    "ocrReceiptsHint": "Prima prova con un lettore di testo gratuito, senza AI e senza quota; l'AI interviene solo se la lettura non è sicura."
   },
   "legal": {
     "privacyTitle": "Informativa sulla privacy",
@@ -916,14 +918,16 @@
       "AI_FAILED": "Qualcosa è andato storto con Nina. Riprova."
     },
     "receipt": {
-      "scan": "Fai leggere lo scontrino a Nina",
+      "scan": "Leggi scontrino da foto",
       "reading": "Lettura in corso…",
       "read": "Scontrino letto: controlla i dati prima di salvare.",
       "lowConfidence": "Lettura incerta: controlla bene importo e data.",
       "open": "Vedi scontrino",
       "attached": "Scontrino allegato",
       "byItems": "Dividi per voce ({{count}} righe)",
-      "itemsHint": "Tocca chi ha preso ogni voce; servizio, mance e tasse si ripartiscono in proporzione."
+      "itemsHint": "Tocca chi ha preso ogni voce; servizio, mance e tasse si ripartiscono in proporzione.",
+      "readOcr": "Scontrino letto senza AI: controlla i dati prima di salvare.",
+      "rereadAi": "Non torna? Rileggi con Nina"
     },
     "booking": {
       "fromScreenshot": "Da screenshot o PDF",

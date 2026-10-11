@@ -242,6 +242,8 @@ export const AiInputSchema = z.discriminatedUnion('kind', [
     file: z.string(),
     mime: z.string(),
     tripCurrency: z.enum(CURRENCY_CODES),
+    /** "ai" salta la lettura con l'OCR e usa subito l'AI (per rileggere uno scontrino). */
+    engine: z.enum(['auto', 'ai']).optional(),
   }),
   z.object({
     kind: z.literal('booking'),

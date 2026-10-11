@@ -73,6 +73,8 @@ SMTP non risponde, l'invio viene ritentato fino a 6 volte nel giro di circa 15 m
 lavori AI (scontrini, prenotazioni, generazione dei viaggi, assistente) girano nel `worker`, che
 per questo monta lo stesso volume `uploads` dell'API.
 
+**Scontrini (OCR).** Gli scontrini si leggono prima sul server con Tesseract (`tesseract.js`, dati italiano e inglese inclusi), senza AI e senza quota; l'AI interviene solo se la lettura non è sicura. Si spegne dal pannello admin (scheda AI).
+
 **AI.** Dal pannello admin (scheda AI) si sceglie il provider della chiave centrale (OpenRouter o
 Google Gemini), i modelli per ogni compito e i limiti mensili per utente. In modalità "per utente"
 o "mista" ognuno può aggiungere nel profilo la propria chiave OpenRouter o Gemini.

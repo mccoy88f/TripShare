@@ -29,6 +29,8 @@ export interface ReceiptResult {
   tip?: number;
   confidence: 'high' | 'medium' | 'low';
   notes?: string;
+  /** Come è stato letto: "ocr" sul server, senza AI, oppure "ai". */
+  source?: 'ocr' | 'ai';
 }
 
 export interface ReceiptItem {
@@ -37,20 +39,24 @@ export interface ReceiptItem {
   members: string[];
 }
 
-/** Pulsante "Leggi scontrino": foto o PDF → lettura con l'AI. */
+/**
+ * Pulsante "Leggi scontrino": foto o PDF. Il server prova prima con l'OCR (gratis, senza AI) e
+ * passa all'AI solo se la lettura non è sicura (o se si chiede di rileggere con l'AI).
+ */
 export function ReceiptScanButton({
   trip,
   onResult,
 }: {
   trip: TripDetail;
-  onResult: (result: ReceiptResult, file: string) => void;
+  onResult: (result: ReceiptResult, file: string, mime: string) => void;
 }) {
   const { t } = useTranslation();
   const status = useAiStatus();
   const { run, running } = useAiTask();
   const [uploading, setUploading] = useState(false);
   const input = useRef<HTMLInputElement>(null);
-  if (!status.data?.available) return null;
+  // L'OCR basta: il pulsante c'è anche senza AI configurata.
+  if (!status.data?.available && !status.data?.ocr) return null;
   const busy = uploading || running;
 
   const onFile = async (file: File | undefined) => {
@@ -74,9 +80,8 @@ export function ReceiptScanButton({
       tripCurrency: trip.currency as CurrencyCode,
     });
     if (result) {
-      onResult(result, uploaded.file);
-      if (result.confidence === 'low') toast.warning(t('ai.receipt.lowConfidence'));
-      else toast.success(t('ai.receipt.read'));
+      onResult(result, uploaded.file, uploaded.mime);
+      announceReceipt(result, t);
     }
   };
 
@@ -104,6 +109,13 @@ export function ReceiptScanButton({
       </Button>
     </>
   );
+}
+
+/** Messaggio dopo la lettura: da dove arriva e quanto è sicura. */
+export function announceReceipt(result: ReceiptResult, t: (key: string) => string) {
+  if (result.confidence === 'low') toast.warning(t('ai.receipt.lowConfidence'));
+  else if (result.source === 'ocr') toast.success(t('ai.receipt.readOcr'));
+  else toast.success(t('ai.receipt.read'));
 }
 
 /** Righe dello scontrino in unità minori (con sconti negativi). */

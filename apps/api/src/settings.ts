@@ -93,6 +93,8 @@ export const SETTINGS = {
     secret: false,
   },
   'openrouter.denyDataCollection': { schema: z.boolean(), default: true, secret: false },
+  /** Lettura degli scontrini sul server (OCR), senza AI: l'AI resta come riserva. */
+  'ocr.receipts': { schema: z.boolean(), default: true, secret: false },
   'payments.paypalEnabled': { schema: z.boolean(), default: true, secret: false },
   'uploads.maxMb': { schema: z.number().int().min(1).max(50), default: 10, secret: false },
   'memories.maxVideoMb': {

@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { subscribeUserAi, type AiEvent } from '../src/services/realtime.js';
+import { closeReceiptOcr } from '../src/services/receipt-ocr.js';
 import { createTestApp } from './helpers.js';
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
@@ -145,7 +146,10 @@ run('AI jobs (integration)', () => {
     calls.length = 0;
     for (const k of Object.keys(replies)) delete replies[k];
   });
-  afterAll(async () => t?.close());
+  afterAll(async () => {
+    await closeReceiptOcr();
+    await t?.close();
+  });
 
   async function setup() {
     const marco = (await t.signUp('marco@example.com', 'Marco')).cookie;
@@ -159,12 +163,19 @@ run('AI jobs (integration)', () => {
     return { marco, tripId: trip.id };
   }
 
-  async function uploadReceipt(cookie: string, tripId: string) {
-    const image = await sharp({
-      create: { width: 400, height: 600, channels: 3, background: '#ffffff' },
-    })
-      .jpeg()
-      .toBuffer();
+  async function uploadReceipt(
+    cookie: string,
+    tripId: string,
+    photo?: { image: Buffer; mime: string },
+  ) {
+    const image =
+      photo?.image ??
+      (await sharp({
+        create: { width: 400, height: 600, channels: 3, background: '#ffffff' },
+      })
+        .jpeg()
+        .toBuffer());
+    const mime = photo?.mime ?? 'image/jpeg';
     const boundary = '----tripshare-ai';
     const res = await t.app.inject({
       method: 'POST',
@@ -176,7 +187,7 @@ run('AI jobs (integration)', () => {
       },
       payload: Buffer.concat([
         Buffer.from(
-          `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="r.jpg"\r\nContent-Type: image/jpeg\r\n\r\n`,
+          `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="r.${mime === 'image/png' ? 'png' : 'jpg'}"\r\nContent-Type: ${mime}\r\n\r\n`,
         ),
         image,
         Buffer.from(`\r\n--${boundary}--\r\n`),
@@ -238,6 +249,156 @@ run('AI jobs (integration)', () => {
       headers: { cookie: marco },
     });
     expect(img.statusCode).toBe(200);
+  });
+
+  /** Scontrino finto: righe di testo su carta bianca, come lo vedrebbe una foto ben fatta. */
+  const receiptPhoto = async (lines: string[]) => {
+    const esc = (l: string) => l.replace(/&/g, '&amp;').replace(/ /g, '\u00a0');
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="${80 + lines.length * 40}"><rect width="100%" height="100%" fill="white"/>${lines
+      .map(
+        (l, i) =>
+          `<text x="40" y="${60 + i * 40}" font-family="DejaVu Sans Mono, monospace" font-size="28" fill="#111">${esc(l)}</text>`,
+      )
+      .join('')}</svg>`;
+    return { image: await sharp(Buffer.from(svg)).png().toBuffer(), mime: 'image/png' };
+  };
+  const TRATTORIA = [
+    'TRATTORIA DA MARIO',
+    'Via Roma 12 - 00100 ROMA',
+    'P.IVA 01234567890',
+    '12/10/2026 20:41',
+    '',
+    'Spaghetti carbonara 9,50',
+    'Tiramisu 5,00',
+    'Acqua naturale 1L 2,50',
+    'Vino della casa 0,5 8,00',
+    'SUBTOTALE 25,00',
+    'TOTALE COMPLESSIVO 25,00',
+    'Pagamento elettronico 25,00',
+  ];
+
+  it('reads a clear receipt with OCR, with no AI key and no AI request', async () => {
+    // Nessuna chiave AI configurata: l'OCR basta.
+    const { marco, tripId } = await setup();
+    const file = await uploadReceipt(marco, tripId, await receiptPhoto(TRATTORIA));
+    const started = await t.trpc<{ id: string }>('ai.start', marco, {
+      tripId,
+      input: { kind: 'receipt', file: file.file, mime: file.mime, tripCurrency: 'EUR' },
+    });
+    expect(started.status).toBe(200);
+    const job = await t.trpc<{
+      status: string;
+      provider: string;
+      result: { total: number; merchant: string; date: string; source: string; confidence: string };
+    }>('ai.job', marco, { id: started.data.id }, 'query');
+    expect(job.data).toMatchObject({ status: 'done', provider: 'ocr' });
+    expect(job.data.result).toMatchObject({
+      total: 25,
+      merchant: 'Trattoria Da Mario',
+      date: '2026-10-12',
+      source: 'ocr',
+      confidence: 'high',
+    });
+    expect(calls.filter((c) => c.url.endsWith('/chat/completions'))).toHaveLength(0);
+    // Non conta nella quota delle richieste AI.
+    const status = await t.trpc<{ ocr: boolean; usage: { requests: number } }>(
+      'ai.status',
+      marco,
+      undefined,
+      'query',
+    );
+    expect(status.data).toMatchObject({ ocr: true, usage: { requests: 0 } });
+  });
+
+  it('falls back to the AI when the OCR is not sure, and can be forced to use it', async () => {
+    await t.settings.set('openrouter.apiKey', 'sk-or-central-key-123');
+    const { marco, tripId } = await setup();
+    replies.tripshare_receipt = [RECEIPT];
+    // Una foto senza testo leggibile: l'OCR non trova nulla e si passa all'AI.
+    const blank = await uploadReceipt(marco, tripId);
+    const first = await t.trpc<{ id: string }>('ai.start', marco, {
+      tripId,
+      input: { kind: 'receipt', file: blank.file, mime: blank.mime, tripCurrency: 'EUR' },
+    });
+    const job1 = await t.trpc<{ provider: string; result: { source: string; total: number } }>(
+      'ai.job',
+      marco,
+      { id: first.data.id },
+      'query',
+    );
+    expect(job1.data).toMatchObject({
+      provider: 'openrouter',
+      result: { source: 'ai', total: 42.5 },
+    });
+
+    // Con un solo punto di conferma (poco sicuro) l'AI viene comunque interpellata.
+    const unsure = await uploadReceipt(
+      marco,
+      tripId,
+      await receiptPhoto(['BAR CENTRALE', 'Cornetto 1,50', 'TOTALE 1,50']),
+    );
+    calls.length = 0;
+    const second = await t.trpc<{ id: string }>('ai.start', marco, {
+      tripId,
+      input: { kind: 'receipt', file: unsure.file, mime: unsure.mime, tripCurrency: 'EUR' },
+    });
+    const job2 = await t.trpc<{ result: { source: string } }>(
+      'ai.job',
+      marco,
+      { id: second.data.id },
+      'query',
+    );
+    expect(job2.data.result.source).toBe('ai');
+    expect(calls.filter((c) => c.url.endsWith('/chat/completions')).length).toBeGreaterThan(0);
+
+    // "Rileggi con Nina": con engine "ai" l'OCR si salta anche se lo scontrino è chiaro.
+    const clear = await uploadReceipt(marco, tripId, await receiptPhoto(TRATTORIA));
+    calls.length = 0;
+    const forced = await t.trpc<{ id: string }>('ai.start', marco, {
+      tripId,
+      input: {
+        kind: 'receipt',
+        file: clear.file,
+        mime: clear.mime,
+        tripCurrency: 'EUR',
+        engine: 'ai',
+      },
+    });
+    const job3 = await t.trpc<{ provider: string; result: { source: string } }>(
+      'ai.job',
+      marco,
+      { id: forced.data.id },
+      'query',
+    );
+    expect(job3.data).toMatchObject({ provider: 'openrouter', result: { source: 'ai' } });
+  });
+
+  it('offers the uncertain OCR reading when the AI is not available', async () => {
+    const { marco, tripId } = await setup();
+    const unsure = await uploadReceipt(
+      marco,
+      tripId,
+      await receiptPhoto(['BAR CENTRALE', 'Cornetto 1,50', 'TOTALE 1,50']),
+    );
+    const started = await t.trpc<{ id: string }>('ai.start', marco, {
+      tripId,
+      input: { kind: 'receipt', file: unsure.file, mime: unsure.mime, tripCurrency: 'EUR' },
+    });
+    const job = await t.trpc<{
+      status: string;
+      result: { total: number; confidence: string; source: string };
+    }>('ai.job', marco, { id: started.data.id }, 'query');
+    expect(job.data.status).toBe('done');
+    expect(job.data.result).toMatchObject({ total: 1.5, source: 'ocr' });
+    expect(job.data.result.confidence).not.toBe('high');
+
+    // Spento dall'admin, senza AI non si legge: errore come prima.
+    await t.settings.set('ocr.receipts', false);
+    const off = await t.trpc('ai.start', marco, {
+      tripId,
+      input: { kind: 'receipt', file: unsure.file, mime: unsure.mime, tripCurrency: 'EUR' },
+    });
+    expect(off.error?.message).toBe('AI_NOT_CONFIGURED');
   });
 
   it('uses the Gemini central key and enforces the monthly request quota', async () => {
