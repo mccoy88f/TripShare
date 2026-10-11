@@ -149,7 +149,15 @@ export function PlaceGallery({
             className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain rounded-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {slides.map((s) => (
-              <div key={s.full} className="grid w-full shrink-0 snap-center place-items-center">
+              <div
+                key={s.full}
+                className="relative grid w-full shrink-0 snap-center place-items-center"
+              >
+                {!s.current && (
+                  <span className="pointer-events-none absolute top-2 left-2 z-10 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white">
+                    {t('placePhoto.gallery.auto')}
+                  </span>
+                )}
                 <ZoomImage
                   src={failed.has(s.full) ? s.thumb : s.full}
                   alt={s.title || place.name}
@@ -197,6 +205,9 @@ export function PlaceGallery({
             </>
           )}
         </div>
+        {current && !current.current && (
+          <p className="pt-3 text-xs text-muted-foreground">{t('placePhoto.gallery.autoNote')}</p>
+        )}
         <div className="flex items-center justify-between gap-3 pt-3">
           <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
             {slides.length > 0 && (

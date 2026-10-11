@@ -1087,7 +1087,9 @@
       "used": "Place photo updated.",
       "none": "No photos found for this place.",
       "prev": "Previous photo",
-      "next": "Next photo"
+      "next": "Next photo",
+      "auto": "Automatic search · unverified",
+      "autoNote": "This photo comes from an automatic search (Wikimedia Commons and the web): it is not verified and may not show the right place. Check the image and its usage rights before using it."
     },
     "none": "No photo",
     "upload": "Upload",

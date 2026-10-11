@@ -1087,7 +1087,9 @@
       "used": "Foto del luogo aggiornata.",
       "none": "Nessuna foto trovata per questo luogo.",
       "prev": "Foto precedente",
-      "next": "Foto successiva"
+      "next": "Foto successiva",
+      "auto": "Ricerca automatica · non verificata",
+      "autoNote": "Questa foto viene da una ricerca automatica (Wikimedia Commons e web): non è verificata e potrebbe non mostrare il luogo giusto. Controlla l'immagine e i diritti d'uso prima di usarla."
     },
     "none": "Nessuna foto",
     "upload": "Carica",
