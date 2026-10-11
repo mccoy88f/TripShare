@@ -23,6 +23,10 @@ import { notifyTrip } from '../services/events.js';
 import { requireMember } from '../services/trips.js';
 import { authedProcedure, router, type Context } from '../trpc/init.js';
 
+/** Condizione: la spesa `id` di questo viaggio, non cancellata. */
+const liveExpense = (tripId: string, id: string) =>
+  and(eq(expense.id, id), eq(expense.tripId, tripId), isNull(expense.deletedAt));
+
 const MemberId = z.uuid();
 const Minor = z.number().int().positive().max(1e12);
 
@@ -89,6 +93,25 @@ function weightsOf(split: z.infer<typeof SplitSchema>): Record<string, number | 
 }
 
 /** Valida l'input e calcola quote, pagatori e importo convertito. */
+/** Campi di una spesa uguali in creazione e in modifica. */
+const expenseFields = (
+  input: z.infer<typeof ExpenseInput>,
+  prepared: { rate: number; amountTrip: number },
+) => ({
+  title: input.title,
+  emoji: input.emoji,
+  category: input.category,
+  amount: input.amount,
+  currency: input.currency,
+  rate: prepared.rate,
+  amountTrip: prepared.amountTrip,
+  date: input.date,
+  splitMethod: input.split.method,
+  notes: input.notes,
+  status: input.status,
+  bookingId: input.bookingId ?? null,
+});
+
 async function prepare(
   ctx: Context,
   input: ExpenseInputT,
@@ -192,18 +215,7 @@ export const expensesRouter = router({
         .insert(expense)
         .values({
           tripId: input.tripId,
-          title: input.title,
-          emoji: input.emoji,
-          category: input.category,
-          amount: input.amount,
-          currency: input.currency,
-          rate: prepared.rate,
-          amountTrip: prepared.amountTrip,
-          date: input.date,
-          splitMethod: input.split.method,
-          notes: input.notes,
-          status: input.status,
-          bookingId: input.bookingId ?? null,
+          ...expenseFields(input, prepared),
           receipt: input.receipt ?? null,
           createdBy: ctx.user.id,
         })
@@ -228,13 +240,7 @@ export const expensesRouter = router({
       const [current] = await ctx.db
         .select({ id: expense.id })
         .from(expense)
-        .where(
-          and(
-            eq(expense.id, input.id),
-            eq(expense.tripId, input.tripId),
-            isNull(expense.deletedAt),
-          ),
-        );
+        .where(liveExpense(input.tripId, input.id));
       if (!current) throw new TRPCError({ code: 'NOT_FOUND' });
       // Nelle modifiche restano validi anche i membri usciti dal viaggio dopo la spesa.
       const { all } = await activeMemberIds(ctx.db, input.tripId);
@@ -243,18 +249,7 @@ export const expensesRouter = router({
         await tx
           .update(expense)
           .set({
-            title: input.title,
-            emoji: input.emoji,
-            category: input.category,
-            amount: input.amount,
-            currency: input.currency,
-            rate: prepared.rate,
-            amountTrip: prepared.amountTrip,
-            date: input.date,
-            splitMethod: input.split.method,
-            notes: input.notes,
-            status: input.status,
-            bookingId: input.bookingId ?? null,
+            ...expenseFields(input, prepared),
             ...(input.receipt !== undefined ? { receipt: input.receipt } : {}),
             updatedAt: new Date(),
           })
@@ -290,13 +285,7 @@ export const expensesRouter = router({
           ...(input.date ? { date: input.date } : {}),
           updatedAt: new Date(),
         })
-        .where(
-          and(
-            eq(expense.id, input.id),
-            eq(expense.tripId, input.tripId),
-            isNull(expense.deletedAt),
-          ),
-        )
+        .where(liveExpense(input.tripId, input.id))
         .returning({
           id: expense.id,
           title: expense.title,
@@ -332,16 +321,7 @@ export const expensesRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const { trip } = await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
-      const [row] = await ctx.db
-        .select()
-        .from(expense)
-        .where(
-          and(
-            eq(expense.id, input.id),
-            eq(expense.tripId, input.tripId),
-            isNull(expense.deletedAt),
-          ),
-        );
+      const [row] = await ctx.db.select().from(expense).where(liveExpense(input.tripId, input.id));
       if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
       const total = row.amount;
       const paid = input.amount ?? total;
@@ -489,16 +469,7 @@ export const expensesRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const { trip } = await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
-      const [row] = await ctx.db
-        .select()
-        .from(expense)
-        .where(
-          and(
-            eq(expense.id, input.id),
-            eq(expense.tripId, input.tripId),
-            isNull(expense.deletedAt),
-          ),
-        );
+      const [row] = await ctx.db.select().from(expense).where(liveExpense(input.tripId, input.id));
       if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
       const changeAmount = input.amount !== undefined && input.amount !== row.amount;
       await ctx.db.transaction(async (tx) => {
@@ -578,13 +549,7 @@ export const expensesRouter = router({
       const [removed] = await ctx.db
         .update(expense)
         .set({ deletedAt: new Date() })
-        .where(
-          and(
-            eq(expense.id, input.id),
-            eq(expense.tripId, input.tripId),
-            isNull(expense.deletedAt),
-          ),
-        )
+        .where(liveExpense(input.tripId, input.id))
         .returning({ title: expense.title, amount: expense.amount, currency: expense.currency });
       if (removed)
         await notifyTrip(ctx.db, {

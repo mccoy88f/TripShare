@@ -1,3 +1,4 @@
+import { DeleteButton } from '@/components/detail-footer';
 import {
   CheckCircle2,
   CircleHelp,
@@ -7,7 +8,6 @@ import {
   CalendarCheck,
   CalendarPlus,
   Sparkles,
-  Trash2,
 } from 'lucide-react';
 import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -53,7 +53,6 @@ import {
   parseLinks,
   textareaClass,
 } from './fields';
-import { confirmDialog } from '@/components/confirm';
 import { PlacePhotoField } from './place-photo';
 import { searchId } from '@/lib/search-focus';
 
@@ -375,21 +374,14 @@ function PlaceDialog({
           submitDisabled={!d.name.trim()}
           leading={
             place && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-destructive"
-                aria-label={t('expense.delete')}
+              <DeleteButton
                 disabled={pending}
-                onClick={async () => {
-                  if (!(await confirmDialog(t('plan.place.confirmDelete')))) return;
+                confirm={t('plan.place.confirmDelete')}
+                onDelete={async () => {
                   await apply([{ type: 'deletePlace', id: place.id }]);
                   onClose();
                 }}
-              >
-                <Trash2 />
-                <span className="hidden sm:inline">{t('expense.delete')}</span>
-              </Button>
+              />
             )
           }
         >

@@ -1,3 +1,4 @@
+import { DeleteButton, DetailFooter } from '@/components/detail-footer';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Globe, Loader2, Lock, Pin, Trash2 } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
@@ -6,8 +7,6 @@ import { toast } from 'sonner';
 import { UserAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { DIALOG_FOOTER } from '@/components/dialog-footer';
-import { CloseButton, EditButton } from '@/components/edit-button';
 import { useDetailMode } from '@/lib/detail-mode';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -242,35 +241,25 @@ function NoteDialog({
               </label>
             </div>
           </fieldset>
-          <div className={DIALOG_FOOTER}>
-            {draft.id && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-destructive"
-                aria-label={t('expense.delete')}
-                disabled={pending}
-                onClick={async () => {
-                  if (!(await confirmDialog(t('notes.confirmDelete')))) return;
-                  await remove.mutateAsync({ tripId: trip.id, id: draft.id! });
-                  onClose();
-                }}
-              >
-                <Trash2 />
-                <span className="hidden sm:inline">{t('expense.delete')}</span>
-              </Button>
-            )}
-            {detail.readOnly && <EditButton onClick={detail.startEdit} />}
-            <div className="flex-1" />
-            {detail.readOnly ? (
-              <CloseButton />
-            ) : (
-              <Button type="submit" size="lg" disabled={pending || !draft.content.trim()}>
-                {pending && <Loader2 className="animate-spin" />}
-                {draft.id ? t('common.save') : t('notes.add')}
-              </Button>
-            )}
-          </div>
+          <DetailFooter
+            readOnly={detail.readOnly}
+            onEdit={detail.startEdit}
+            remove={
+              draft.id && (
+                <DeleteButton
+                  disabled={pending}
+                  confirm={t('notes.confirmDelete')}
+                  onDelete={async () => {
+                    await remove.mutateAsync({ tripId: trip.id, id: draft.id! });
+                    onClose();
+                  }}
+                />
+              )
+            }
+            pending={pending}
+            submitLabel={draft.id ? t('common.save') : t('notes.add')}
+            submitDisabled={!draft.content.trim()}
+          />
         </form>
       </DialogContent>
     </Dialog>

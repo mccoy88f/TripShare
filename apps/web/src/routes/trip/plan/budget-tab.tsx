@@ -1,5 +1,6 @@
+import { DeleteButton } from '@/components/detail-footer';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, RefreshCw, Trash2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -30,7 +31,6 @@ import type { TripDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useOnAdd } from '@/lib/fab';
 import { moneyDraft, MoneyFields, moneyFromDraft, moneyLabel, textareaClass } from './fields';
-import { confirmDialog } from '@/components/confirm';
 import { searchId } from '@/lib/search-focus';
 
 export function BudgetTab({ trip }: { trip: TripDetail }) {
@@ -308,21 +308,14 @@ function BudgetDialog({
           submitDisabled={!d.title.trim() || (d.status !== 'pending' && !amount)}
           leading={
             item && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-destructive"
-                aria-label={t('expense.delete')}
+              <DeleteButton
                 disabled={pending}
-                onClick={async () => {
-                  if (!(await confirmDialog(t('budget.confirmDelete')))) return;
+                confirm={t('budget.confirmDelete')}
+                onDelete={async () => {
                   await apply([{ type: 'deleteBudgetItem', id: item.id }]);
                   onClose();
                 }}
-              >
-                <Trash2 />
-                <span className="hidden sm:inline">{t('expense.delete')}</span>
-              </Button>
+              />
             )
           }
         >

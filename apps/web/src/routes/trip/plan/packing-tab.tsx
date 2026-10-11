@@ -1,13 +1,12 @@
+import { DeleteButton, DetailFooter } from '@/components/detail-footer';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, Loader2, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { Check, Loader2, Plus, Sparkles } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PackingItem } from '@tripshare/shared/trip-format';
 import { UserAvatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { DIALOG_FOOTER } from '@/components/dialog-footer';
-import { CloseButton, EditButton } from '@/components/edit-button';
 import { useDetailMode } from '@/lib/detail-mode';
 import { AskAiButton } from '../ask-ai';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -418,36 +417,22 @@ function PackingDialog({
               {t('packing.perPerson')}
             </label>
           </fieldset>
-          <div className={DIALOG_FOOTER}>
-            <Button
-              type="button"
-              variant="ghost"
-              className="text-destructive"
-              aria-label={t('expense.delete')}
-              disabled={pending}
-              onClick={onDelete}
-            >
-              <Trash2 />
-              <span className="hidden sm:inline">{t('expense.delete')}</span>
-            </Button>
-            {detail.readOnly && <EditButton onClick={detail.startEdit} />}
-            {detail.readOnly && (
+          <DetailFooter
+            readOnly={detail.readOnly}
+            onEdit={detail.startEdit}
+            remove={<DeleteButton disabled={pending} onDelete={onDelete} />}
+            ask={
               <AskAiButton
                 tripId={tripId}
                 target={{ type: 'packing', id: item.id ?? item.item }}
                 name={item.item}
                 onDone={onClose}
               />
-            )}
-            <div className="flex-1" />
-            {detail.readOnly ? (
-              <CloseButton />
-            ) : (
-              <Button type="submit" size="lg" disabled={pending || !draft.item.trim()}>
-                {t('common.save')}
-              </Button>
-            )}
-          </div>
+            }
+            pending={pending}
+            submitLabel={t('common.save')}
+            submitDisabled={!draft.item.trim()}
+          />
         </form>
       </DialogContent>
     </Dialog>

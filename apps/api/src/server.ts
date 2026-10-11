@@ -3,7 +3,7 @@ import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import { fastifyTRPCPlugin, type FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
-import Fastify, { type FastifyRequest } from 'fastify';
+import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import { and, eq, inArray } from 'drizzle-orm';
 import { createReadStream } from 'node:fs';
 import { once } from 'node:events';
@@ -141,6 +141,31 @@ export async function buildServer(
 
   const sessionOf = (req: FastifyRequest) => auth.api.getSession({ headers: toHeaders(req) });
 
+  /**
+   * Sessione di chi è membro del viaggio (con il ruolo richiesto). Se manca, risponde già
+   * 401 o 404 e restituisce null: la rotta deve solo fare `return reply`.
+   */
+  async function memberSession(
+    req: FastifyRequest,
+    reply: FastifyReply,
+    tripId: string,
+    role?: 'editor' | 'viewer',
+    notFound = 'TRIP_NOT_FOUND',
+  ) {
+    const session = await sessionOf(req);
+    if (!session) {
+      reply.status(401).send({ error: 'UNAUTHORIZED' });
+      return null;
+    }
+    try {
+      await requireMember(services.db, tripId, session.user.id, role);
+    } catch {
+      reply.status(404).send({ error: notFound });
+      return null;
+    }
+    return session;
+  }
+
   /** Legge l'immagine dalla richiesta multipart rispettando il limite impostato nel pannello. */
   async function readImage(
     req: FastifyRequest,
@@ -190,13 +215,8 @@ export async function buildServer(
 
     /** Foto di un luogo caricata dal dispositivo; il programma la collega al luogo. */
     app.post<{ Params: { id: string } }>('/api/trips/:id/place-photo', async (req, reply) => {
-      const session = await sessionOf(req);
-      if (!session) return reply.status(401).send({ error: 'UNAUTHORIZED' });
-      try {
-        await requireMember(services.db, req.params.id, session.user.id, 'editor');
-      } catch {
-        return reply.status(404).send({ error: 'TRIP_NOT_FOUND' });
-      }
+      const session = await memberSession(req, reply, req.params.id, 'editor');
+      if (!session) return reply;
       const image = await readImage(req);
       if (!Buffer.isBuffer(image)) return reply.status(image.status).send({ error: image.error });
       const url = await storage.saveImage(image, 'place').catch(() => null);
@@ -216,13 +236,8 @@ export async function buildServer(
 
     /** Caricamento di un biglietto (PDF, immagine o Apple Wallet) per una prenotazione. */
     app.post<{ Params: { id: string } }>('/api/trips/:id/tickets', async (req, reply) => {
-      const session = await sessionOf(req);
-      if (!session) return reply.status(401).send({ error: 'UNAUTHORIZED' });
-      try {
-        await requireMember(services.db, req.params.id, session.user.id, 'editor');
-      } catch {
-        return reply.status(404).send({ error: 'TRIP_NOT_FOUND' });
-      }
+      const session = await memberSession(req, reply, req.params.id, 'editor');
+      if (!session) return reply;
       const maxMb = await services.settings.get('uploads.maxMb');
       const file = await req.file({ limits: { fileSize: maxMb * 1024 * 1024 } });
       if (!file) return reply.status(400).send({ error: 'NO_FILE' });
@@ -290,13 +305,8 @@ export async function buildServer(
     app.get<{ Params: { id: string; ticketId: string } }>(
       '/api/trips/:id/tickets/:ticketId/file',
       async (req, reply) => {
-        const session = await sessionOf(req);
-        if (!session) return reply.status(401).send({ error: 'UNAUTHORIZED' });
-        try {
-          await requireMember(services.db, req.params.id, session.user.id);
-        } catch {
-          return reply.status(404).send({ error: 'NOT_FOUND' });
-        }
+        const session = await memberSession(req, reply, req.params.id, undefined, 'NOT_FOUND');
+        if (!session) return reply;
         const [ticket] = await services.db
           .select()
           .from(bookingTicket)
@@ -591,13 +601,8 @@ export async function buildServer(
 
     /** Foto o PDF di uno scontrino o di una conferma di prenotazione, da far leggere all'AI. */
     app.post<{ Params: { id: string } }>('/api/trips/:id/ai-files', async (req, reply) => {
-      const session = await sessionOf(req);
-      if (!session) return reply.status(401).send({ error: 'UNAUTHORIZED' });
-      try {
-        await requireMember(services.db, req.params.id, session.user.id, 'editor');
-      } catch {
-        return reply.status(404).send({ error: 'TRIP_NOT_FOUND' });
-      }
+      const session = await memberSession(req, reply, req.params.id, 'editor');
+      if (!session) return reply;
       const maxMb = await services.settings.get('uploads.maxMb');
       const file = await req.file({ limits: { fileSize: maxMb * 1024 * 1024 } });
       if (!file) return reply.status(400).send({ error: 'NO_FILE' });
@@ -614,13 +619,8 @@ export async function buildServer(
     app.get<{ Params: { id: string; name: string } }>(
       '/api/trips/:id/receipts/:name',
       async (req, reply) => {
-        const session = await sessionOf(req);
-        if (!session) return reply.status(401).send({ error: 'UNAUTHORIZED' });
-        try {
-          await requireMember(services.db, req.params.id, session.user.id);
-        } catch {
-          return reply.status(404).send({ error: 'NOT_FOUND' });
-        }
+        const session = await memberSession(req, reply, req.params.id, undefined, 'NOT_FOUND');
+        if (!session) return reply;
         const [row] = await services.db
           .select({ id: expense.id })
           .from(expense)
@@ -639,13 +639,8 @@ export async function buildServer(
     );
 
     app.post<{ Params: { id: string } }>('/api/trips/:id/cover', async (req, reply) => {
-      const session = await sessionOf(req);
-      if (!session) return reply.status(401).send({ error: 'UNAUTHORIZED' });
-      try {
-        await requireMember(services.db, req.params.id, session.user.id, 'editor');
-      } catch {
-        return reply.status(404).send({ error: 'TRIP_NOT_FOUND' });
-      }
+      const session = await memberSession(req, reply, req.params.id, 'editor');
+      if (!session) return reply;
       const image = await readImage(req);
       if (!Buffer.isBuffer(image)) return reply.status(image.status).send({ error: image.error });
       const url = await storage.saveImage(image, 'cover').catch(() => null);

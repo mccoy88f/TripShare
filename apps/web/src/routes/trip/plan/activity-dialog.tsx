@@ -1,4 +1,5 @@
-import { Smile, Trash2 } from 'lucide-react';
+import { DeleteButton } from '@/components/detail-footer';
+import { Smile } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isCurrencyCode, type CurrencyCode } from '@tripshare/shared';
@@ -8,7 +9,6 @@ import {
   type Activity,
   type TripDocument,
 } from '@tripshare/shared/trip-format';
-import { Button } from '@/components/ui/button';
 import { useDetailMode } from '@/lib/detail-mode';
 import { AskAiButton } from '../ask-ai';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -30,7 +30,6 @@ import {
   textareaClass,
   type MoneyDraft,
 } from './fields';
-import { confirmDialog } from '@/components/confirm';
 
 interface Draft {
   date: string;
@@ -210,21 +209,14 @@ export function ActivityDialog({
           submitDisabled={!d.title.trim()}
           leading={
             activity && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-destructive"
-                aria-label={t('expense.delete')}
+              <DeleteButton
                 disabled={pending}
-                onClick={async () => {
-                  if (!(await confirmDialog(t('plan.activity.confirmDelete')))) return;
+                confirm={t('plan.activity.confirmDelete')}
+                onDelete={async () => {
                   await apply([{ type: 'deleteActivity', id: activity.id }]);
                   onOpenChange(false);
                 }}
-              >
-                <Trash2 />
-                <span className="hidden sm:inline">{t('expense.delete')}</span>
-              </Button>
+              />
             )
           }
         >

@@ -1,3 +1,4 @@
+import { DeleteButton, DetailFooter } from '@/components/detail-footer';
 import { useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -10,7 +11,6 @@ import {
   Pencil,
   Plus,
   Shuffle,
-  Trash2,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -19,10 +19,8 @@ import type { Activity, Day, TripDocument } from '@tripshare/shared/trip-format'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { DIALOG_FOOTER } from '@/components/dialog-footer';
 import { AskAiButton } from '../ask-ai';
 import { SectionAiButton } from '../section-ai';
-import { CloseButton, EditButton } from '@/components/edit-button';
 import { useDetailMode } from '@/lib/detail-mode';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Input, Select } from '@/components/ui/input';
@@ -765,39 +763,32 @@ function DayDialog({
               </Field>
             )}
           </fieldset>
-          <div className={DIALOG_FOOTER}>
-            <Button
-              type="button"
-              variant="ghost"
-              className="text-destructive"
-              disabled={pending}
-              onClick={async () => {
-                if (!(await confirmDialog(t('plan.confirmDeleteDay')))) return;
-                await apply([{ type: 'deleteDay', date: day.date }]);
-                onOpenChange(false);
-              }}
-            >
-              {t('plan.deleteDay')}
-            </Button>
-            {detail.readOnly && <EditButton onClick={detail.startEdit} />}
-            {detail.readOnly && (
+          <DetailFooter
+            readOnly={detail.readOnly}
+            onEdit={detail.startEdit}
+            remove={
+              <DeleteButton
+                disabled={pending}
+                label={t('plan.deleteDay')}
+                confirm={t('plan.confirmDeleteDay')}
+                onDelete={async () => {
+                  await apply([{ type: 'deleteDay', date: day.date }]);
+                  onOpenChange(false);
+                }}
+              />
+            }
+            ask={
               <AskAiButton
                 tripId={tripId}
                 target={{ type: 'day', id: day.date }}
                 name={day.title}
                 onDone={() => onOpenChange(false)}
               />
-            )}
-            <div className="flex-1" />
-            {detail.readOnly ? (
-              <CloseButton />
-            ) : (
-              <Button type="submit" disabled={pending || !title.trim()}>
-                {pending && <Loader2 className="animate-spin" />}
-                {t('common.save')}
-              </Button>
-            )}
-          </div>
+            }
+            pending={pending}
+            submitLabel={t('common.save')}
+            submitDisabled={!title.trim()}
+          />
         </form>
       </DialogContent>
     </Dialog>
@@ -856,38 +847,24 @@ function TipDialog({
               />
             </Field>
           </fieldset>
-          <div className={DIALOG_FOOTER}>
-            {onDelete && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-destructive"
-                aria-label={t('expense.delete')}
-                disabled={pending}
-                onClick={onDelete}
-              >
-                <Trash2 />
-                <span className="hidden sm:inline">{t('expense.delete')}</span>
-              </Button>
-            )}
-            {detail.readOnly && <EditButton onClick={detail.startEdit} />}
-            {detail.readOnly && tip && (
-              <AskAiButton
-                tripId={tripId}
-                target={{ type: 'tips', id: tip.title }}
-                name={tip.title}
-                onDone={onClose}
-              />
-            )}
-            <div className="flex-1" />
-            {detail.readOnly ? (
-              <CloseButton />
-            ) : (
-              <Button type="submit" size="lg" disabled={pending || !title.trim() || !text.trim()}>
-                {t('common.save')}
-              </Button>
-            )}
-          </div>
+          <DetailFooter
+            readOnly={detail.readOnly}
+            onEdit={detail.startEdit}
+            remove={onDelete && <DeleteButton disabled={pending} onDelete={onDelete} />}
+            ask={
+              tip && (
+                <AskAiButton
+                  tripId={tripId}
+                  target={{ type: 'tips', id: tip.title }}
+                  name={tip.title}
+                  onDone={onClose}
+                />
+              )
+            }
+            pending={pending}
+            submitLabel={t('common.save')}
+            submitDisabled={!title.trim() || !text.trim()}
+          />
         </form>
       </DialogContent>
     </Dialog>

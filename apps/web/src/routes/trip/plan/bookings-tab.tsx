@@ -1,5 +1,6 @@
+import { DeleteButton } from '@/components/detail-footer';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, Receipt, Ticket as TicketIcon, Trash2 } from 'lucide-react';
+import { Loader2, Receipt, Ticket as TicketIcon } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isCurrencyCode, type CurrencyCode, type ExpenseCategory } from '@tripshare/shared';
@@ -38,7 +39,6 @@ import {
   parseLinks,
   textareaClass,
 } from './fields';
-import { confirmDialog } from '@/components/confirm';
 import { searchId } from '@/lib/search-focus';
 
 const CATEGORY_OF: Record<Booking['type'], ExpenseCategory> = {
@@ -433,21 +433,14 @@ function BookingDialog({
           submitDisabled={!d.title.trim() || !d.startDate}
           leading={
             booking && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-destructive"
-                aria-label={t('expense.delete')}
+              <DeleteButton
                 disabled={pending}
-                onClick={async () => {
-                  if (!(await confirmDialog(t('plan.booking.confirmDelete')))) return;
+                confirm={t('plan.booking.confirmDelete')}
+                onDelete={async () => {
                   await apply([{ type: 'deleteBooking', id: booking.id }]);
                   onClose();
                 }}
-              >
-                <Trash2 />
-                <span className="hidden sm:inline">{t('expense.delete')}</span>
-              </Button>
+              />
             )
           }
         >

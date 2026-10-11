@@ -1,5 +1,6 @@
+import { DeleteButton } from '@/components/detail-footer';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Smile, Sparkles, Trash2 } from 'lucide-react';
+import { Loader2, Smile, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -41,7 +42,6 @@ import {
   type ReceiptItem,
   type ReceiptResult,
 } from './receipt-scan';
-import { confirmDialog } from '@/components/confirm';
 
 type Method = 'equal' | 'shares' | 'percent' | 'exact';
 
@@ -420,23 +420,16 @@ export function ExpenseDialog({
           submitDisabled={!amount || !split.input || !s.title.trim() || (foreign && !(rate > 0))}
           leading={
             expense && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-destructive"
-                aria-label={t('expense.delete')}
+              <DeleteButton
                 disabled={pending}
-                onClick={async () => {
-                  if (!(await confirmDialog(t('expense.confirmDelete')))) return;
+                confirm={t('expense.confirmDelete')}
+                onDelete={async () => {
                   await remove.mutateAsync({ tripId: trip.id, id: expense.id });
                   await invalidate();
                   toast.success(t('expense.deleted'));
                   onOpenChange(false);
                 }}
-              >
-                <Trash2 />
-                <span className="hidden sm:inline">{t('expense.delete')}</span>
-              </Button>
+              />
             )
           }
         >
