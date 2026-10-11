@@ -21,7 +21,14 @@ import { cn } from '@/lib/utils';
 import type { ExpenseT, TripDetail } from '@/lib/types';
 import { useOnAdd } from '@/lib/fab';
 import { ExpenseDialog, type ExpensePreset } from '../expense-dialog';
-import { myTickets, TicketsDialog, TicketViewer, useTickets, type Ticket } from './tickets';
+import {
+  myTickets,
+  TicketIcon as TicketKindIcon,
+  TicketsDialog,
+  TicketViewer,
+  useTickets,
+  type Ticket,
+} from './tickets';
 import {
   formatLinks,
   moneyDraft,
@@ -104,6 +111,12 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
       bookings.findIndex((x) => x.id === b.bookingId),
   );
 
+  // Biglietti la cui prenotazione non c'è più (tolta a mano o rifatta dall'AI): vanno ritrovabili
+  // e eliminabili da chi può modificare.
+  const orphans = canEdit
+    ? (tickets ?? []).filter((tk) => !bookings.some((b) => b.id === tk.bookingId))
+    : [];
+
   return (
     <div className="grid grid-cols-1 gap-4 pb-8">
       {mine.length > 0 && (
@@ -132,6 +145,27 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
                 </button>
               );
             })}
+          </div>
+        </section>
+      )}
+      {orphans.length > 0 && (
+        <section className="grid grid-cols-1 gap-2 rounded-xl border border-dashed border-amber-500/50 bg-amber-500/5 p-3">
+          <h3 className="text-sm font-semibold">⚠️ {t('tickets.orphans')}</h3>
+          <p className="text-[13px] text-muted-foreground">{t('tickets.orphansHint')}</p>
+          <div className="grid grid-cols-1 gap-1.5">
+            {orphans.map((tk, i) => (
+              <button
+                key={tk.id}
+                type="button"
+                onClick={() => setViewing({ list: orphans, index: i })}
+                className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2 text-left text-sm transition hover:bg-muted"
+              >
+                <TicketKindIcon ticket={tk} />
+                <span className="min-w-0 flex-1 truncate font-medium">
+                  {tk.label ?? tk.fileName ?? t('tickets.ticket')}
+                </span>
+              </button>
+            ))}
           </div>
         </section>
       )}

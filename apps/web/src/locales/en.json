@@ -872,7 +872,10 @@
     "all": "All tickets",
     "manage": "Manage tickets",
     "needBooking": "Add a booking first: tickets are linked to a booking.",
-    "chooseBooking": "Which booking?"
+    "chooseBooking": "Which booking?",
+    "orphan": "Booking no longer in the plan",
+    "orphans": "Tickets without a booking",
+    "orphansHint": "The booking of these tickets was removed from the plan. Open them to view or delete them."
   },
   "notes": {
     "title": "Title",

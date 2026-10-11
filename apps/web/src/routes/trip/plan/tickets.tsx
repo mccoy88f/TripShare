@@ -396,10 +396,58 @@ export function TicketViewer({
   index: number;
   onClose: () => void;
 }) {
+  // I biglietti eliminati da qui spariscono subito; senza altri biglietti la finestra si chiude.
+  const [gone, setGone] = useState<string[]>([]);
+  const list = tickets.filter((x) => !gone.includes(x.id));
+  useEffect(() => {
+    if (list.length === 0) onClose();
+  }, [list.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (list.length === 0) return null;
+  return (
+    <TicketViewerBody
+      trip={trip}
+      bookings={bookings}
+      tickets={list}
+      index={Math.min(index, list.length - 1)}
+      onClose={onClose}
+      onDeleted={(id) => setGone((g) => [...g, id])}
+    />
+  );
+}
+
+function TicketViewerBody({
+  trip,
+  bookings,
+  tickets,
+  index,
+  onClose,
+  onDeleted,
+}: {
+  trip: TripDetail;
+  bookings: Booking[];
+  tickets: Ticket[];
+  index: number;
+  onClose: () => void;
+  onDeleted: (id: string) => void;
+}) {
   const { t } = useTranslation();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const [i, setI] = useState(index);
   const [svg, setSvg] = useState<string | null>(null);
-  const ticket = tickets[i]!;
+  const canEdit = trip.role !== 'viewer';
+  const remove = useMutation(
+    trpc.tickets.delete.mutationOptions({
+      onSuccess: (_res, vars) => {
+        onDeleted(vars.id);
+        void queryClient.invalidateQueries({
+          queryKey: trpc.tickets.list.queryKey({ tripId: trip.id }),
+        });
+      },
+      onError: () => toast.error(t('common.error')),
+    }),
+  );
+  const ticket = tickets[Math.min(i, tickets.length - 1)]!;
   const booking = bookings.find((b) => b.id === ticket.bookingId);
   const member = trip.members.find((m) => m.id === ticket.memberId);
 
@@ -430,7 +478,11 @@ export function TicketViewer({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent
         title={`${booking ? `${BOOKING_EMOJI[booking.type]} ${booking.title}` : t('tickets.ticket')}`}
-        description={ticket.label ?? undefined}
+        description={
+          booking
+            ? (ticket.label ?? undefined)
+            : [t('tickets.orphan'), ticket.label].filter(Boolean).join(' · ')
+        }
       >
         <div className="grid grid-cols-1 gap-4 pt-1">
           <div className="flex items-center justify-between gap-2">
@@ -449,7 +501,7 @@ export function TicketViewer({
                   variant="ghost"
                   className="size-8"
                   disabled={i === 0}
-                  onClick={() => setI(i - 1)}
+                  onClick={() => setI(Math.max(0, i - 1))}
                   aria-label={t('common.back')}
                 >
                   <ChevronLeft />
@@ -499,7 +551,22 @@ export function TicketViewer({
             />
           )}
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {canEdit && (
+              <Button
+                variant="ghost"
+                className="text-destructive hover:text-destructive"
+                disabled={remove.isPending}
+                onClick={async () =>
+                  (await confirmDialog(t('tickets.confirmDelete'))) &&
+                  remove.mutate({ tripId: trip.id, id: ticket.id })
+                }
+              >
+                {remove.isPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                {t('expense.delete')}
+              </Button>
+            )}
+            <div className="flex-1" />
             {ticket.fileUrl && isPkpass(ticket) && (
               <Button asChild className="bg-black text-white hover:bg-black/85">
                 <a href={ticket.fileUrl}>

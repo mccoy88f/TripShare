@@ -872,7 +872,10 @@
     "all": "Tutti i biglietti",
     "manage": "Gestisci biglietti",
     "needBooking": "Aggiungi prima una prenotazione: i biglietti si collegano a una prenotazione.",
-    "chooseBooking": "A quale prenotazione?"
+    "chooseBooking": "A quale prenotazione?",
+    "orphan": "Prenotazione non più nel programma",
+    "orphans": "Biglietti senza prenotazione",
+    "orphansHint": "La prenotazione di questi biglietti è stata tolta dal programma. Aprili per vederli o eliminarli."
   },
   "notes": {
     "title": "Titolo",
