@@ -21,7 +21,6 @@ const MIN_ROLE = {
   generateTrip: 'owner',
   refine: 'editor',
   verify: 'editor',
-  placePhoto: 'editor',
   packing: 'editor',
   schedule: 'editor',
   document: 'editor',

@@ -51,6 +51,7 @@ const aiWorker = new Worker<{ jobId: string }>(
         encryptionKey: env.ENCRYPTION_KEY,
         appUrl: env.APP_URL,
         appName: env.APP_NAME,
+        searxngUrl: env.SEARXNG_URL,
         emit: aiEmit,
         log: (msg) => console.warn(msg),
       },

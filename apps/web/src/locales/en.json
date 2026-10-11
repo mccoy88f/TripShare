@@ -1108,14 +1108,9 @@
       "INVALID_IMAGE": "Invalid image.",
       "COMMONS_RATE_LIMIT": "Too many requests to Wikimedia: try again shortly."
     },
-    "rights": "Free photos from Wikimedia Commons: the author and licence are saved as the credit.",
+    "rights": "Free Wikimedia Commons photos first (author and licence are saved as credit), then photos found on the web: make sure you may use them.",
     "view": "Open the photo of {{name}}",
-    "failed": "Some photos could not be downloaded: invalid or unreachable address.",
-    "ask": "Ask Nina to find a photo",
-    "askTitle": "Photos found by Nina",
-    "asking": "Nina is searching the web for photos and checking they can be downloaded… this may take a moment.",
-    "askNone": "I couldn't find reliable photos for this place. Try Search or upload your own.",
-    "askPick": "Pick the photo you prefer:"
+    "failed": "Some photos could not be downloaded: invalid or unreachable address."
   },
   "notifications": {
     "title": "Notifications",

@@ -13,6 +13,8 @@ const EnvSchema = z
     PORT: z.coerce.number().int().positive().default(3000),
     HOST: z.string().default('0.0.0.0'),
     APP_NAME: z.string().min(1).default('TripShare'),
+    /** Indirizzo di SearXNG per cercare foto sul web (es. http://searxng:8080); vuoto = solo Commons. */
+    SEARXNG_URL: optional(z.url()),
     APP_URL: z.url(),
     DATABASE_URL: z.string().min(1),
     REDIS_URL: z.string().min(1).default('redis://localhost:6379'),

@@ -27,7 +27,7 @@ import {
 } from '@tripshare/shared/trip-format';
 import { downloadImageFromAnyUrl } from '../image-download.js';
 import { searchPlaces } from '../nominatim.js';
-import { searchCommons } from '../photo-search.js';
+import { searchPhotos } from '../photo-search.js';
 import { listMembers } from '../services/members.js';
 import { prepareForStorage, readPlan } from '../services/plan.js';
 import type { AiAccess } from './access.js';
@@ -832,7 +832,7 @@ JSON Schema: ${JSON.stringify(schemaOf(PackingResultSchema))}`,
   return { count: value.packing.length + value.tips.length };
 }
 
-/** Foto libere (Wikimedia Commons) per i luoghi del programma, senza chiedere nulla all'AI. */
+/** Foto (Commons e, se c'è, SearXNG) per i luoghi del programma, senza chiedere nulla all'AI. */
 async function stepPhotos(
   ctx: RunCtx,
   progress: (p: { done: number; total: number }) => Promise<void>,
@@ -856,8 +856,14 @@ async function stepPhotos(
   await progress({ done, total: targets.length });
   for (const p of targets) {
     try {
-      const hits = await searchCommons(p.name, ctx.deps.appName, ctx.deps.httpFetch);
-      for (const hit of hits.slice(0, 3)) {
+      const hits = await searchPhotos({
+        query: [p.name, ctx.plan.trip.destination?.name].filter(Boolean).join(' '),
+        appName: ctx.deps.appName,
+        searxngUrl: ctx.deps.searxngUrl,
+        fetch: ctx.deps.httpFetch,
+        limit: 8,
+      });
+      for (const hit of hits) {
         try {
           const data = await downloadImageFromAnyUrl(hit.full, maxBytes, ctx.deps.httpFetch);
           const meta = await sharp(data, { limitInputPixels: 80_000_000 }).metadata();

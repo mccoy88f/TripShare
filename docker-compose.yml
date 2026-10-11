@@ -10,6 +10,7 @@ x-app-env: &app-env
   DATABASE_URL: postgres://tripshare@postgres:5432/tripshare
   PGPASSWORD: ${POSTGRES_PASSWORD:?imposta POSTGRES_PASSWORD}
   REDIS_URL: redis://redis:6379
+  SEARXNG_URL: http://searxng:8080
 
 services:
   caddy:
@@ -59,6 +60,15 @@ services:
     healthcheck: { disable: true }
     depends_on:
       api: { condition: service_healthy }
+
+  # Metamotore per cercare foto sul web (senza chiavi né AI); raggiungibile solo da api e worker.
+  searxng:
+    image: searxng/searxng:latest
+    restart: unless-stopped
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:-tripshare-searxng-secret-change-me}
+    volumes:
+      - ./docker/searxng/settings.yml:/etc/searxng/settings.yml:ro
 
   postgres:
     image: postgres:16-alpine

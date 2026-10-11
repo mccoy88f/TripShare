@@ -467,9 +467,7 @@ function PlaceDialog({
             <PlacePhotoField
               tripId={tripId}
               value={{ photo: d.photo || undefined, photoCredit: d.photoCredit || undefined }}
-              searchQuery={d.name}
-              placeName={d.name}
-              destination={plan.trip.destination.name || undefined}
+              searchQuery={[d.name, plan.trip.destination.name].filter(Boolean).join(' ')}
               onChange={(v) =>
                 setD((p) => ({ ...p, photo: v.photo ?? '', photoCredit: v.photoCredit ?? '' }))
               }

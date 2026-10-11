@@ -12,6 +12,7 @@ export function aiDeps(services: AppServices): AiDeps {
     encryptionKey: services.env.ENCRYPTION_KEY,
     appUrl: services.env.APP_URL,
     appName: services.env.APP_NAME,
+    searxngUrl: services.env.SEARXNG_URL,
     httpFetch: services.httpFetch,
     enqueue: queue
       ? async (jobId) => {

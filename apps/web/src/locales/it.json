@@ -1108,14 +1108,9 @@
       "INVALID_IMAGE": "Immagine non valida.",
       "COMMONS_RATE_LIMIT": "Troppe richieste a Wikimedia: riprova tra poco."
     },
-    "rights": "Foto libere di Wikimedia Commons: l'autore e la licenza vengono salvati come credito.",
+    "rights": "Prima le foto libere di Wikimedia Commons (autore e licenza salvati come credito), poi quelle trovate sul web: controlla che tu possa usarle.",
     "view": "Apri la foto di {{name}}",
-    "failed": "Alcune foto non si sono potute scaricare: indirizzo non valido o non raggiungibile.",
-    "ask": "Chiedi a Nina di trovare una foto",
-    "askTitle": "Foto trovate da Nina",
-    "asking": "Nina cerca delle foto sul web e controlla che si possano scaricare… può richiedere un po' di tempo.",
-    "askNone": "Non ho trovato foto affidabili per questo luogo. Prova con Cerca oppure Carica una tua foto.",
-    "askPick": "Scegli la foto che preferisci:"
+    "failed": "Alcune foto non si sono potute scaricare: indirizzo non valido o non raggiungibile."
   },
   "notifications": {
     "title": "Notifiche",

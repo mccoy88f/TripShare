@@ -12,7 +12,7 @@ import {
 } from '../services/plan.js';
 import { downloadImage, ImageDownloadError } from '../image-download.js';
 import { broadcastChange, diffPlan, notifyTrip } from '../services/events.js';
-import { searchCommons } from '../photo-search.js';
+import { searchPhotos } from '../photo-search.js';
 import { requireMember } from '../services/trips.js';
 import { authedProcedure, router } from '../trpc/init.js';
 import { forecast, forecastWindow, geocode } from '../weather.js';
@@ -204,48 +204,24 @@ export const planRouter = router({
       }
     }),
 
-  /** Cerca foto di un luogo su Wikimedia Commons (libere, con autore e licenza). */
+  /** Cerca foto di un luogo: Wikimedia Commons e, se configurato, il web tramite SearXNG. */
   placePhotoSearch: authedProcedure
     .input(z.object({ tripId: z.uuid(), query: z.string().trim().min(2).max(120) }))
     .query(async ({ ctx, input }) => {
       await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
       try {
-        return await searchCommons(
-          input.query,
-          (await ctx.settings.get('general.appName')) ?? ctx.env.APP_NAME,
-          ctx.httpFetch,
-        );
+        return await searchPhotos({
+          query: input.query,
+          appName: (await ctx.settings.get('general.appName')) ?? ctx.env.APP_NAME,
+          searxngUrl: ctx.env.SEARXNG_URL,
+          fetch: ctx.httpFetch,
+        });
       } catch (err) {
         throw new TRPCError({
           code: 'BAD_GATEWAY',
           message: err instanceof Error ? err.message : 'PHOTO_SEARCH_UNAVAILABLE',
         });
       }
-    }),
-
-  /**
-   * Elimina le foto proposte dall'assistente che l'utente non ha scelto. Si tolgono solo file di
-   * foto dei luoghi che nessun programma usa.
-   */
-  placePhotoDiscard: authedProcedure
-    .input(
-      z.object({
-        tripId: z.uuid(),
-        urls: z
-          .array(z.string().regex(/^\/api\/files\/place-[a-f0-9]{32}\.webp$/))
-          .min(1)
-          .max(8),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
-      for (const url of input.urls) {
-        const used = await ctx.db.execute(
-          sql`select 1 from trip where plan::text like ${`%${url}%`} limit 1`,
-        );
-        if (used.length === 0) await ctx.storage?.removeByUrl(url);
-      }
-      return { ok: true };
     }),
 
   /** Scarica la foto scelta dalla ricerca e la salva; restituisce l'URL da usare nel luogo. */

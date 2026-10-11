@@ -91,3 +91,82 @@ export async function searchCommons(
   }
   return out;
 }
+
+interface SearxResult {
+  img_src?: string;
+  thumbnail_src?: string;
+  thumbnail?: string;
+  title?: string;
+  url?: string;
+  engine?: string;
+}
+
+const hostOf = (url: string) => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+};
+
+/**
+ * Cerca immagini sul web tramite SearXNG (metamotore self-hosted, senza chiavi né AI). Il
+ * credito è il sito di provenienza: a differenza di Commons non c'è una licenza garantita.
+ */
+export async function searchWeb(
+  query: string,
+  baseUrl: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<PhotoResult[]> {
+  const params = new URLSearchParams({
+    q: query,
+    format: 'json',
+    categories: 'images',
+    safesearch: '1',
+  });
+  const res = await fetchImpl(`${baseUrl.replace(/\/+$/, '')}/search?${params}`, {
+    headers: { accept: 'application/json' },
+    signal: AbortSignal.timeout(12_000),
+  });
+  if (!res.ok) throw new Error(`SEARXNG_HTTP_${res.status}`);
+  const data = (await res.json()) as { results?: SearxResult[] };
+  const seen = new Set<string>();
+  const out: PhotoResult[] = [];
+  for (const r of data.results ?? []) {
+    const full = r.img_src;
+    if (!full || !/^https:\/\//i.test(full) || seen.has(full)) continue;
+    seen.add(full);
+    out.push({
+      thumb: r.thumbnail_src ?? r.thumbnail ?? full,
+      full,
+      title: text(r.title),
+      source: hostOf(r.url ?? full),
+      credit: hostOf(r.url ?? full) || undefined,
+    });
+  }
+  return out;
+}
+
+/**
+ * Foto per un luogo: prima Wikimedia Commons (libere, con autore), poi il web via SearXNG se è
+ * configurato. Una fonte che non risponde non blocca l'altra.
+ */
+export async function searchPhotos(opts: {
+  query: string;
+  appName: string;
+  searxngUrl?: string;
+  fetch?: typeof fetch;
+  /** Quanti risultati restituire al massimo. */
+  limit?: number;
+}): Promise<PhotoResult[]> {
+  const [commons, web] = await Promise.allSettled([
+    searchCommons(opts.query, opts.appName, opts.fetch),
+    opts.searxngUrl ? searchWeb(opts.query, opts.searxngUrl, opts.fetch) : Promise.resolve([]),
+  ]);
+  if (commons.status === 'rejected' && web.status === 'rejected') throw commons.reason;
+  const all = [
+    ...(commons.status === 'fulfilled' ? commons.value : []),
+    ...(web.status === 'fulfilled' ? web.value : []),
+  ];
+  return all.slice(0, opts.limit ?? 30);
+}

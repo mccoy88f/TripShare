@@ -1,0 +1,22 @@
+# SearXNG per la ricerca di foto dei luoghi (solo rete interna di TripShare, nessuna porta pubblica).
+use_default_settings:
+  engines:
+    keep_only:
+      - bing images
+      - duckduckgo images
+      - qwant images
+      - openverse
+      - wikicommons.images
+search:
+  safe_search: 1
+  formats:
+    - html
+    - json
+server:
+  # Il segreto vero arriva da SEARXNG_SECRET (variabile d'ambiente del servizio).
+  secret_key: 'cambiami'
+  limiter: false
+  image_proxy: false
+outgoing:
+  request_timeout: 6.0
+  max_request_timeout: 10.0
