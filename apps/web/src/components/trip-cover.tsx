@@ -31,10 +31,15 @@ export function TripCover({
 }) {
   return (
     <div
-      className={cn('relative overflow-hidden text-white', className)}
+      className={cn(
+        'relative overflow-hidden text-white',
+        // Con una foto, un'ombra attorno al testo ne migliora la lettura.
+        coverImage && '[text-shadow:0_1px_3px_rgb(0_0_0/0.6),0_0_14px_rgb(0_0_0/0.5)]',
+        className,
+      )}
       style={{ background: coverBackground(coverImage, coverColor) }}
     >
-      <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/5" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_10%,rgb(255_255_255/0.22),transparent_45%)]" />
       <div className="relative h-full">{children}</div>
     </div>

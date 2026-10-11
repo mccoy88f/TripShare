@@ -125,7 +125,7 @@
  * stesso colore attorno al testo, così si legge bene su qualsiasi foto.
  */
 .photo-card {
-  --veil: linear-gradient(to bottom, rgb(255 255 255 / 0.3), rgb(255 255 255 / 0.88));
+  --veil: linear-gradient(to bottom, rgb(255 255 255 / 0), rgb(255 255 255 / 0.5));
   --halo: rgb(255 255 255 / 0.95);
   background-image: var(--veil), var(--photo);
   background-size: cover;
@@ -136,7 +136,7 @@
     0 0 14px var(--halo);
 }
 .dark .photo-card {
-  --veil: linear-gradient(to bottom, rgb(0 0 0 / 0.35), rgb(0 0 0 / 0.82));
+  --veil: linear-gradient(to bottom, rgb(0 0 0 / 0.1), rgb(0 0 0 / 0.55));
   --halo: rgb(0 0 0 / 0.95);
 }
 /* Controlli e badge hanno già il loro sfondo: niente alone. */
