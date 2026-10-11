@@ -168,8 +168,40 @@ function findCurrency(text: string, fallback: CurrencyCode): CurrencyCode {
 const NOT_MERCHANT =
   /^(?:scontrino|ricevuta|fattura|documento|receipt|invoice|tel|telefono|fax|p\.?\s?iva|c\.?\s?f\.?|cod|via\b|viale|piazza|corso|largo|strada|www|http|data|ora\b|cassa|n[.°]|num|grazie|benvenut|welcome|tavolo|coperti|operatore|cliente)/i;
 
+/** Testo di un'email (o di una sua schermata): intestazioni "Da:", "Oggetto:", indirizzi, "Posta in arrivo". */
+const EMAIL_LINE = /^(?:da|from|a|to|cc|bcc|oggetto|subject|inviato|sent|re|fwd|i)\s*:/i;
+const EMAIL_HINT =
+  /<[^<>\s@]+@[^<>\s]+>|\bposta in arrivo\b|\binbox\b|^\s*(?:oggetto|subject)\s*:/im;
+/** Barra di stato del telefono nelle schermate ("9:41 4G 85%"). */
+const STATUS_BAR = /^\d{1,2}[:.]\d{2}\b|\b(?:4G|5G|LTE|WiFi|Wi-Fi)\b|\b\d{1,3}\s?%$/i;
+const GENERIC_SENDER =
+  /^(?:no[-\s]?reply|noreply|ricevut[ae]|notifiche?|info|ordini|orders?|receipts?|support|assistenza|servizio\s+clienti|customer\s+service|team)$/i;
+
+/** Mittente di un'email come nome del negozio: il nome visualizzato o, se generico, il sito. */
+function emailSender(lines: string[]): string | undefined {
+  for (const line of lines.slice(0, 12)) {
+    const m = /^(?:da|from)\s*:\s*(.+)$/i.exec(line);
+    if (!m) continue;
+    const name = m[1]!
+      .replace(/<[^>]*>/g, '')
+      .replace(/["']/g, '')
+      .trim();
+    if (
+      (name.match(/\p{L}/gu) ?? []).length >= 3 &&
+      !GENERIC_SENDER.test(name) &&
+      !name.includes('@')
+    )
+      return name.slice(0, 80);
+    const domain = /@([a-z0-9-]+(?:\.[a-z0-9-]+)*)\.[a-z]{2,}/i.exec(m[1]!)?.[1]?.split('.').pop();
+    if (domain && domain.length >= 3) return domain[0]!.toUpperCase() + domain.slice(1);
+  }
+  return undefined;
+}
+
 function findMerchant(lines: string[]): string | undefined {
   for (const raw of lines.slice(0, 8)) {
+    if (EMAIL_LINE.test(raw) || STATUS_BAR.test(raw) || /posta in arrivo|^inbox$/i.test(raw))
+      continue;
     const line = raw
       .replace(/[^\p{L}\p{N}&'’.,\- ]/gu, ' ')
       .replace(/\s+/g, ' ')
@@ -306,7 +338,8 @@ export function parseReceiptText(
   const total = chosen?.value ?? lastResort;
   if (!(total > 0)) return null;
 
-  const merchant = findMerchant(lines);
+  const emailLike = lines.some((l) => EMAIL_LINE.test(l)) && EMAIL_HINT.test(text);
+  const merchant = (emailLike ? emailSender(lines) : undefined) ?? findMerchant(lines);
   const date = findDate(text, today);
   const category = findCategory(text);
   const support = chosen?.support ?? 0;
@@ -320,7 +353,7 @@ export function parseReceiptText(
 
   // Alta fiducia solo se il totale è confermato da almeno due punti dello scontrino (la data,
   // se non c'è, si lascia da scegliere: lo scontrino potrebbe semplicemente non averla).
-  const confidence: ParsedReceipt['confidence'] =
+  const rawConfidence: ParsedReceipt['confidence'] =
     support >= 2 && merchant && !conflict
       ? 'high'
       : support >= 1 && (chosen?.best ?? 0) >= 2 && (date || merchant) && !conflict
@@ -332,6 +365,9 @@ export function parseReceiptText(
             : support >= 1 && (chosen?.best ?? 0) >= 2
               ? 'medium'
               : 'low';
+  // Email e schermate: il layout è libero (data dell'invio, più importi, mittente come negozio),
+  // quindi non si va oltre "media": l'AI, se c'è, rilegge.
+  const confidence = emailLike && rawConfidence === 'high' ? 'medium' : rawConfidence;
   const notes: string[] = [];
   if (!date) notes.push('Data non letta.');
   if (conflict) notes.push('Il totale non è chiaro: controllalo.');

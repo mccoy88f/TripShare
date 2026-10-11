@@ -199,3 +199,51 @@ Card 3.50
     ).toBe('groceries');
   });
 });
+
+describe('parseReceiptText su email e schermate', () => {
+  const EMAIL = `9:41 4G 85%
+Posta in arrivo
+Da: Ricevute <noreply@trenitalia.com>
+Oggetto: La tua ricevuta di pagamento
+Ven 9 ott 2026, 18:22
+Grazie per il tuo acquisto
+Biglietto Roma Termini - Napoli Centrale 12/10/2026
+Importo 24,90 EUR
+Totale pagato 24,90 EUR
+Metodo di pagamento Visa **** 4242`;
+
+  it('il mittente (non la barra di stato) è il negozio; la fiducia non supera "media"', () => {
+    const r = parseReceiptText(EMAIL, { today })!;
+    expect(r).toMatchObject({ merchant: 'Trenitalia', total: 24.9, currency: 'EUR' });
+    expect(r.confidence).toBe('medium');
+  });
+
+  it('con un mittente con nome si usa quello', () => {
+    const r = parseReceiptText(
+      `Da: Ristorante Da Gino <info@dagino.it>\nOggetto: Conto\nTotale 38,50 EUR\nPagamento elettronico 38,50`,
+      { today },
+    )!;
+    expect(r.merchant).toBe('Ristorante Da Gino');
+  });
+
+  it('conferme con più importi diversi (acconto, saldo) restano incerte', () => {
+    const r = parseReceiptText(
+      `Da: Hotel Aurora <info@hotelaurora.it>
+Oggetto: Conferma prenotazione
+Totale soggiorno 450,00 EUR
+Acconto versato 90,00 EUR
+Saldo da pagare in struttura 360,00 EUR`,
+      { today },
+    )!;
+    expect(r.confidence).not.toBe('high');
+  });
+
+  it('senza importi non si ricava nulla', () => {
+    expect(
+      parseReceiptText(
+        `Da: Marco <marco@gmail.com>\nOggetto: Ci vediamo domani\nCiao, a domani alle 20.`,
+        { today },
+      ),
+    ).toBeNull();
+  });
+});
