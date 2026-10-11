@@ -492,36 +492,39 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
       <form
         onSubmit={onSubmit}
         style={keyboard.open ? { bottom: keyboard.inset + 8 } : undefined}
-        className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 mx-auto flex max-w-4xl items-end gap-2 px-4 lg:bottom-6 lg:px-8"
+        // Su desktop la barra si centra nell'area dei contenuti, a destra del menu laterale.
+        className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 lg:bottom-6 lg:pl-[260px]"
       >
-        <div className="flex flex-1 items-end gap-2 rounded-3xl border bg-card p-1.5 shadow-lg">
-          <textarea
-            id="assistant-input"
-            ref={input}
-            rows={1}
-            onFocus={() => setTimeout(scrollToEnd, 300)}
-            maxLength={3000}
-            value={message}
-            placeholder={t('ai.chat.placeholder')}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                void send(message);
-              }
-            }}
-            className="max-h-32 min-h-9 flex-1 resize-none bg-transparent px-2 py-2 text-[15px] outline-none"
-            aria-label={t('ai.chat.placeholder')}
-          />
-          <Button
-            type="submit"
-            size="icon"
-            className="size-9 shrink-0 rounded-full"
-            disabled={running || !message.trim()}
-            aria-label={t('ai.chat.send')}
-          >
-            {running ? <Loader2 className="animate-spin" /> : <Send />}
-          </Button>
+        <div className="mx-auto flex max-w-4xl items-end gap-2 px-4 lg:px-8">
+          <div className="flex flex-1 items-end gap-2 rounded-3xl border bg-card p-1.5 shadow-lg">
+            <textarea
+              id="assistant-input"
+              ref={input}
+              rows={1}
+              onFocus={() => setTimeout(scrollToEnd, 300)}
+              maxLength={3000}
+              value={message}
+              placeholder={t('ai.chat.placeholder')}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  void send(message);
+                }
+              }}
+              className="max-h-32 min-h-9 flex-1 resize-none bg-transparent px-2 py-2 text-[15px] outline-none"
+              aria-label={t('ai.chat.placeholder')}
+            />
+            <Button
+              type="submit"
+              size="icon"
+              className="size-9 shrink-0 rounded-full"
+              disabled={running || !message.trim()}
+              aria-label={t('ai.chat.send')}
+            >
+              {running ? <Loader2 className="animate-spin" /> : <Send />}
+            </Button>
+          </div>
         </div>
       </form>
     </div>
