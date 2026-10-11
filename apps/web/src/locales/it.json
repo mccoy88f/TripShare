@@ -848,7 +848,7 @@
     "confirmDelete": "Eliminare questo biglietto?",
     "codesFound_one": "Letto {{count}} codice dalle immagini.",
     "codesFound_other": "Letti {{count}} codici dalle immagini.",
-    "openFile": "Apri file",
+    "openFile": "Apri",
     "errors": {
       "UNSUPPORTED_FILE": "formato non supportato",
       "FILE_TOO_LARGE": "file troppo grande",
@@ -860,7 +860,6 @@
     "reference": "Numero di prenotazione",
     "copyReference": "Tocca per copiare",
     "referenceCopied": "Numero copiato",
-    "download": "Scarica",
     "holder": "Intestato a",
     "detail": "Dettaglio",
     "trip": "Viaggio",
@@ -868,7 +867,8 @@
     "imageFooter": "Mostra questo codice al controllo",
     "imageSaved": "Immagine del biglietto salvata",
     "imageFailed": "Non sono riuscito a creare l'immagine",
-    "openImage": "Apri l'immagine a schermo intero"
+    "openImage": "Apri l'immagine a schermo intero",
+    "share": "Condividi"
   },
   "notes": {
     "title": "Titolo",

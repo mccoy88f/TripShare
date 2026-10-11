@@ -138,35 +138,41 @@ export function PlacesTab({ trip }: { trip: TripDetail }) {
               style={p.photo ? ({ '--photo': `url("${p.photo}")` } as CSSProperties) : undefined}
             >
               {p.photo && (
-                // Toccando la foto si apre la galleria, senza aprire la scheda del luogo.
+                // Solo questo pulsante apre la galleria: il resto della scheda apre i dettagli.
                 <button
                   type="button"
                   aria-label={t('placePhoto.view', { name: p.name })}
+                  title={t('placePhoto.view', { name: p.name })}
                   onClick={(e) => {
                     e.stopPropagation();
                     setGallery(p);
                   }}
                   onKeyDown={(e) => e.stopPropagation()}
-                  className="absolute inset-x-0 top-0 h-24 rounded-t-[inherit] outline-none focus-visible:ring-4 focus-visible:ring-ring/30"
+                  className="absolute top-3 right-3 grid size-9 place-items-center rounded-full bg-black/45 text-white outline-none transition hover:bg-black/65 focus-visible:ring-4 focus-visible:ring-ring/30"
                 >
-                  <span className="absolute top-3 right-3 grid size-8 place-items-center rounded-full bg-black/45 text-white">
-                    <Images className="size-4" />
-                  </span>
+                  <Images className="size-4" />
                 </button>
               )}
               <div className="flex items-start gap-3">
-                <button
-                  type="button"
-                  aria-label={t('placePhoto.view', { name: p.name })}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setGallery(p);
-                  }}
-                  onKeyDown={(e) => e.stopPropagation()}
-                  className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-xl outline-none transition hover:scale-110 focus-visible:ring-4 focus-visible:ring-ring/30"
-                >
-                  {PLACE_KIND_EMOJI[p.kind]}
-                </button>
+                {p.photo ? (
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-xl">
+                    {PLACE_KIND_EMOJI[p.kind]}
+                  </span>
+                ) : (
+                  // Senza foto l'emoji apre comunque la galleria (e la ricerca).
+                  <button
+                    type="button"
+                    aria-label={t('placePhoto.view', { name: p.name })}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setGallery(p);
+                    }}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-xl outline-none transition hover:scale-110 focus-visible:ring-4 focus-visible:ring-ring/30"
+                  >
+                    {PLACE_KIND_EMOJI[p.kind]}
+                  </button>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">{p.name}</p>
                   <p className="text-xs text-muted-foreground">

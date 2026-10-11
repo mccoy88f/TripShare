@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ChevronLeft,
   ChevronRight,
-  Download,
+  Share2,
   ExternalLink,
   FileText,
   Loader2,
@@ -693,8 +693,8 @@ function TicketViewerBody({
             )}
             <div className="flex-1" />
             <Button disabled={saving} onClick={() => void download()}>
-              {saving ? <Loader2 className="animate-spin" /> : <Download />}
-              {t('tickets.download')}
+              {saving ? <Loader2 className="animate-spin" /> : <Share2 />}
+              {t('tickets.share')}
             </Button>
             {ticket.fileUrl && !isPkpass(ticket) && (
               <Button asChild variant="outline">

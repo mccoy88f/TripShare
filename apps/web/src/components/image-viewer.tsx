@@ -109,6 +109,7 @@ export function ImageViewer({
                     alt={s.alt ?? ''}
                     referrerPolicy="no-referrer"
                     onError={() => setFailed((f) => new Set(f).add(s.key))}
+                    wrapperClassName="h-full w-full"
                     className="max-h-full max-w-full object-contain"
                   />
                 )}

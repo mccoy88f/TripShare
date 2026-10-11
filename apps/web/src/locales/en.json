@@ -848,7 +848,7 @@
     "confirmDelete": "Delete this ticket?",
     "codesFound_one": "Read {{count}} code from the images.",
     "codesFound_other": "Read {{count}} codes from the images.",
-    "openFile": "Open file",
+    "openFile": "Open",
     "errors": {
       "UNSUPPORTED_FILE": "unsupported format",
       "FILE_TOO_LARGE": "file too large",
@@ -860,7 +860,6 @@
     "reference": "Booking reference",
     "copyReference": "Tap to copy",
     "referenceCopied": "Reference copied",
-    "download": "Download",
     "holder": "Name",
     "detail": "Details",
     "trip": "Trip",
@@ -868,7 +867,8 @@
     "imageFooter": "Show this code at the check",
     "imageSaved": "Ticket image saved",
     "imageFailed": "Could not create the image",
-    "openImage": "Open the image full screen"
+    "openImage": "Open the image full screen",
+    "share": "Share"
   },
   "notes": {
     "title": "Title",

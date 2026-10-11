@@ -903,6 +903,7 @@ function Lightbox({
                     <ZoomImage
                       src={memoryUrl(mem.id, mem.kind === 'video' ? 'thumb' : undefined)}
                       alt={mem.caption ?? ''}
+                      wrapperClassName="h-full w-full"
                       className="max-h-full max-w-full object-contain"
                     />
                   ))}
