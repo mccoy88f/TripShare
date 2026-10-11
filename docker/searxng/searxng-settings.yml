@@ -1,12 +1,8 @@
 # SearXNG per la ricerca di foto dei luoghi (solo rete interna di TripShare, nessuna porta pubblica).
-use_default_settings:
-  engines:
-    keep_only:
-      - bing images
-      - duckduckgo images
-      - qwant images
-      - openverse
-      - wikicommons.images
+# Si parte dalle impostazioni predefinite complete: togliere motori con "keep_only" rompe quelli
+# che ne ereditano la rete (es. "qwant images" usa la rete di "qwant"). I motori da interrogare
+# li sceglie TripShare a ogni ricerca (parametro "engines").
+use_default_settings: true
 search:
   safe_search: 1
   formats:

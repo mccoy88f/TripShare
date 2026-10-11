@@ -94,6 +94,8 @@ export async function searchCommons(
   return out;
 }
 
+const WEB_ENGINES = 'bing images,duckduckgo images,qwant images,openverse,wikicommons.images';
+
 interface SearxResult {
   img_src?: string;
   thumbnail_src?: string;
@@ -125,6 +127,8 @@ export async function searchWeb(
     q: query,
     format: 'json',
     categories: 'images',
+    // Senza Google, che dal server risponde quasi sempre con un controllo anti-robot.
+    engines: WEB_ENGINES,
     safesearch: '1',
     pageno: String(page + 1),
   });

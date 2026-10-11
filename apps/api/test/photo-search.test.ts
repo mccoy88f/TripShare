@@ -51,7 +51,7 @@ describe('searchWeb (SearXNG)', () => {
 describe('searchPhotos', () => {
   it('falls back to the web when Commons is down, and fails only if both are', async () => {
     const webOnly = (async (url: string | URL | Request) =>
-      String(url).includes('commons') ? json({}, 500) : json(searx)) as typeof fetch;
+      String(url).includes('commons.wikimedia.org') ? json({}, 500) : json(searx)) as typeof fetch;
     const out = await searchPhotos({
       query: 'castello',
       appName: 'TripShare',
@@ -123,7 +123,7 @@ describe('titleMatchesName', () => {
       },
     };
     const fake = (async (url: string | URL | Request) =>
-      String(url).includes('commons') ? json(commonsBody) : json(searx)) as typeof fetch;
+      String(url).includes('commons.wikimedia.org') ? json(commonsBody) : json(searx)) as typeof fetch;
     const base = {
       query: 'Trattoria da Mario Firenze',
       appName: 'TripShare',
@@ -160,7 +160,7 @@ describe('cleanQuery', () => {
     const asked: string[] = [];
     const fake = (async (url: string | URL | Request) => {
       asked.push(decodeURIComponent(String(url).replace(/\+/g, ' ')));
-      return json(String(url).includes('commons') ? { query: { pages: {} } } : { results: [] });
+      return json(String(url).includes('commons.wikimedia.org') ? { query: { pages: {} } } : { results: [] });
     }) as typeof fetch;
     await searchPhotos({
       query: '!bing Pane & Vino',
