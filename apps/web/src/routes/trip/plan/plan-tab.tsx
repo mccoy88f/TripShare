@@ -595,14 +595,21 @@ function ActivityCard({
                 {alt.cost ? ` · ${moneyLabel(alt.cost, t, fmt)}` : ''}
               </span>
             ))}
-            {a.cost && (
-              <span className="rounded-full bg-muted px-2.5 py-1 font-medium">
-                💶 {moneyLabel(a.cost, t, fmt)}
-              </span>
-            )}
+            {a.cost &&
+              // Se è lo stesso importo della prenotazione collegata, basta quello della prenotazione.
+              !(
+                booking?.cost &&
+                booking.cost.amount === a.cost.amount &&
+                booking.cost.currency === a.cost.currency
+              ) && (
+                <span className="rounded-full bg-muted px-2.5 py-1 font-medium">
+                  💶 {moneyLabel(a.cost, t, fmt)}
+                </span>
+              )}
             {booking && (
               <span className="rounded-full bg-muted px-2.5 py-1 font-medium">
                 {BOOKING_EMOJI[booking.type]} {booking.title}
+                {booking.cost && ` · ${moneyLabel(booking.cost, t, fmt)}`}
                 {booking.status === 'to_book' && ` · ${t('plan.bookingStatus.to_book')}`}
               </span>
             )}
