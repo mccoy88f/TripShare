@@ -1,3 +1,4 @@
+import { ImageViewer } from '@/components/image-viewer';
 import { DeleteButton } from '@/components/detail-footer';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Smile, Sparkles } from 'lucide-react';
@@ -210,6 +211,7 @@ export function ExpenseDialog({
   const queryClient = useQueryClient();
   const [s, setS] = useState<State>(() => initialState(trip, expense, preset));
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [receiptView, setReceiptView] = useState(false);
   /** L'ultimo scontrino letto, per poterlo rileggere con l'AI. */
   const [scan, setScan] = useState<{ file: string; mime: string; source: 'ocr' | 'ai' } | null>(
     null,
@@ -435,7 +437,17 @@ export function ExpenseDialog({
         >
           <Step title={t('expense.stepWhat')}>
             {!expense && !s.receipt && <ReceiptScanButton trip={trip} onResult={onReceipt} />}
-            {s.receipt && (
+            {s.receipt && /\.(jpe?g|png|webp|gif)$/i.test(s.receipt) && (
+              <button
+                type="button"
+                onClick={() => setReceiptView(true)}
+                disabled={!expense}
+                className="inline-flex items-center gap-2 justify-self-start rounded-full bg-secondary px-3 py-1 text-sm font-medium"
+              >
+                🧾 {expense ? t('ai.receipt.open') : t('ai.receipt.attached')}
+              </button>
+            )}
+            {s.receipt && !/\.(jpe?g|png|webp|gif)$/i.test(s.receipt) && (
               <a
                 href={`/api/trips/${trip.id}/receipts/${s.receipt}`}
                 target="_blank"
@@ -825,6 +837,15 @@ export function ExpenseDialog({
             </Field>
           </Step>
         </StepForm>
+        {receiptView && s.receipt && (
+          <ImageViewer
+            slides={[{ key: s.receipt, src: `/api/trips/${trip.id}/receipts/${s.receipt}` }]}
+            index={0}
+            onIndex={() => undefined}
+            onClose={() => setReceiptView(false)}
+            title={expense?.title ?? t('ai.receipt.open')}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

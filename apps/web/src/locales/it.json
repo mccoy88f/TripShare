@@ -867,7 +867,8 @@
     "provider": "Fornitore",
     "imageFooter": "Mostra questo codice al controllo",
     "imageSaved": "Immagine del biglietto salvata",
-    "imageFailed": "Non sono riuscito a creare l'immagine"
+    "imageFailed": "Non sono riuscito a creare l'immagine",
+    "openImage": "Apri l'immagine a schermo intero"
   },
   "notes": {
     "title": "Titolo",

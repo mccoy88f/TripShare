@@ -867,7 +867,8 @@
     "provider": "Provider",
     "imageFooter": "Show this code at the check",
     "imageSaved": "Ticket image saved",
-    "imageFailed": "Could not create the image"
+    "imageFailed": "Could not create the image",
+    "openImage": "Open the image full screen"
   },
   "notes": {
     "title": "Title",

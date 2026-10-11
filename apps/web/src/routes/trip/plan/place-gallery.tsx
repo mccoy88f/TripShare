@@ -1,12 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { Place } from '@tripshare/shared/trip-format';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { ZoomImage } from '@/components/zoom-image';
+import { ImageViewer } from '@/components/image-viewer';
 import { usePlanOps } from '@/lib/plan';
 import { useTRPC } from '@/lib/trpc';
 
@@ -61,10 +60,8 @@ export function PlaceGallery({
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
-  const [failed, setFailed] = useState<Set<string>>(new Set());
   const page = useRef(0);
   const busy = useRef(false);
-  const scroller = useRef<HTMLDivElement>(null);
 
   const loadMore = useCallback(async () => {
     if (busy.current || page.current >= MAX_PAGES) return;
@@ -111,10 +108,6 @@ export function PlaceGallery({
     if (!done && !loading && slides.length - index <= 3) void loadMore();
   }, [index, slides.length, done, loading, loadMore]);
 
-  const goTo = (i: number) => {
-    const el = scroller.current;
-    if (el) el.scrollTo({ left: i * el.clientWidth, behavior: 'smooth' });
-  };
   const current = slides[index];
 
   const use = async (slide: Slide) => {
@@ -133,88 +126,31 @@ export function PlaceGallery({
   };
 
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent
-        title={place.name}
-        description={current?.credit || undefined}
-        className="sm:max-w-2xl"
-      >
-        <div className="relative">
-          <div
-            ref={scroller}
-            onScroll={(e) => {
-              const el = e.currentTarget;
-              setIndex(Math.round(el.scrollLeft / Math.max(1, el.clientWidth)));
-            }}
-            className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain rounded-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          >
-            {slides.map((s) => (
-              <div
-                key={s.full}
-                className="relative grid w-full shrink-0 snap-center place-items-center"
-              >
-                {!s.current && (
-                  <span className="pointer-events-none absolute bottom-2 left-2 z-10 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white">
-                    {t('placePhoto.gallery.auto')}
-                  </span>
-                )}
-                <ZoomImage
-                  src={failed.has(s.full) ? s.thumb : s.full}
-                  alt={s.title || place.name}
-                  referrerPolicy="no-referrer"
-                  onError={() => setFailed((f) => new Set(f).add(s.full))}
-                  className="max-h-[60dvh] w-full rounded-xl object-contain"
-                />
-              </div>
-            ))}
-            {slides.length === 0 && !loading && (
-              <p className="w-full py-16 text-center text-sm text-muted-foreground">
-                {t('placePhoto.gallery.none')}
-              </p>
-            )}
-            {loading && slides.length === 0 && (
-              <div className="grid w-full place-items-center py-16">
-                <Loader2 className="animate-spin text-muted-foreground" />
-              </div>
-            )}
-          </div>
-          {slides.length > 1 && (
-            <>
-              <Button
-                type="button"
-                size="icon"
-                variant="secondary"
-                className="absolute top-1/2 left-2 hidden -translate-y-1/2 rounded-full opacity-90 sm:flex"
-                aria-label={t('placePhoto.gallery.prev')}
-                disabled={index === 0}
-                onClick={() => goTo(index - 1)}
-              >
-                <ChevronLeft />
-              </Button>
-              <Button
-                type="button"
-                size="icon"
-                variant="secondary"
-                className="absolute top-1/2 right-2 hidden -translate-y-1/2 rounded-full opacity-90 sm:flex"
-                aria-label={t('placePhoto.gallery.next')}
-                disabled={index >= slides.length - 1}
-                onClick={() => goTo(index + 1)}
-              >
-                <ChevronRight />
-              </Button>
-            </>
+    <ImageViewer
+      slides={slides.map((s) => ({
+        key: s.full,
+        src: s.full,
+        fallback: s.thumb,
+        alt: s.title || place.name,
+      }))}
+      index={index}
+      onIndex={setIndex}
+      onClose={onClose}
+      title={place.name}
+      subtitle={current?.credit || undefined}
+      loadingMore={loading}
+      hasMore={!done}
+      footer={
+        <div className="flex flex-wrap items-center gap-3">
+          {current && !current.current && (
+            <span className="rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-medium">
+              {t('placePhoto.gallery.auto')}
+            </span>
           )}
-        </div>
-        <div className="flex items-center justify-between gap-3 pt-3">
-          <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-            {slides.length > 0 && (
-              <span className="tabular">
-                {index + 1} / {slides.length}
-                {!done && '+'}
-              </span>
-            )}
-            {loading && slides.length > 0 && <Loader2 className="size-4 animate-spin" />}
-          </span>
+          {slides.length === 0 && !loading && (
+            <span className="text-white/80">{t('placePhoto.gallery.none')}</span>
+          )}
+          <span className="flex-1" />
           {canEdit && current && !current.current && (
             <Button type="button" disabled={download.isPending} onClick={() => use(current)}>
               {download.isPending ? <Loader2 className="animate-spin" /> : <Check />}
@@ -222,7 +158,7 @@ export function PlaceGallery({
             </Button>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      }
+    />
   );
 }

@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 import type { Locale } from '@tripshare/shared';
 import type { Booking } from '@tripshare/shared/trip-format';
 import { UserAvatar } from '@/components/ui/avatar';
-import { ZoomImage } from '@/components/zoom-image';
+import { ImageViewer } from '@/components/image-viewer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -442,6 +442,7 @@ function TicketViewerBody({
   const queryClient = useQueryClient();
   const [i, setI] = useState(index);
   const [svg, setSvg] = useState<string | null>(null);
+  const [preview, setPreview] = useState(false);
   const [saving, setSaving] = useState(false);
   const canEdit = trip.role !== 'viewer';
   const remove = useMutation(
@@ -649,11 +650,27 @@ function TicketViewerBody({
             </div>
           )}
           {!ticket.codeValue && ticket.fileUrl && isImage(ticket) && (
-            <ZoomImage
-              src={ticket.fileUrl}
-              alt={ticket.label ?? ''}
-              wrapperClassName="rounded-xl bg-white"
-              className="max-h-[60vh] w-full object-contain"
+            <button
+              type="button"
+              onClick={() => setPreview(true)}
+              aria-label={t('tickets.openImage')}
+              className="overflow-hidden rounded-xl bg-white outline-none focus-visible:ring-4 focus-visible:ring-ring/20"
+            >
+              <img
+                src={ticket.fileUrl}
+                alt={ticket.label ?? ''}
+                className="max-h-[60vh] w-full object-contain"
+              />
+            </button>
+          )}
+          {preview && ticket.fileUrl && (
+            <ImageViewer
+              slides={[{ key: ticket.id, src: ticket.fileUrl, alt: ticket.label ?? '' }]}
+              index={0}
+              onIndex={() => undefined}
+              onClose={() => setPreview(false)}
+              title={ticket.label ?? t('tickets.title')}
+              subtitle={ticket.fileName ?? undefined}
             />
           )}
 
