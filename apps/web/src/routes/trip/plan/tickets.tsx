@@ -692,10 +692,6 @@ function TicketViewerBody({
               </Button>
             )}
             <div className="flex-1" />
-            <Button disabled={saving} onClick={() => void download()}>
-              {saving ? <Loader2 className="animate-spin" /> : <Share2 />}
-              {t('tickets.share')}
-            </Button>
             {ticket.fileUrl && !isPkpass(ticket) && (
               <Button asChild variant="outline">
                 <a href={ticket.fileUrl} target="_blank" rel="noopener noreferrer">
@@ -704,6 +700,10 @@ function TicketViewerBody({
                 </a>
               </Button>
             )}
+            <Button disabled={saving} onClick={() => void download()}>
+              {saving ? <Loader2 className="animate-spin" /> : <Share2 />}
+              {t('tickets.share')}
+            </Button>
           </div>
         </div>
       </DialogContent>
