@@ -399,7 +399,11 @@
     "payRemaining": "Partial payment: {{amount}} still to pay.",
     "payInvalid": "The amount must be greater than zero and not exceed the total.",
     "payPartial": "Record deposit",
-    "partialPaid": "Deposit recorded: the rest is still to pay"
+    "partialPaid": "Deposit recorded: the rest is still to pay",
+    "quantity": "Quantity",
+    "unitPrice": "Price",
+    "perPerson": "Per person (× {{count}})",
+    "totalFormula": "{{unit}} × {{factor}} = {{total}}"
   },
   "invite": {
     "from": "{{name}} invites you",
@@ -675,7 +679,8 @@
       },
       "approximate": "Estimate",
       "notePlaceholder": "Note, e.g. £14 online, £16 on site",
-      "free": "Free"
+      "free": "Free",
+      "quantity": "Quantity"
     },
     "place": {
       "add": "Add place",
@@ -1360,7 +1365,7 @@
     "children": "Children",
     "whoTravels_one": "1 person travelling",
     "whoTravels_other": "{{count}} people travelling",
-    "whoHint": "Names and emails are optional: anyone with an email gets an invitation to join the trip.",
+    "whoHint": "Names and emails are optional and you can fill them in later: from the Members tab you can rename someone, invite them or replace them with someone already in the trip, and recorded expenses stay linked to them. Anyone with an email gets the invitation to join right away.",
     "you": "you",
     "adult": "Adult",
     "child": "Child",

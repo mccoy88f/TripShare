@@ -54,6 +54,17 @@ export const MoneySchema = z
       .meta(
         d('A cosa si riferisce l\'importo. "per_person" viene moltiplicato per i viaggiatori.'),
       ),
+    quantity: z
+      .number()
+      .int()
+      .min(1)
+      .max(999)
+      .optional()
+      .meta(
+        d(
+          'Numero di unità (es. 3 biglietti): si moltiplica per l\'importo, oltre a "basis". Facoltativo, 1 se manca.',
+        ),
+      ),
     approximate: z
       .boolean()
       .default(false)

@@ -62,6 +62,8 @@ export interface MoneyDraft {
   amount: string;
   currency: CurrencyCode;
   basis: Money['basis'];
+  /** Numero di unità (es. 3 biglietti); vuoto = 1. */
+  quantity: string;
   approximate: boolean;
   note: string;
 }
@@ -70,6 +72,7 @@ export const moneyDraft = (m: Money | undefined, currency: CurrencyCode): MoneyD
   amount: m ? String(m.amount) : '',
   currency: (m?.currency as CurrencyCode) ?? currency,
   basis: m?.basis ?? 'total',
+  quantity: m?.quantity && m.quantity > 1 ? String(m.quantity) : '',
   approximate: m?.approximate ?? false,
   note: m?.note ?? '',
 });
@@ -77,10 +80,12 @@ export const moneyDraft = (m: Money | undefined, currency: CurrencyCode): MoneyD
 export function moneyFromDraft(d: MoneyDraft): Money | undefined {
   const amount = Number(d.amount.replace(',', '.'));
   if (d.amount.trim() === '' || !Number.isFinite(amount) || amount < 0) return undefined;
+  const quantity = Math.floor(Number(d.quantity.replace(',', '.')));
   return {
     amount,
     currency: d.currency,
     basis: d.basis,
+    ...(quantity > 1 ? { quantity: Math.min(quantity, 999) } : {}),
     approximate: d.approximate,
     ...(d.note.trim() ? { note: d.note.trim() } : {}),
   };
@@ -137,6 +142,16 @@ export function MoneyFields({
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <label className="inline-flex items-center gap-2 text-sm">
+          {t('plan.money.quantity')}
+          <Input
+            className="h-9 w-20 text-sm"
+            inputMode="numeric"
+            placeholder="1"
+            value={value.quantity}
+            onChange={(e) => onChange({ ...value, quantity: e.target.value.replace(/\D/g, '') })}
+          />
+        </label>
+        <label className="inline-flex items-center gap-2 text-sm">
           <input
             type="checkbox"
             className="accent-[var(--primary)]"
@@ -167,5 +182,6 @@ export function moneyLabel(
       ? t('plan.money.free')
       : format(toMinor(m.amount, isCurrencyCode(m.currency) ? m.currency : 'EUR'), m.currency);
   const basis = m.basis !== 'total' ? ` ${t(`plan.money.short.${m.basis}`)}` : '';
-  return `${m.approximate ? '~ ' : ''}${value}${basis}`;
+  const quantity = m.quantity && m.quantity > 1 ? ` × ${m.quantity}` : '';
+  return `${m.approximate ? '~ ' : ''}${value}${quantity}${basis}`;
 }

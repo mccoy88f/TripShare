@@ -264,6 +264,12 @@
                   "per_day"
                 ]
               },
+              "quantity": {
+                "description": "Numero di unità (es. 3 biglietti): si moltiplica per l'importo, oltre a \"basis\". Facoltativo, 1 se manca.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 999
+              },
               "approximate": {
                 "default": false,
                 "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
@@ -575,6 +581,12 @@
                   "per_day"
                 ]
               },
+              "quantity": {
+                "description": "Numero di unità (es. 3 biglietti): si moltiplica per l'importo, oltre a \"basis\". Facoltativo, 1 se manca.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 999
+              },
               "approximate": {
                 "default": false,
                 "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
@@ -830,6 +842,12 @@
                             "per_day"
                           ]
                         },
+                        "quantity": {
+                          "description": "Numero di unità (es. 3 biglietti): si moltiplica per l'importo, oltre a \"basis\". Facoltativo, 1 se manca.",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 999
+                        },
                         "approximate": {
                           "default": false,
                           "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
@@ -947,6 +965,12 @@
                                   "per_day"
                                 ]
                               },
+                              "quantity": {
+                                "description": "Numero di unità (es. 3 biglietti): si moltiplica per l'importo, oltre a \"basis\". Facoltativo, 1 se manca.",
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 999
+                              },
                               "approximate": {
                                 "default": false,
                                 "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
@@ -1037,6 +1061,12 @@
                         "per_vehicle",
                         "per_day"
                       ]
+                    },
+                    "quantity": {
+                      "description": "Numero di unità (es. 3 biglietti): si moltiplica per l'importo, oltre a \"basis\". Facoltativo, 1 se manca.",
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 999
                     },
                     "approximate": {
                       "default": false,
@@ -1293,6 +1323,12 @@
                                   "per_day"
                                 ]
                               },
+                              "quantity": {
+                                "description": "Numero di unità (es. 3 biglietti): si moltiplica per l'importo, oltre a \"basis\". Facoltativo, 1 se manca.",
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 999
+                              },
                               "approximate": {
                                 "default": false,
                                 "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
@@ -1410,6 +1446,12 @@
                                         "per_day"
                                       ]
                                     },
+                                    "quantity": {
+                                      "description": "Numero di unità (es. 3 biglietti): si moltiplica per l'importo, oltre a \"basis\". Facoltativo, 1 se manca.",
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 999
+                                    },
                                     "approximate": {
                                       "default": false,
                                       "description": "true se è una stima e non un prezzo letto da una fonte o da una prenotazione.",
@@ -1500,6 +1542,12 @@
                               "per_vehicle",
                               "per_day"
                             ]
+                          },
+                          "quantity": {
+                            "description": "Numero di unità (es. 3 biglietti): si moltiplica per l'importo, oltre a \"basis\". Facoltativo, 1 se manca.",
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 999
                           },
                           "approximate": {
                             "default": false,
@@ -1699,6 +1747,12 @@
                   "per_vehicle",
                   "per_day"
                 ]
+              },
+              "quantity": {
+                "description": "Numero di unità (es. 3 biglietti): si moltiplica per l'importo, oltre a \"basis\". Facoltativo, 1 se manca.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 999
               },
               "approximate": {
                 "default": false,

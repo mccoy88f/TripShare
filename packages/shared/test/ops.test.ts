@@ -4,6 +4,7 @@ import {
   applyPlanOps,
   budgetContext,
   emptyPlan,
+  moneyToTripMinor,
   normalizePlan,
   parseTripDocument,
   sortActivities,
@@ -161,6 +162,22 @@ describe('budget', () => {
     expect(s.byCategory.lodging).toBe(20300 + 51000 + 26000);
     expect(s.total).toBe(s.byStatus.booked + s.byStatus.estimate);
     expect(s.missingRates).toEqual([]);
+  });
+
+  it('multiplies by quantity on top of the basis', () => {
+    const ctx = { ...budgetContext(example), travelers: 4 };
+    const ticket = (extra: { basis: 'total' | 'per_person'; quantity?: number }) => ({
+      amount: 12,
+      currency: 'EUR' as const,
+      approximate: false,
+      ...extra,
+    });
+    const total = (m: Parameters<typeof moneyToTripMinor>[0]) =>
+      moneyToTripMinor(m, { ...ctx, tripCurrency: 'EUR' });
+    expect(total(ticket({ basis: 'total' }))).toBe(1200);
+    expect(total(ticket({ basis: 'total', quantity: 3 }))).toBe(3600);
+    // 2 biglietti a persona per 4 viaggiatori
+    expect(total(ticket({ basis: 'per_person', quantity: 2 }))).toBe(12 * 4 * 2 * 100);
   });
 
   it('reports missing exchange rates', () => {

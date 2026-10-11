@@ -33,7 +33,7 @@ export function moneyToTripMinor(money: Money, ctx: BudgetContext, nights = 1): 
           : 1;
   const rate = money.currency === ctx.tripCurrency ? 1 : ctx.rates[money.currency];
   if (!rate) return null;
-  return toMinor(money.amount * multiplier * rate, ctx.tripCurrency);
+  return toMinor(money.amount * multiplier * (money.quantity ?? 1) * rate, ctx.tripCurrency);
 }
 
 export interface BudgetLine {

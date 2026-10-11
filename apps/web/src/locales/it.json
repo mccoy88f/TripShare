@@ -399,7 +399,11 @@
     "payRemaining": "Pagamento parziale: restano da pagare {{amount}}.",
     "payInvalid": "L'importo deve essere maggiore di zero e non superare il totale.",
     "payPartial": "Registra acconto",
-    "partialPaid": "Acconto registrato: il resto rimane da pagare"
+    "partialPaid": "Acconto registrato: il resto rimane da pagare",
+    "quantity": "Quantità",
+    "unitPrice": "Prezzo",
+    "perPerson": "A persona (× {{count}})",
+    "totalFormula": "{{unit}} × {{factor}} = {{total}}"
   },
   "invite": {
     "from": "{{name}} ti invita",
@@ -675,7 +679,8 @@
       },
       "approximate": "Stima",
       "notePlaceholder": "Nota, es. 14 £ online, 16 £ in loco",
-      "free": "Gratis"
+      "free": "Gratis",
+      "quantity": "Quantità"
     },
     "place": {
       "add": "Aggiungi luogo",
@@ -1360,7 +1365,7 @@
     "children": "Bambini",
     "whoTravels_one": "Viaggia 1 persona",
     "whoTravels_other": "Viaggiano {{count}} persone",
-    "whoHint": "Nomi ed email sono facoltativi: chi ha un'email riceve l'invito a unirsi al viaggio.",
+    "whoHint": "Nomi ed email sono facoltativi e li puoi completare dopo: dalla scheda Partecipanti puoi cambiare un nome, invitare la persona o sostituirla con una già nel viaggio, e le spese segnate restano collegate a lei. Chi ha un'email riceve subito l'invito a unirsi al viaggio.",
     "you": "tu",
     "adult": "Adulto",
     "child": "Bambino",

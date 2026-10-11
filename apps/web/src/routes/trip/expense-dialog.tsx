@@ -58,7 +58,12 @@ interface State {
   emoji: string | null;
   emojiTouched: boolean;
   category: ExpenseCategory;
+  /** Prezzo (unitario se ci sono quantità o "a persona", altrimenti il totale). */
   amount: string;
+  /** Quanti ne sono (es. 3 biglietti): il totale è prezzo × quantità. */
+  quantity: string;
+  /** Il prezzo è per ognuna delle persone tra cui si divide. */
+  perPerson: boolean;
   currency: CurrencyCode;
   rate: string;
   rateTouched: boolean;
@@ -105,6 +110,8 @@ function initialState(trip: TripDetail, expense?: ExpenseT, preset?: ExpensePres
       emojiTouched: !!preset?.emoji,
       category: preset?.category ?? 'food',
       amount: preset?.amount ? fmtNumber(preset.amount, currency) : '',
+      quantity: '1',
+      perPerson: false,
       currency,
       rate: currency === tripCurrency ? '1' : '',
       rateTouched: false,
@@ -135,6 +142,8 @@ function initialState(trip: TripDetail, expense?: ExpenseT, preset?: ExpensePres
       ? expense.category
       : 'other') as ExpenseCategory,
     amount: fmtNumber(expense.amount, currency),
+    quantity: '1',
+    perPerson: false,
     currency,
     rate: String(expense.rate),
     rateTouched: true,
@@ -221,7 +230,13 @@ export function ExpenseDialog({
       setS((prev) => ({ ...prev, rate: String(Number(fx.data.rate.toFixed(6))) }));
   }, [fx.data]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const amount = parseAmount(s.amount, s.currency);
+  const unit = parseAmount(s.amount, s.currency);
+  const quantity = Math.max(1, Math.min(999, Math.floor(Number(s.quantity) || 1)));
+  const people = Math.max(1, s.members.length);
+  /** Per quante volte si moltiplica il prezzo inserito. */
+  const factor = quantity * (s.perPerson ? people : 1);
+  /** Totale della spesa: è quello che si divide e si registra. */
+  const amount = unit ? Math.round(unit * factor) : null;
   const rate = foreign ? Number(s.rate.replace(',', '.')) || 0 : 1;
 
   /** Calcolo della divisione per l'anteprima e per l'invio. */
@@ -356,6 +371,8 @@ export function ExpenseDialog({
       emojiTouched: prev.emojiTouched || !!r.emoji,
       category: r.category in EXPENSE_CATEGORIES ? r.category : prev.category,
       amount: fmtNumber(total, currency),
+      quantity: '1',
+      perPerson: false,
       currency,
       rate: currency === tripCurrency ? '1' : currency === prev.currency ? prev.rate : '',
       rateTouched: currency === prev.currency && prev.rateTouched,
@@ -462,7 +479,10 @@ export function ExpenseDialog({
             </div>
 
             <div className="grid grid-cols-[1fr_auto] gap-3">
-              <Field label={t('expense.amount')} htmlFor="exp-amount">
+              <Field
+                label={factor > 1 ? t('expense.unitPrice') : t('expense.amount')}
+                htmlFor="exp-amount"
+              >
                 <Input
                   id="exp-amount"
                   inputMode="decimal"
@@ -498,6 +518,37 @@ export function ExpenseDialog({
                   ))}
                 </Select>
               </Field>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <label className="inline-flex items-center gap-2 text-sm">
+                {t('expense.quantity')}
+                <Input
+                  className="h-9 w-20 text-sm"
+                  inputMode="numeric"
+                  placeholder="1"
+                  value={s.quantity}
+                  onChange={(e) => set('quantity', e.target.value.replace(/\D/g, ''))}
+                  onBlur={() => !s.quantity && set('quantity', '1')}
+                />
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-[var(--primary)]"
+                  checked={s.perPerson}
+                  onChange={(e) => set('perPerson', e.target.checked)}
+                />
+                {t('expense.perPerson', { count: people })}
+              </label>
+              {factor > 1 && unit && amount && (
+                <span className="tabular text-sm font-medium text-muted-foreground">
+                  {t('expense.totalFormula', {
+                    unit: money(unit, s.currency, locale),
+                    factor,
+                    total: money(amount, s.currency, locale),
+                  })}
+                </span>
+              )}
             </div>
             {foreign && (
               <div className="grid grid-cols-1 gap-1.5 rounded-xl bg-muted/60 p-3 text-sm">
