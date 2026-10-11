@@ -1106,7 +1106,11 @@
       "more": "Show all",
       "less": "Show less",
       "tellMore": "Tell me more",
-      "tellMoreAsk": "Write a description of “{{name}}”: what to see or do, why it is worth visiting and how long it takes. A few lines."
+      "aiDescription": "Description written by Nina: check it before saving.",
+      "writing": "Nina is writing the description…",
+      "writeFailed": "I could not write the description. Try again.",
+      "discard": "Don't save",
+      "descriptionSaved": "Description saved."
     },
     "none": "No photo",
     "upload": "Upload",

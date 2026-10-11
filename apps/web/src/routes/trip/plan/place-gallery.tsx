@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import type { Place } from '@tripshare/shared/trip-format';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { AskAiButton } from '../ask-ai';
+import { PlaceInfoButton } from './place-info';
 import { ImageViewer } from '@/components/image-viewer';
 import { usePlanOps } from '@/lib/plan';
 import { useTRPC } from '@/lib/trpc';
@@ -36,7 +36,7 @@ export function PlaceGallery({
   onClose,
 }: {
   tripId: string;
-  place: Pick<Place, 'id' | 'name' | 'kind' | 'photo' | 'photoCredit' | 'description'>;
+  place: Place;
   destination?: string;
   canEdit?: boolean;
   onClose: () => void;
@@ -61,6 +61,7 @@ export function PlaceGallery({
   );
   const [index, setIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const [description, setDescription] = useState(place.description ?? '');
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const page = useRef(0);
@@ -145,7 +146,7 @@ export function PlaceGallery({
       hasMore={!done}
       footer={
         <div className="grid grid-cols-1 gap-3">
-          {place.description ? (
+          {description ? (
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
@@ -153,9 +154,9 @@ export function PlaceGallery({
               className="max-h-[45dvh] overflow-y-auto text-left outline-none"
             >
               <p className={cn('whitespace-pre-wrap text-white/90', !expanded && 'line-clamp-3')}>
-                {place.description}
+                {description}
               </p>
-              {place.description.length > 140 && (
+              {description.length > 140 && (
                 <span className="mt-0.5 block text-xs font-medium text-white/70 underline">
                   {expanded ? t('placePhoto.gallery.less') : t('placePhoto.gallery.more')}
                 </span>
@@ -164,15 +165,10 @@ export function PlaceGallery({
           ) : (
             canEdit && (
               <div>
-                <AskAiButton
+                <PlaceInfoButton
                   tripId={tripId}
-                  target={{ type: 'place', id: place.id }}
-                  name={place.name}
-                  quick={{
-                    label: t('placePhoto.gallery.tellMore'),
-                    instruction: t('placePhoto.gallery.tellMoreAsk', { name: place.name }),
-                  }}
-                  onDone={onClose}
+                  place={place}
+                  onSaved={(text) => setDescription(text)}
                 />
               </div>
             )

@@ -277,6 +277,8 @@ export const AiInputSchema = z.discriminatedUnion('kind', [
     conversationId: z.uuid().optional(),
   }),
   z.object({ kind: z.literal('verify'), placeId: z.string().max(64) }),
+  /** Breve descrizione di un luogo (da salvare solo dopo conferma dell'utente). */
+  z.object({ kind: z.literal('placeInfo'), placeId: z.string().max(64) }),
   z.object({ kind: z.literal('packing') }),
   z.object({ kind: z.literal('schedule'), placeId: z.string().max(64) }),
   z.object({
@@ -290,6 +292,11 @@ export const AiInputSchema = z.discriminatedUnion('kind', [
   }),
 ]);
 export type AiInput = z.infer<typeof AiInputSchema>;
+
+export const PlaceInfoResultSchema = z.object({
+  description: z.string().trim().min(20).max(700),
+});
+export type PlaceInfoResult = z.infer<typeof PlaceInfoResultSchema>;
 
 export const RefineResultSchema = z.object({
   summary: z.string().max(600),
@@ -305,6 +312,7 @@ export const PURPOSE: Record<AiInput['kind'], AiPurpose> = {
   refine: 'chat',
   chat: 'chat',
   verify: 'web',
+  placeInfo: 'light',
   packing: 'light',
   schedule: 'chat',
   document: 'vision',
@@ -583,6 +591,32 @@ Dati del viaggio: ${planContext(ctx.plan!, ctx.extra)}`,
         ],
       };
     }
+    case 'placeInfo': {
+      const place = ctx.plan!.places.find((p) => p.id === input.placeId);
+      return {
+        schemaName: 'tripshare_place_info',
+        schema: PlaceInfoResultSchema,
+        jsonSchema: schemaOf(PlaceInfoResultSchema),
+        repairs: 1,
+        messages: [
+          {
+            role: 'system',
+            content: `Scrivi in ${L} una breve descrizione per un viaggiatore (2-4 frasi, massimo 500 caratteri): cosa è il luogo, cosa vedere o fare e perché vale la visita. Usa solo ciò che sai con certezza; niente prezzi, orari o date precisi. Rispondi SOLO con JSON secondo lo schema.
+JSON Schema: ${JSON.stringify(schemaOf(PlaceInfoResultSchema))}`,
+          },
+          {
+            role: 'user',
+            content: JSON.stringify({
+              place: place
+                ? { name: place.name, kind: place.kind, address: place.address }
+                : input.placeId,
+              destination: ctx.plan!.trip.destination.name,
+            }),
+          },
+        ],
+      };
+    }
+
     case 'verify': {
       const place = ctx.plan!.places.find((p) => p.id === input.placeId);
       const dates = ctx

@@ -1106,7 +1106,11 @@
       "more": "Mostra tutto",
       "less": "Riduci",
       "tellMore": "Dimmi di più",
-      "tellMoreAsk": "Scrivi una descrizione di «{{name}}»: cosa vedere o fare, perché vale la visita e quanto tempo serve. Poche righe."
+      "aiDescription": "Descrizione scritta da Nina: controllala prima di salvarla.",
+      "writing": "Nina sta scrivendo la descrizione…",
+      "writeFailed": "Non sono riuscita a scrivere la descrizione. Riprova.",
+      "discard": "Non salvare",
+      "descriptionSaved": "Descrizione salvata."
     },
     "none": "Nessuna foto",
     "upload": "Carica",

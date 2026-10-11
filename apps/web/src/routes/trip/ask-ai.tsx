@@ -1,7 +1,7 @@
 import { Loader2, Send, Sparkles } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { PlanOp } from '@tripshare/shared/trip-format';
@@ -39,18 +39,12 @@ export function AskAiButton({
   target,
   name,
   onDone,
-  quick,
 }: {
   tripId: string;
   target: AskTarget;
   name: string;
   /** Chiamata dopo che la proposta è stata applicata (di solito chiude la scheda). */
   onDone?: () => void;
-  /**
-   * Pulsante con testo che, al tocco, manda subito questa richiesta all'AI (senza chiedere
-   * di scriverla): es. "Dimmi di più" per aggiungere una descrizione.
-   */
-  quick?: { label: string; instruction: string };
 }) {
   const { t } = useTranslation();
   const ai = useAiStatus();
@@ -58,35 +52,22 @@ export function AskAiButton({
   if (!ai.data?.available) return null;
   return (
     <>
-      {quick ? (
-        // Come una riga di testo (es. sulla galleria nera): scritta chiara e icona gialla.
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-2 rounded-md py-1 text-left text-sm font-medium text-white outline-none hover:underline focus-visible:ring-4 focus-visible:ring-white/30"
-        >
-          <Sparkles className="size-4 shrink-0 text-amber-400" />
-          {quick.label}
-        </button>
-      ) : (
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          className="text-accent"
-          onClick={() => setOpen(true)}
-          aria-label={t('refine.ask')}
-          title={t('refine.ask')}
-        >
-          <Sparkles />
-        </Button>
-      )}
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="text-accent"
+        onClick={() => setOpen(true)}
+        aria-label={t('refine.ask')}
+        title={t('refine.ask')}
+      >
+        <Sparkles />
+      </Button>
       {open && (
         <AskAiDialog
           tripId={tripId}
           target={target}
           name={name}
-          autoInstruction={quick?.instruction}
           onClose={() => setOpen(false)}
           onDone={() => {
             setOpen(false);
@@ -102,15 +83,12 @@ function AskAiDialog({
   tripId,
   target,
   name,
-  autoInstruction,
   onClose,
   onDone,
 }: {
   tripId: string;
   target: AskTarget;
   name: string;
-  /** Se c'è, la richiesta parte subito all'apertura. */
-  autoInstruction?: string;
   onClose: () => void;
   onDone: () => void;
 }) {
@@ -145,13 +123,6 @@ function AskAiDialog({
       });
     }
   };
-
-  const started = useRef(false);
-  useEffect(() => {
-    if (!autoInstruction || started.current) return;
-    started.current = true;
-    void ask(autoInstruction);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** Apre la chat del viaggio, dove la richiesta è già registrata, per continuare lì. */
   const continueInChat = async () => {

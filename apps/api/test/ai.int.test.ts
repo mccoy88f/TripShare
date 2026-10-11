@@ -287,6 +287,48 @@ run('AI jobs (integration)', () => {
     expect(calls).toHaveLength(1);
   });
 
+  it('writes a short place description to be confirmed before saving', async () => {
+    await t.settings.set('openrouter.apiKey', 'sk-or-central-key-123');
+    const { marco, tripId } = await setup();
+    await t.trpc('plan.applyOps', marco, {
+      tripId,
+      ops: [
+        {
+          type: 'upsertPlace',
+          place: { id: 'castello', name: 'Castello di Edimburgo', kind: 'sight' },
+        },
+      ],
+    });
+    replies.tripshare_place_info = [
+      {
+        description:
+          'Fortezza sulla roccia vulcanica che domina la città: vale la visita per i gioielli della Corona e la vista.',
+      },
+    ];
+    const started = await t.trpc<{ id: string }>('ai.start', marco, {
+      tripId,
+      input: { kind: 'placeInfo', placeId: 'castello' },
+    });
+    const job = await t.trpc<{ status: string; result: { description: string } }>(
+      'ai.job',
+      marco,
+      { id: started.data.id },
+      'query',
+    );
+    expect(job.data.status).toBe('done');
+    expect(job.data.result.description).toContain('Fortezza');
+    // Il salvataggio vero e proprio lo fa l'app dopo la conferma, con una normale operazione.
+    const plan = await t.trpc<{ plan: { places: { description?: string }[] } }>(
+      'plan.get',
+      marco,
+      { tripId },
+      'query',
+    );
+    expect(plan.data.plan.places[0]!.description).toBeUndefined();
+    const body = JSON.stringify(calls.at(-1)!.body);
+    expect(body).toContain('Castello di Edimburgo');
+  });
+
   it('reports AI as not configured without a key', async () => {
     const { marco, tripId } = await setup();
     const res = await t.trpc('ai.start', marco, {
