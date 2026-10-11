@@ -276,7 +276,8 @@
         "DUPLICATE_ID": "Configurazione duplicata.",
         "OPENROUTER_INVALID_KEY": "Chiave non valida o rifiutata da OpenRouter.",
         "GEMINI_INVALID_KEY": "Chiave non valida o rifiutata da Gemini.",
-        "GROQ_INVALID_KEY": "Chiave non valida o rifiutata da Groq."
+        "GROQ_INVALID_KEY": "Chiave non valida o rifiutata da Groq.",
+        "NVIDIA_INVALID_KEY": "Chiave non valida o rifiutata da NVIDIA."
       },
       "key": "Chiave API",
       "order": "Ordine",

@@ -198,6 +198,8 @@ export async function resolveAiAccess(
 /** Modello e riserva per un provider: quelli del primo profilo attivo, altrimenti le impostazioni storiche. */
 async function modelsFor(settings: SettingsService, provider: AiProvider, purpose: AiPurpose) {
   if (provider === 'groq') return { model: 'llama-3.3-70b-versatile', fallbacks: [] as string[] };
+  if (provider === 'nvidia')
+    return { model: 'meta/llama-3.3-70b-instruct', fallbacks: [] as string[] };
   if (provider === 'llm7') return { model: 'gpt-4.1-nano-2025-04-14', fallbacks: [] as string[] };
   const profile = (await settings.get('ai.profiles')).find(
     (p) => p.enabled && p.provider === provider,

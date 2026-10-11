@@ -1,12 +1,13 @@
 /**
- * Chiamata al modello: OpenRouter, Groq e LLM7 (API compatibili OpenAI) oppure Google Gemini (API nativa).
+ * Chiamata al modello: OpenRouter, Groq, LLM7 e NVIDIA (API compatibili OpenAI) oppure Google Gemini (API nativa).
  * Restituisce testo, modello effettivo, token e costi.
  */
 import { geminiBase } from '../gemini.js';
 import { groqBase } from '../groq.js';
 import { llm7Base } from '../llm7.js';
+import { nvidiaBase } from '../nvidia.js';
 
-export type AiProvider = 'openrouter' | 'gemini' | 'groq' | 'llm7';
+export type AiProvider = 'openrouter' | 'gemini' | 'groq' | 'llm7' | 'nvidia';
 
 export type ContentPart =
   | { type: 'text'; text: string }
@@ -86,6 +87,7 @@ export async function complete(req: CompletionRequest): Promise<CompletionResult
   if (req.provider === 'gemini') return completeGemini(req);
   if (req.provider === 'groq') return completeCompatible(req, 'Groq', groqBase(), true);
   if (req.provider === 'llm7') return completeCompatible(req, 'LLM7', llm7Base(), false);
+  if (req.provider === 'nvidia') return completeCompatible(req, 'NVIDIA', nvidiaBase(), false);
   return completeOpenRouter(req);
 }
 

@@ -407,6 +407,7 @@ const PROVIDER_LABEL = {
   gemini: 'Gemini',
   groq: 'Groq',
   llm7: 'LLM7',
+  nvidia: 'NVIDIA',
 } as const;
 
 function AiSettings() {

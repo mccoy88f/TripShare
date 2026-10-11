@@ -276,7 +276,8 @@
         "DUPLICATE_ID": "Duplicate configuration.",
         "OPENROUTER_INVALID_KEY": "Invalid key, rejected by OpenRouter.",
         "GEMINI_INVALID_KEY": "Invalid key, rejected by Gemini.",
-        "GROQ_INVALID_KEY": "Invalid key, rejected by Groq."
+        "GROQ_INVALID_KEY": "Invalid key, rejected by Groq.",
+        "NVIDIA_INVALID_KEY": "Invalid key, rejected by NVIDIA."
       },
       "key": "API key",
       "order": "Order",

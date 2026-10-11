@@ -24,7 +24,7 @@ import { Switch } from '@/components/ui/switch';
 import { useTRPC } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
-type Provider = 'openrouter' | 'gemini' | 'groq' | 'llm7';
+type Provider = 'openrouter' | 'gemini' | 'groq' | 'llm7' | 'nvidia';
 type Catalog = React.ComponentProps<typeof ModelPicker>['models'];
 
 interface Item {
@@ -48,6 +48,7 @@ const PROVIDER_NAME: Record<Provider, string> = {
   gemini: 'Google Gemini',
   groq: 'Groq',
   llm7: 'LLM7',
+  nvidia: 'NVIDIA NIM',
 };
 /** Modello proposto all'inizio, se il provider lo elenca (altrimenti il primo dell'elenco). */
 const PREFERRED_MODEL: Record<Provider, string> = {
@@ -55,6 +56,7 @@ const PREFERRED_MODEL: Record<Provider, string> = {
   gemini: 'gemini-flash-latest',
   groq: 'llama-3.3-70b-versatile',
   llm7: 'gpt-4.1-nano-2025-04-14',
+  nvidia: 'meta/llama-3.3-70b-instruct',
 };
 /** LLM7 funziona anche senza chiave: si invia questo segnaposto. */
 const LLM7_NO_KEY = 'unused';
@@ -172,35 +174,31 @@ export function AiProfiles() {
         ) : (
           items.length > 0 && (
             <div className="overflow-x-auto rounded-xl border">
-              <table className="w-full min-w-[44rem] text-sm">
+              <table className="w-full min-w-[40rem] text-sm">
                 <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
                   <tr>
-                    <th className="w-12 px-2 py-2 font-medium">#</th>
-                    <th className="w-44 px-2 py-2 font-medium">{t('admin.profiles.config')}</th>
-                    <th className="w-48 px-2 py-2 font-medium">{t('admin.profiles.model')}</th>
-                    <th className="w-48 px-2 py-2 font-medium">{t('admin.profiles.backup')}</th>
-                    <th className="w-32 px-2 py-2 font-medium">{t('admin.profiles.test')}</th>
-                    <th className="w-14 px-2 py-2 text-center font-medium">
+                    <th className="w-28 px-2 py-2 font-medium">#</th>
+                    <th className="px-2 py-2 font-medium">{t('admin.profiles.config')}</th>
+                    <th className="w-44 px-2 py-2 font-medium">{t('admin.profiles.test')}</th>
+                    <th className="w-24 px-2 py-2 text-center font-medium">
                       {t('admin.profiles.enabled')}
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
-                  {items.map((item, index) => (
-                    <ProfileRow
-                      key={item.id}
-                      item={item}
-                      index={index}
-                      last={index === items.length - 1}
-                      onChange={(patch) => update(item.id, patch)}
-                      onMove={(by) => move(index, by)}
-                      onRemove={() => {
-                        setDirty(true);
-                        setItems((list) => list!.filter((i) => i.id !== item.id));
-                      }}
-                    />
-                  ))}
-                </tbody>
+                {items.map((item, index) => (
+                  <ProfileRow
+                    key={item.id}
+                    item={item}
+                    index={index}
+                    last={index === items.length - 1}
+                    onChange={(patch) => update(item.id, patch)}
+                    onMove={(by) => move(index, by)}
+                    onRemove={() => {
+                      setDirty(true);
+                      setItems((list) => list!.filter((i) => i.id !== item.id));
+                    }}
+                  />
+                ))}
               </table>
             </div>
           )
@@ -396,136 +394,149 @@ function ProfileRow({
     );
 
   return (
-    <tr className={cn('align-top', !item.enabled && 'opacity-60')}>
-      <td className="px-2 py-1.5">
-        <div className="flex flex-col items-center gap-0.5">
-          <Badge variant="outline" className="tabular">
-            {index + 1}
-          </Badge>
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            className="size-7"
-            aria-label={t('admin.profiles.up')}
-            disabled={index === 0}
-            onClick={() => onMove(-1)}
-          >
-            <ArrowUp />
-          </Button>
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            className="size-7"
-            aria-label={t('admin.profiles.down')}
-            disabled={last}
-            onClick={() => onMove(1)}
-          >
-            <ArrowDown />
-          </Button>
-        </div>
-      </td>
-      <td className="px-2 py-1.5">
-        <div className="grid grid-cols-1 gap-1.5">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant="default">{PROVIDER_NAME[item.provider]}</Badge>
-            {!item.saved && <Badge variant="warning">{t('admin.profiles.unsaved')}</Badge>}
-          </div>
-          <Input
-            aria-label={t('admin.profiles.name')}
-            className="h-7 px-2 text-xs"
-            maxLength={60}
-            value={item.name}
-            onChange={(e) => onChange({ name: e.target.value })}
-          />
-          {changingKey ? (
-            <Input
-              aria-label={t('admin.profiles.key')}
-              className="h-7 px-2 text-xs"
-              type="password"
-              autoComplete="off"
-              autoFocus
-              placeholder={t('admin.profiles.keyPlaceholder')}
-              value={item.newKey}
-              onChange={(e) => onChange({ newKey: e.target.value })}
-            />
-          ) : (
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <KeyRound className="size-3.5" />
-              <span className="min-w-0 flex-1 truncate font-mono">{item.keyPreview ?? '••••'}</span>
-              {item.saved && (
-                <button
-                  type="button"
-                  className="text-primary hover:underline"
-                  onClick={() => setChangingKey(true)}
-                >
-                  {t('admin.profiles.changeKey')}
-                </button>
-              )}
-            </span>
-          )}
-        </div>
-      </td>
-      <td className="px-2 py-1.5">{picker(item.model, (id) => onChange({ model: id }))}</td>
-      <td className="px-2 py-1.5">
-        <div className="flex items-center gap-1">
-          <div className="min-w-0 flex-1">
-            {picker(
-              item.backupModel || null,
-              (id) => onChange({ backupModel: id }),
-              t('admin.profiles.noBackup'),
-            )}
-          </div>
-          {item.backupModel && (
+    <tbody className={cn('border-t', !item.enabled && 'opacity-60')}>
+      <tr className="align-top">
+        <td className="px-2 pt-2 pb-1">
+          <div className="flex items-center gap-0.5">
+            <Badge variant="outline" className="tabular mr-1">
+              {index + 1}
+            </Badge>
             <Button
               type="button"
               size="icon"
               variant="ghost"
-              className="size-7 shrink-0"
-              aria-label={t('admin.profiles.removeBackup')}
-              title={t('admin.profiles.removeBackup')}
-              onClick={() => onChange({ backupModel: '' })}
+              className="size-7"
+              aria-label={t('admin.profiles.up')}
+              disabled={index === 0}
+              onClick={() => onMove(-1)}
             >
-              <X />
+              <ArrowUp />
             </Button>
-          )}
-        </div>
-      </td>
-      <td className="px-2 py-1.5">
-        <div className="grid grid-cols-1 gap-1.5">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-7 justify-self-start px-2.5 text-xs"
-            disabled={test.isPending || !item.model.trim()}
-            onClick={runTest}
-          >
-            {test.isPending ? <Loader2 className="animate-spin" /> : <Send />}
-            {t('admin.profiles.runTest')}
-          </Button>
-          {results?.main && <Result label={t('admin.profiles.mainShort')} r={results.main} />}
-          {results?.backup && <Result label={t('admin.profiles.backupShort')} r={results.backup} />}
-        </div>
-      </td>
-      <td className="px-2 py-1.5">
-        <div className="flex flex-col items-center gap-1">
-          <Switch checked={item.enabled} onCheckedChange={(v) => onChange({ enabled: v })} />
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            className="size-8 text-destructive"
-            aria-label={t('admin.remove')}
-            title={t('admin.remove')}
-            onClick={onRemove}
-          >
-            <Trash2 />
-          </Button>
-        </div>
-      </td>
-    </tr>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="size-7"
+              aria-label={t('admin.profiles.down')}
+              disabled={last}
+              onClick={() => onMove(1)}
+            >
+              <ArrowDown />
+            </Button>
+          </div>
+        </td>
+        <td className="px-2 pt-2 pb-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="default">{PROVIDER_NAME[item.provider]}</Badge>
+            {!item.saved && <Badge variant="warning">{t('admin.profiles.unsaved')}</Badge>}
+            <Input
+              aria-label={t('admin.profiles.name')}
+              className="h-7 w-40 px-2 text-xs"
+              maxLength={60}
+              value={item.name}
+              onChange={(e) => onChange({ name: e.target.value })}
+            />
+            {changingKey ? (
+              <Input
+                aria-label={t('admin.profiles.key')}
+                className="h-7 w-48 px-2 text-xs"
+                type="password"
+                autoComplete="off"
+                autoFocus
+                placeholder={t('admin.profiles.keyPlaceholder')}
+                value={item.newKey}
+                onChange={(e) => onChange({ newKey: e.target.value })}
+              />
+            ) : (
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <KeyRound className="size-3.5" />
+                <span className="font-mono">{item.keyPreview ?? '••••'}</span>
+                {item.saved && (
+                  <button
+                    type="button"
+                    className="text-primary hover:underline"
+                    onClick={() => setChangingKey(true)}
+                  >
+                    {t('admin.profiles.changeKey')}
+                  </button>
+                )}
+              </span>
+            )}
+          </div>
+        </td>
+        <td className="px-2 pt-2 pb-1">
+          <div className="grid grid-cols-1 gap-1.5">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 justify-self-start px-2.5 text-xs"
+              disabled={test.isPending || !item.model.trim()}
+              onClick={runTest}
+            >
+              {test.isPending ? <Loader2 className="animate-spin" /> : <Send />}
+              {t('admin.profiles.runTest')}
+            </Button>
+            {results?.main && <Result label={t('admin.profiles.mainShort')} r={results.main} />}
+            {results?.backup && (
+              <Result label={t('admin.profiles.backupShort')} r={results.backup} />
+            )}
+          </div>
+        </td>
+        <td className="px-2 pt-2 pb-1">
+          <div className="flex items-center justify-center gap-1">
+            <Switch checked={item.enabled} onCheckedChange={(v) => onChange({ enabled: v })} />
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="size-8 text-destructive"
+              aria-label={t('admin.remove')}
+              title={t('admin.remove')}
+              onClick={onRemove}
+            >
+              <Trash2 />
+            </Button>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td />
+        <td colSpan={3} className="px-2 pt-0 pb-2.5">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <label className="grid grid-cols-1 gap-1 text-xs font-medium text-muted-foreground">
+              {t('admin.profiles.model')}
+              {picker(item.model, (id) => onChange({ model: id }))}
+            </label>
+            <div className="grid grid-cols-1 gap-1 text-xs font-medium text-muted-foreground">
+              {t('admin.profiles.backup')}
+              <div className="flex items-center gap-1">
+                <div className="min-w-0 flex-1">
+                  {picker(
+                    item.backupModel || null,
+                    (id) => onChange({ backupModel: id }),
+                    t('admin.profiles.noBackup'),
+                  )}
+                </div>
+                {item.backupModel && (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="size-7 shrink-0"
+                    aria-label={t('admin.profiles.removeBackup')}
+                    title={t('admin.profiles.removeBackup')}
+                    onClick={() => onChange({ backupModel: '' })}
+                  >
+                    <X />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </tbody>
   );
 }
 

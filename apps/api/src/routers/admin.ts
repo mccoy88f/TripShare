@@ -6,6 +6,7 @@ import { complete } from '../ai/client.js';
 import { checkGeminiKey, clearGeminiCache, listGeminiModels } from '../gemini.js';
 import { clearGroqCache, listGroqModels } from '../groq.js';
 import { clearLlm7Cache, listLlm7Models } from '../llm7.js';
+import { clearNvidiaCache, listNvidiaModels } from '../nvidia.js';
 import { checkKey, clearModelsCache, listModels } from '../openrouter.js';
 import { clearCooldowns } from '../ai/access.js';
 import { maskSecret } from '../crypto.js';
@@ -29,7 +30,7 @@ async function audit(
   });
 }
 
-const PROVIDERS = ['openrouter', 'gemini', 'groq', 'llm7'] as const;
+const PROVIDERS = ['openrouter', 'gemini', 'groq', 'llm7', 'nvidia'] as const;
 
 /** Le chiavi dei provider sono lunghe; solo LLM7 funziona anche con un segnaposto. */
 function requireKey(provider: string, apiKey: string | undefined | null) {
@@ -165,6 +166,7 @@ export const adminRouter = router({
         clearGeminiCache();
         clearGroqCache();
         clearLlm7Cache();
+        clearNvidiaCache();
         clearCooldowns();
         await audit(ctx, 'settings.update', {
           key: 'ai.profiles',
@@ -214,6 +216,8 @@ export const adminRouter = router({
         try {
           if (profile.provider === 'groq')
             return await listGroqModels(profile.apiKey, ctx.httpFetch, input.refresh);
+          if (profile.provider === 'nvidia')
+            return await listNvidiaModels(profile.apiKey, ctx.httpFetch, input.refresh);
           if (profile.provider === 'llm7')
             return await listLlm7Models(profile.apiKey, ctx.httpFetch, input.refresh);
           return profile.provider === 'gemini'
@@ -238,6 +242,8 @@ export const adminRouter = router({
         try {
           if (input.provider === 'groq')
             return await listGroqModels(input.apiKey, ctx.httpFetch, true);
+          if (input.provider === 'nvidia')
+            return await listNvidiaModels(input.apiKey, ctx.httpFetch, true);
           if (input.provider === 'llm7')
             return await listLlm7Models(input.apiKey, ctx.httpFetch, true);
           if (input.provider === 'gemini')
