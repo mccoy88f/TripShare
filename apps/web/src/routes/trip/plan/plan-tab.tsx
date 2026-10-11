@@ -401,7 +401,7 @@ function DayView({
           {t('plan.noActivities')}
         </div>
       ) : (
-        <ol className="relative grid gap-3 before:absolute before:top-3 before:bottom-3 before:left-[3.15rem] before:w-px before:bg-border">
+        <ol className="relative grid grid-cols-1 gap-3 before:absolute before:top-3 before:bottom-3 before:left-[3.15rem] before:w-px before:bg-border">
           {day.activities.map((a) => (
             <ActivityCard
               key={a.id}
@@ -437,7 +437,7 @@ function DayView({
               </Button>
             )}
           </div>
-          <ol className="mt-3 grid gap-2">
+          <ol className="mt-3 grid grid-cols-1 gap-2">
             {alt.activities.map((a) => (
               <ActivityCard
                 key={a.id}
@@ -620,7 +620,7 @@ function ActivityCard({
           </div>
         )}
         {a.warnings.length > 0 && (
-          <div className="mt-2.5 grid gap-1 rounded-lg bg-warning/15 px-3 py-2 text-sm">
+          <div className="mt-2.5 grid grid-cols-1 gap-1 rounded-lg bg-warning/15 px-3 py-2 text-sm">
             {a.warnings.map((w, i) => (
               <p key={i} className="flex gap-2">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
@@ -630,7 +630,7 @@ function ActivityCard({
           </div>
         )}
         {a.tips.length > 0 && (
-          <div className="mt-2 grid gap-1 text-sm text-muted-foreground">
+          <div className="mt-2 grid grid-cols-1 gap-1 text-sm text-muted-foreground">
             {a.tips.map((tip, i) => (
               <p key={i} className="flex gap-2">
                 <Lightbulb className="mt-0.5 size-4 shrink-0" />

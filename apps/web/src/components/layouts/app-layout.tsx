@@ -109,7 +109,7 @@ export function AppLayout() {
       {/* Barra laterale (desktop) */}
       <aside className="sticky top-0 hidden h-dvh flex-col gap-2 border-r bg-card/50 p-4 lg:flex">
         <Logo to="/app" className="px-2 py-2" />
-        <nav className="mt-4 grid gap-1">
+        <nav className="mt-4 grid grid-cols-1 gap-1">
           {items.map((item) => (
             <NavLink key={item.to} item={item} active={isActive(item)} />
           ))}

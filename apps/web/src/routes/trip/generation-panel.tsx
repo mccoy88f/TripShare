@@ -205,7 +205,7 @@ export function GenerationPanel({ tripId, canEdit }: { tripId: string; canEdit: 
       {gen.status === 'done' && gen.warnings.length > 0 && (
         <div className="mt-3 rounded-lg bg-muted/60 p-3 text-sm">
           <p className="font-medium">{t('generation.review')}</p>
-          <ul className="mt-1.5 grid list-disc gap-1 pl-5 text-muted-foreground">
+          <ul className="mt-1.5 grid grid-cols-1 list-disc gap-1 pl-5 text-muted-foreground">
             {gen.warnings.map((w, i) => (
               <li key={i}>{t(`generation.warnings.${w.k}`, w.p)}</li>
             ))}

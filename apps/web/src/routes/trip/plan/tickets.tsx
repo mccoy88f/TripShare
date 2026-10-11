@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { Booking } from '@tripshare/shared/trip-format';
 import { UserAvatar } from '@/components/ui/avatar';
+import { ZoomImage } from '@/components/zoom-image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -591,10 +592,11 @@ function TicketViewerBody({
             </div>
           )}
           {!ticket.codeValue && ticket.fileUrl && isImage(ticket) && (
-            <img
+            <ZoomImage
               src={ticket.fileUrl}
               alt={ticket.label ?? ''}
-              className="max-h-[60vh] w-full rounded-xl bg-white object-contain"
+              wrapperClassName="rounded-xl bg-white"
+              className="max-h-[60vh] w-full object-contain"
             />
           )}
 

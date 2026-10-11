@@ -88,7 +88,7 @@ function PendingInvitations() {
   );
   if (!invitations?.length) return null;
   return (
-    <section className="mt-8 grid gap-3" aria-label={t('invite.pendingTitle')}>
+    <section className="mt-8 grid grid-cols-1 gap-3" aria-label={t('invite.pendingTitle')}>
       <h2 className="flex items-center gap-2 text-sm font-semibold tracking-wide text-muted-foreground uppercase">
         <Mail className="size-4" />
         {t('invite.pendingTitle')}
@@ -98,16 +98,18 @@ function PendingInvitations() {
           key={inv.id}
           className="flex flex-wrap items-center gap-3 rounded-xl border border-accent/40 bg-accent/5 p-4"
         >
-          <span className="text-3xl">{inv.emoji ?? '🧳'}</span>
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold">{inv.title}</p>
-            <p className="text-sm text-muted-foreground">
-              {inv.inviter
-                ? t('invite.invitedBy', { name: inv.inviter })
-                : t('invite.invitedGeneric')}
-              {inv.startDate ? ` · ${dateRange(inv.startDate, inv.endDate)}` : ''}
-              {inv.destination ? ` · ${inv.destination}` : ''}
-            </p>
+          <div className="flex min-w-0 flex-[1_1_16rem] items-center gap-3">
+            <span className="text-3xl">{inv.emoji ?? '🧳'}</span>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold">{inv.title}</p>
+              <p className="text-sm text-muted-foreground">
+                {inv.inviter
+                  ? t('invite.invitedBy', { name: inv.inviter })
+                  : t('invite.invitedGeneric')}
+                {inv.startDate ? ` · ${dateRange(inv.startDate, inv.endDate)}` : ''}
+                {inv.destination ? ` · ${inv.destination}` : ''}
+              </p>
+            </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <Button
@@ -193,10 +195,11 @@ export function TripsPage() {
         </motion.div>
       )}
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {trips?.map((trip, i) => (
           <motion.div
             key={trip.id}
+            className="min-w-0"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.04 }}

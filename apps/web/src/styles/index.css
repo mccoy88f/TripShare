@@ -79,8 +79,13 @@
   }
   html {
     -webkit-tap-highlight-color: transparent;
+    /* L'interfaccia non si ingrandisce con il pizzico né con il doppio tocco: lo zoom è solo
+       sulle immagini (vedi ZoomImage). La pagina non scorre di lato. */
+    touch-action: pan-x pan-y;
+    overflow-x: clip;
   }
   body {
+    overflow-x: clip;
     @apply bg-background text-foreground antialiased;
     font-feature-settings: 'cv11', 'ss01';
   }

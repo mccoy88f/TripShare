@@ -7,6 +7,11 @@ import './styles/index.css';
 import { queryClient, TRPCProvider, trpcClient } from './lib/trpc';
 import { router } from './router';
 
+// Safari su iPhone ignora "user-scalable=no": si ferma qui lo zoom della pagina con il pizzico.
+// Lo zoom resta sulle immagini (ZoomImage), che usano il tocco e non questi eventi.
+for (const type of ['gesturestart', 'gesturechange', 'gestureend'])
+  document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

@@ -37,6 +37,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ZoomImage } from '@/components/zoom-image';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 import { toast } from 'sonner';
 import { confirmDialog } from '@/components/confirm';
@@ -900,7 +901,7 @@ function Lightbox({
                       className="max-h-full max-w-full"
                     />
                   ) : (
-                    <img
+                    <ZoomImage
                       src={memoryUrl(mem.id, mem.kind === 'video' ? 'thumb' : undefined)}
                       alt={mem.caption ?? ''}
                       className="max-h-full max-w-full object-contain"
