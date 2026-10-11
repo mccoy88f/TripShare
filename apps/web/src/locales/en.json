@@ -626,8 +626,7 @@
       "stepWhat": "Activity",
       "stepWhere": "Places and travel",
       "stepMore": "Costs and tips",
-      "costFromBooking": "from the booking “{{title}}”",
-      "noExpenseYet": "expense not recorded yet"
+      "costFromBooking": "from the booking “{{title}}”"
     },
     "activityTypes": {
       "travel": "Transfer",
@@ -745,9 +744,10 @@
       "paidYes": "Already paid",
       "payOnSite": "Pay on site",
       "toExpense": "Log expense",
-      "confirmDelete": "Delete the booking?",
+      "confirmDelete": "Delete this booking? Its expense is deleted if it is still unpaid; if already paid it stays as a standalone expense.",
       "stepWhat": "Booking",
-      "stepDetails": "Details and cost"
+      "stepDetails": "Details and cost",
+      "free": "Free"
     },
     "bookingStatus": {
       "booked": "Booked",

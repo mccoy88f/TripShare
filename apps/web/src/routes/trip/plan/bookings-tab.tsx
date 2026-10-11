@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Loader2, Receipt, Ticket as TicketIcon } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { isCurrencyCode, type CurrencyCode } from '@tripshare/shared';
+import { fromMinor, isCurrencyCode, type CurrencyCode } from '@tripshare/shared';
 import {
   BOOKING_EXPENSE_CATEGORY,
   BOOKING_TYPES,
@@ -40,7 +40,6 @@ import {
   moneyDraft,
   MoneyFields,
   moneyFromDraft,
-  moneyLabel,
   parseLinks,
   textareaClass,
 } from './fields';
@@ -204,18 +203,19 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
                 )}
                 {b.notes && <p className="mt-1 text-sm text-muted-foreground">{b.notes}</p>}
               </div>
-              {(b.cost || b.paid === false) && (
+              {/* Il costo reale vive nella spesa collegata: qui si legge da lì. */}
+              {linked(b) && (
                 <div className="flex shrink-0 flex-col items-end text-right">
-                  {b.cost && (
-                    <span className="tabular font-semibold whitespace-nowrap">
-                      {moneyLabel(b.cost, t, money)}
-                    </span>
-                  )}
-                  {b.cost && b.paid === false && (
-                    <span className="text-xs text-muted-foreground">
-                      {t('plan.booking.payOnSite')}
-                    </span>
-                  )}
+                  <span className="tabular font-semibold whitespace-nowrap">
+                    {linked(b)!.amount === 0
+                      ? t('plan.booking.free')
+                      : money(linked(b)!.amount, linked(b)!.currency)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {linked(b)!.status === 'planned'
+                      ? `⏳ ${t('expense.planned')}`
+                      : `✅ ${t('expense.paidStatus')}`}
+                  </span>
                 </div>
               )}
             </div>
@@ -280,6 +280,7 @@ export function BookingsTab({ trip }: { trip: TripDetail }) {
           tripId={trip.id}
           plan={plan}
           booking={editing === 'new' ? undefined : editing}
+          expense={editing === 'new' ? undefined : linked(editing as Booking)}
           onClose={() => setEditing(null)}
         />
       )}
@@ -305,11 +306,14 @@ function BookingDialog({
   tripId,
   plan,
   booking,
+  expense,
   onClose,
 }: {
   tripId: string;
   plan: TripDocument;
   booking?: Booking;
+  /** Spesa collegata: da lì arrivano costo e stato mostrati nel modulo. */
+  expense?: ExpenseT;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -332,15 +336,26 @@ function BookingDialog({
     flightNumber: booking?.flight?.number ?? '',
     flightFrom: booking?.flight?.from ?? '',
     flightTo: booking?.flight?.to ?? '',
-    cost: moneyDraft(booking?.cost, currency),
-    paid: booking?.paid === undefined ? '' : booking.paid ? 'yes' : 'no',
+    // Costo e stato sono quelli della spesa collegata; salvando si riportano sulla spesa.
+    cost: moneyDraft(
+      expense && isCurrencyCode(expense.currency)
+        ? {
+            amount: fromMinor(expense.amount, expense.currency),
+            currency: expense.currency,
+            basis: 'total' as const,
+            approximate: false,
+          }
+        : undefined,
+      currency,
+    ),
+    paid: expense ? (expense.status === 'paid' ? 'yes' : 'no') : '',
     notes: booking?.notes ?? '',
     links: formatLinks(booking?.links ?? []),
   });
   const [d, setD] = useState(init);
   useEffect(() => {
     setD(init());
-  }, [booking?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [booking?.id, expense?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const set = <K extends keyof ReturnType<typeof init>>(k: K, v: ReturnType<typeof init>[K]) =>
     setD((p) => ({ ...p, [k]: v }));
 

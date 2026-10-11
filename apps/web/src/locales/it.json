@@ -626,8 +626,7 @@
       "stepWhat": "Attività",
       "stepWhere": "Luoghi e spostamenti",
       "stepMore": "Costi e consigli",
-      "costFromBooking": "dalla prenotazione «{{title}}»",
-      "noExpenseYet": "spesa non ancora registrata"
+      "costFromBooking": "dalla prenotazione «{{title}}»"
     },
     "activityTypes": {
       "travel": "Spostamento",
@@ -745,9 +744,10 @@
       "paidYes": "Già pagato",
       "payOnSite": "Da pagare sul posto",
       "toExpense": "Registra spesa",
-      "confirmDelete": "Eliminare la prenotazione?",
+      "confirmDelete": "Eliminare questa prenotazione? La sua spesa si elimina se è ancora da pagare; se è già pagata resta come spesa libera.",
       "stepWhat": "Prenotazione",
-      "stepDetails": "Dettagli e costo"
+      "stepDetails": "Dettagli e costo",
+      "free": "Gratuita"
     },
     "bookingStatus": {
       "booked": "Prenotato",

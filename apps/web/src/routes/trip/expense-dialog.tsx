@@ -1,3 +1,4 @@
+import { usePlan } from '@/lib/plan';
 import { ImageViewer } from '@/components/image-viewer';
 import { DeleteButton } from '@/components/detail-footer';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -47,11 +48,12 @@ import {
 type Method = 'equal' | 'shares' | 'percent' | 'exact';
 
 /** "12,50" o "12.50" → 1250 (unità minori); null se non valido. */
-function parseAmount(text: string, currency: CurrencyCode): number | null {
+/** `allowZero`: la spesa di una prenotazione può essere a zero (gratuita). */
+function parseAmount(text: string, currency: CurrencyCode, allowZero = false): number | null {
   const normalized = text.replace(/\s/g, '').replace(',', '.');
   if (!/^\d+(\.\d{0,4})?$/.test(normalized)) return null;
   const value = toMinor(Number(normalized), currency);
-  return value > 0 ? value : null;
+  return value > 0 || (allowZero && value === 0) ? value : null;
 }
 
 const fmtNumber = (minor: number, currency: CurrencyCode) => String(fromMinor(minor, currency));
@@ -240,13 +242,13 @@ export function ExpenseDialog({
       setS((prev) => ({ ...prev, rate: String(Number(fx.data.rate.toFixed(6))) }));
   }, [fx.data]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const unit = parseAmount(s.amount, s.currency);
+  const unit = parseAmount(s.amount, s.currency, !!s.bookingId);
   const quantity = Math.max(1, Math.min(999, Math.floor(Number(s.quantity) || 1)));
   const people = Math.max(1, s.members.length);
   /** Per quante volte si moltiplica il prezzo inserito. */
   const factor = quantity * (s.perPerson ? people : 1);
   /** Totale della spesa: è quello che si divide e si registra. */
-  const amount = unit ? Math.round(unit * factor) : null;
+  const amount = unit !== null ? Math.round(unit * factor) : null;
   const rate = foreign ? Number(s.rate.replace(',', '.')) || 0 : 1;
 
   /** Calcolo della divisione per l'anteprima e per l'invio. */
@@ -255,7 +257,7 @@ export function ExpenseDialog({
     error: string | null;
     preview: Record<string, number>;
   } => {
-    if (!amount) return { input: null, error: null, preview: {} };
+    if (amount === null) return { input: null, error: null, preview: {} };
     let input: SplitInput;
     if (s.method === 'equal') {
       if (s.members.length === 0)
@@ -313,10 +315,14 @@ export function ExpenseDialog({
   const update = useMutation(trpc.expenses.update.mutationOptions({ onError }));
   const remove = useMutation(trpc.expenses.delete.mutationOptions({ onError }));
   const pending = create.isPending || update.isPending || remove.isPending;
+  // La spesa di una prenotazione non si elimina da sola: si elimina la prenotazione.
+  const { data: planData } = usePlan(trip.id);
+  const bookingExists =
+    !!expense?.bookingId && !!planData?.plan.bookings.some((b) => b.id === expense.bookingId);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!amount || !split.input || !s.title.trim()) return;
+    if (amount === null || !split.input || !s.title.trim()) return;
     if (foreign && !(rate > 0)) return;
     const input = {
       tripId: trip.id,
@@ -419,9 +425,12 @@ export function ExpenseDialog({
           freeNavigation={!!expense}
           pending={pending}
           submitLabel={expense ? t('common.save') : t('expense.add')}
-          submitDisabled={!amount || !split.input || !s.title.trim() || (foreign && !(rate > 0))}
+          submitDisabled={
+            amount === null || !split.input || !s.title.trim() || (foreign && !(rate > 0))
+          }
           leading={
-            expense && (
+            expense &&
+            !bookingExists && (
               <DeleteButton
                 disabled={pending}
                 confirm={t('expense.confirmDelete')}
@@ -530,7 +539,7 @@ export function ExpenseDialog({
                   placeholder="0,00"
                   className="tabular text-lg font-semibold"
                   value={s.amount}
-                  aria-invalid={s.amount !== '' && !amount}
+                  aria-invalid={s.amount !== '' && amount === null}
                   onChange={(e) => set('amount', e.target.value)}
                 />
               </Field>

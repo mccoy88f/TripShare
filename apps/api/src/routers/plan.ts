@@ -12,7 +12,7 @@ import {
 } from '../services/plan.js';
 import { downloadImage, ImageDownloadError } from '../image-download.js';
 import { broadcastChange, diffPlan, notifyTrip } from '../services/events.js';
-import { syncBookingExpenses } from './booking-expenses.js';
+import { needsBookingExpenses, reconcileBookingExpenses } from './booking-expenses.js';
 import { searchPhotos, WEB_FIRST_KINDS } from '../photo-search.js';
 import { requireMember } from '../services/trips.js';
 import { authedProcedure, router } from '../trpc/init.js';
@@ -85,15 +85,26 @@ async function localizePhotoOps(
 
 export const planRouter = router({
   get: authedProcedure.input(z.object({ tripId: z.uuid() })).query(async ({ ctx, input }) => {
-    const { trip: row } = await requireMember(ctx.db, input.tripId, ctx.user.id);
+    const { trip: found, member } = await requireMember(ctx.db, input.tripId, ctx.user.id);
+    let row = found;
     const [members, checks] = await Promise.all([
       activeMemberCount(ctx.db, input.tripId),
       ctx.db.select().from(packingCheck).where(eq(packingCheck.tripId, input.tripId)),
     ]);
     const byItem: Record<string, string[]> = {};
     for (const c of checks) (byItem[c.itemId] ??= []).push(c.memberId);
+    let plan = readPlan(row, members, localeOf(ctx.session?.user.locale));
+    // Prenotazioni già salvate (o create dall'AI) senza spesa: chi può modificare le sistema aprendo il programma.
+    if (member.role !== 'viewer' && (await needsBookingExpenses(ctx, input.tripId, plan))) {
+      await reconcileBookingExpenses(ctx, input.tripId, null, plan);
+      const [fresh] = await ctx.db.select().from(trip).where(eq(trip.id, input.tripId));
+      if (fresh) {
+        row = fresh;
+        plan = readPlan(row, members, localeOf(ctx.session?.user.locale));
+      }
+    }
     return {
-      plan: readPlan(row, members, localeOf(ctx.session?.user.locale)),
+      plan,
       version: row.planVersion,
       checks: byItem,
     };
@@ -153,8 +164,8 @@ export const planRouter = router({
           }
           return { version: updated!.version, snapshotId };
         });
-        // Le prenotazioni con un costo hanno la loro spesa (da pagare o pagata).
-        if (before && after) await syncBookingExpenses(ctx, input.tripId, before, after);
+        // Ogni prenotazione ha la sua spesa (da pagare, pagata o gratuita).
+        if (before && after) await reconcileBookingExpenses(ctx, input.tripId, before, after);
         await removeOrphanPhotos(ctx.storage, before, after);
         if (before && after)
           for (const change of diffPlan(before, after))

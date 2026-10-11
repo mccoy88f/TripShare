@@ -29,7 +29,6 @@ import {
   moneyDraft,
   MoneyFields,
   moneyFromDraft,
-  moneyLabel,
   parseLinks,
   textareaClass,
   type MoneyDraft,
@@ -440,27 +439,25 @@ export function ActivityDialog({
             </div>
           </Step>
           <Step title={t('plan.activity.stepMore')}>
-            {linkedBooking?.cost ? (
+            {linkedBooking ? (
               <div className="grid grid-cols-1 gap-1 rounded-xl border bg-muted/40 px-3.5 py-3">
                 <span className="text-sm font-medium">{t('plan.activity.cost')}</span>
                 <span className="text-lg font-semibold">
-                  {/* Il valore reale: l'importo della spesa se c'è, altrimenti quello della prenotazione. */}
+                  {/* Il valore reale è quello della spesa della prenotazione. */}
                   {linkedExpense
-                    ? money(linkedExpense.amount, linkedExpense.currency)
-                    : moneyLabel(linkedBooking.cost, t, money)}
+                    ? linkedExpense.amount === 0
+                      ? t('plan.booking.free')
+                      : money(linkedExpense.amount, linkedExpense.currency)
+                    : '…'}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {t('plan.activity.costFromBooking', { title: linkedBooking.title })}
-                  {' · '}
-                  {linkedExpense
-                    ? linkedExpense.status === 'planned'
-                      ? `⏳ ${t('expense.planned')}`
-                      : `✅ ${t('expense.paidStatus')}`
-                    : linkedBooking.paid === true
-                      ? `✅ ${t('expense.paidStatus')}`
-                      : linkedBooking.paid === false
-                        ? t('plan.booking.payOnSite')
-                        : t('plan.activity.noExpenseYet')}
+                  {linkedExpense &&
+                    ` · ${
+                      linkedExpense.status === 'planned'
+                        ? `⏳ ${t('expense.planned')}`
+                        : `✅ ${t('expense.paidStatus')}`
+                    }`}
                 </span>
               </div>
             ) : (

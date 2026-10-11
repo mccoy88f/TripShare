@@ -6,6 +6,7 @@ import {
   expensePayer,
   expenseShare,
   settlement,
+  trip,
   tripMember,
   type Database,
 } from '@tripshare/db';
@@ -29,6 +30,8 @@ const liveExpense = (tripId: string, id: string) =>
 
 const MemberId = z.uuid();
 const Minor = z.number().int().positive().max(1e12);
+/** Importo di una spesa: può essere zero (una prenotazione gratuita ha comunque la sua spesa). */
+const Minor0 = z.number().int().min(0).max(1e12);
 
 const SplitSchema = z.discriminatedUnion('method', [
   z.object({ method: z.literal('equal'), members: z.array(MemberId).min(1) }),
@@ -48,7 +51,7 @@ const ExpenseInput = z.object({
   title: z.string().trim().min(1).max(160),
   emoji: z.string().max(16).nullable().optional(),
   category: z.enum(EXPENSE_CATEGORY_KEYS),
-  amount: Minor,
+  amount: Minor0,
   currency: z.enum(CURRENCY_CODES),
   /** Unità della valuta del viaggio per 1 unità della valuta della spesa. Se manca, si usa la BCE. */
   rate: z.number().positive().max(1e6).optional(),
@@ -139,7 +142,7 @@ async function prepare(
       message: err instanceof Error ? err.message : 'INVALID_SPLIT',
     });
   }
-  if (Object.values(shares).every((v) => v === 0))
+  if (input.amount > 0 && Object.values(shares).every((v) => v === 0))
     throw new TRPCError({ code: 'BAD_REQUEST', message: 'EMPTY_SPLIT' });
 
   let rate = 1;
@@ -154,7 +157,8 @@ async function prepare(
     }
   }
   const amountTrip = convertMinor(input.amount, input.currency, tripCurrency, rate);
-  if (amountTrip <= 0) throw new TRPCError({ code: 'BAD_REQUEST', message: 'AMOUNT_TOO_SMALL' });
+  if (input.amount > 0 && amountTrip <= 0)
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'AMOUNT_TOO_SMALL' });
   return { shares, rate, amountTrip, weights: weightsOf(input.split) };
 }
 
@@ -464,7 +468,7 @@ export const expensesRouter = router({
           .regex(/^[a-f0-9]{32}\.[a-z0-9]{1,8}$/)
           .optional(),
         bookingId: z.string().max(64).optional(),
-        amount: Minor.optional(),
+        amount: Minor0.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -481,16 +485,28 @@ export const expensesRouter = router({
           ]);
           // Pagatori e quote mantengono le proporzioni di prima e sommano al nuovo totale
           // (anche con la divisione per importi esatti).
-          const rescale = <T extends { memberId: string; amount: number }>(rows: T[]) => {
+          // Da un totale a zero (spesa gratuita) non ci sono proporzioni: chi ha pagato è il
+          // primo, e le quote si dividono in parti uguali.
+          const rescale = <T extends { memberId: string; amount: number }>(
+            rows: T[],
+            firstPaysAll = false,
+          ) => {
             const parts = rows.some((r) => r.amount > 0)
               ? allocate(
                   amount,
                   rows.map((r) => r.amount),
                 )
-              : rows.map(() => 0);
+              : firstPaysAll
+                ? rows.map((_, i) => (i === 0 ? amount : 0))
+                : rows.length > 0
+                  ? allocate(
+                      amount,
+                      rows.map(() => 1),
+                    )
+                  : [];
             return rows.map((r, i) => ({ ...r, amount: parts[i]! }));
           };
-          for (const p of rescale(payers))
+          for (const p of rescale(payers, true))
             await tx
               .update(expensePayer)
               .set({ amount: p.amount })
@@ -546,6 +562,21 @@ export const expensesRouter = router({
     .input(z.object({ tripId: z.uuid(), id: z.uuid() }))
     .mutation(async ({ ctx, input }) => {
       await requireMember(ctx.db, input.tripId, ctx.user.id, 'editor');
+      // La spesa di una prenotazione non si elimina da sola: si elimina la prenotazione (o si
+      // porta la spesa a zero).
+      const [linked] = await ctx.db
+        .select({ bookingId: expense.bookingId })
+        .from(expense)
+        .where(liveExpense(input.tripId, input.id));
+      if (linked?.bookingId) {
+        const [row] = await ctx.db
+          .select({ plan: trip.plan })
+          .from(trip)
+          .where(eq(trip.id, input.tripId));
+        const bookings = (row?.plan as { bookings?: { id: string }[] } | null)?.bookings ?? [];
+        if (bookings.some((b) => b.id === linked.bookingId))
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'BOOKING_EXPENSE' });
+      }
       const [removed] = await ctx.db
         .update(expense)
         .set({ deletedAt: new Date() })
