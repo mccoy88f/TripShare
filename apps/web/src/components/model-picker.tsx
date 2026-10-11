@@ -10,6 +10,7 @@ interface ModelOption {
   name: string;
   contextLength: number | null;
   free: boolean;
+  priceUnknown?: boolean;
   imageInput: boolean;
   promptPerM: number | null;
   completionPerM: number | null;
@@ -36,7 +37,7 @@ export function ModelInfo({ model }: { model: ModelOption }) {
   const { t } = useTranslation();
   return (
     <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-      {model.free ? (
+      {model.priceUnknown ? null : model.free ? (
         <Badge variant="success">{t('models.free')}</Badge>
       ) : model.promptPerM === null && model.completionPerM === null ? (
         <Badge variant="outline">{t('models.paid')}</Badge>
@@ -105,8 +106,9 @@ export function ModelPicker({
         (!q || m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q)),
     );
   }, [models, query, priceFilter, onlyImages]);
-  const free = filtered.filter((m) => m.free);
-  const paid = filtered.filter((m) => !m.free);
+  const unknown = filtered.filter((m) => m.priceUnknown);
+  const free = filtered.filter((m) => m.free && !m.priceUnknown);
+  const paid = filtered.filter((m) => !m.free && !m.priceUnknown);
 
   const pick = (modelId: string) => {
     onChange(modelId);
@@ -128,7 +130,7 @@ export function ModelPicker({
       <Check className={cn('size-3.5 shrink-0 text-primary', m.id !== value && 'invisible')} />
       <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{m.name}</span>
       <span className="flex shrink-0 items-center gap-1.5 text-[11px] text-muted-foreground">
-        {m.free ? (
+        {m.priceUnknown ? null : m.free ? (
           <span className="rounded bg-success/15 px-1 font-semibold text-success">
             {t('models.free')}
           </span>
@@ -261,6 +263,14 @@ export function ModelPicker({
             </p>
           )}
           {paid.map((m) => (
+            <Row key={m.id} m={m} />
+          ))}
+          {unknown.length > 0 && (
+            <p className="px-2 pt-2 pb-0.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+              {t('models.groupUnknown', { count: unknown.length })}
+            </p>
+          )}
+          {unknown.map((m) => (
             <Row key={m.id} m={m} />
           ))}
           {filtered.length === 0 && (

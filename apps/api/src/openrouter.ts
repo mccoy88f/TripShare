@@ -12,6 +12,8 @@ export interface OpenRouterModel {
   contextLength: number | null;
   /** Gratuito: suffisso ":free" oppure prezzo zero. */
   free: boolean;
+  /** Il provider non dichiara prezzi né accesso: non si sa se il modello è gratuito o usabile. */
+  priceUnknown?: boolean;
   /** Accetta immagini in input (serve per scontrini e screenshot). */
   imageInput: boolean;
   /** Prezzi in dollari per milione di token; null se variabili o sconosciuti. */

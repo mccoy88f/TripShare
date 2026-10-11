@@ -304,6 +304,9 @@ function AddProfile({ onAdd }: { onAdd: (item: Item) => void }) {
           {t('admin.profiles.verifyAdd')}
         </Button>
       </div>
+      {(provider === 'llm7' || provider === 'nvidia') && (
+        <p className="text-xs text-muted-foreground">{t('admin.profiles.listHint')}</p>
+      )}
       {verify.error && (
         <p className="flex items-center gap-1.5 text-sm text-destructive">
           <XCircle className="size-4 shrink-0" />

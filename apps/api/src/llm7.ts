@@ -28,7 +28,9 @@ export function parseLlm7Models(body: unknown): OpenRouterModel[] {
       id,
       name: id,
       contextLength: typeof context === 'number' ? context : null,
-      free: true,
+      // L'elenco non dice quali modelli sono gratuiti né quali il tuo account può usare.
+      free: false,
+      priceUnknown: true,
       imageInput:
         /vision|vl\b|-vl|gpt-4o|gpt-4\.1|gemini|llava|pixtral|llama-4|mistral-small-3/i.test(id),
       promptPerM: null,

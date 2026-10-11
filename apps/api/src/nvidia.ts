@@ -1,6 +1,6 @@
 /**
  * Elenco dei modelli di NVIDIA NIM (build.nvidia.com, API compatibile OpenAI). Il piano gratuito
- * dà crediti e limiti di richieste: i modelli si segnano "gratis" come stima, senza prezzi.
+ * dà crediti e limiti di richieste: l'elenco non dichiara prezzi né accesso: i modelli restano "non verificati".
  */
 import type { OpenRouterModel } from './openrouter.js';
 
@@ -31,7 +31,9 @@ export function parseNvidiaModels(body: unknown): OpenRouterModel[] {
       id: raw.id,
       name: raw.id,
       contextLength: null,
-      free: true,
+      // L'elenco non dice quali modelli sono gratuiti né quali il tuo account può usare.
+      free: false,
+      priceUnknown: true,
       imageInput: VISION.test(raw.id),
       promptPerM: null,
       completionPerM: null,

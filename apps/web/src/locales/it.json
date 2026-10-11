@@ -291,7 +291,8 @@
       "verifyAdd": "Verifica e aggiungi",
       "unsaved": "da salvare",
       "changeKey": "Cambia",
-      "keyOptional": "Chiave facoltativa (senza: limiti gratuiti)"
+      "keyOptional": "Chiave facoltativa (senza: limiti gratuiti)",
+      "listHint": "L'elenco di questo provider non dice quali modelli sono gratuiti né quali il tuo account può usare: molti possono dare errore. Prova ogni modello con «Prova» prima di tenerlo."
     }
   },
   "legal": {
@@ -553,7 +554,8 @@
     "groupFree": "Gratis · {{count}}",
     "groupPaid": "A pagamento · {{count}}",
     "none": "Nessun modello corrisponde ai filtri.",
-    "paid": "A pagamento"
+    "paid": "A pagamento",
+    "groupUnknown": "Costo e accesso non verificati · {{count}}"
   },
   "plan": {
     "empty": "Nessun programma, per ora",

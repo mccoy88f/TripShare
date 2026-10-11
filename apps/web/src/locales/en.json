@@ -291,7 +291,8 @@
       "verifyAdd": "Verify and add",
       "unsaved": "unsaved",
       "changeKey": "Change",
-      "keyOptional": "Optional key (without: free limits)"
+      "keyOptional": "Optional key (without: free limits)",
+      "listHint": "This provider's list does not say which models are free or which ones your account can use: many may return errors. Test each model with “Test” before keeping it."
     }
   },
   "legal": {
@@ -553,7 +554,8 @@
     "groupFree": "Free · {{count}}",
     "groupPaid": "Paid · {{count}}",
     "none": "No model matches the filters.",
-    "paid": "Paid"
+    "paid": "Paid",
+    "groupUnknown": "Cost and access not verified · {{count}}"
   },
   "plan": {
     "empty": "No plan yet",

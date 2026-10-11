@@ -59,7 +59,12 @@ describe('LLM7', () => {
       { id: 'whisper-large' },
     ]);
     expect(asArray.map((m) => m.id)).toEqual(['gpt-4.1-nano-2025-04-14', 'mistral-small-3.1-24b']);
-    expect(asArray[0]).toMatchObject({ contextLength: 128000, free: true, imageInput: true });
+    expect(asArray[0]).toMatchObject({
+      contextLength: 128000,
+      free: false,
+      priceUnknown: true,
+      imageInput: true,
+    });
     expect(parseLlm7Models({ data: [{ id: 'deepseek-r1' }] })).toHaveLength(1);
     expect(() => parseLlm7Models({})).toThrow('LLM7_BAD_RESPONSE');
 
@@ -74,5 +79,54 @@ describe('LLM7', () => {
     );
     expect(auth).toBe('Bearer unused');
     expect(out.models).toHaveLength(1);
+  });
+});
+
+describe('modelli che rifiutano il ruolo system', () => {
+  it('retries once with the instructions inside the first user message', async () => {
+    const bodies: { messages: { role: string; content: unknown }[] }[] = [];
+    const res = await complete({
+      provider: 'nvidia',
+      apiKey: 'nvapi-test-key-1234',
+      model: 'google/gemma-2-9b-it',
+      messages: [
+        { role: 'system', content: 'Rispondi in JSON.' },
+        { role: 'user', content: 'Ciao' },
+      ],
+      appUrl: 'u',
+      appName: 'a',
+      fetchImpl: (async (_url: string | URL | Request, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body));
+        bodies.push(body);
+        return body.messages.some((m: { role: string }) => m.role === 'system')
+          ? json({ error: { message: 'System role not supported' } }, 400)
+          : json({ choices: [{ message: { content: '{"ok":true}' } }] });
+      }) as typeof fetch,
+    });
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1]!.messages).toEqual([{ role: 'user', content: 'Rispondi in JSON.\n\nCiao' }]);
+    expect(res.content).toBe('{"ok":true}');
+  });
+
+  it('does not retry other 400 errors', async () => {
+    let calls = 0;
+    await expect(
+      complete({
+        provider: 'llm7',
+        apiKey: 'unused',
+        model: 'm',
+        messages: [
+          { role: 'system', content: 's' },
+          { role: 'user', content: 'x' },
+        ],
+        appUrl: 'u',
+        appName: 'a',
+        fetchImpl: (async () => {
+          calls++;
+          return json({ error: { message: 'max_tokens too large' } }, 400);
+        }) as typeof fetch,
+      }),
+    ).rejects.toThrow('AI_PROVIDER_ERROR');
+    expect(calls).toBe(1);
   });
 });

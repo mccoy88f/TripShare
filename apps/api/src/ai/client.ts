@@ -230,6 +230,22 @@ async function completeCompatible(
   throw lastError ?? new AiError('AI_PROVIDER_ERROR');
 }
 
+/** Porta le istruzioni di sistema dentro il primo messaggio dell'utente. */
+function foldSystem(messages: ChatMessage[]): ChatMessage[] {
+  const system = messages
+    .filter((m) => m.role === 'system')
+    .map((m) => (typeof m.content === 'string' ? m.content : ''))
+    .join('\n\n');
+  const rest = messages.filter((m) => m.role !== 'system');
+  const first = rest[0];
+  if (!first || first.role !== 'user' || !system) return rest.length ? rest : messages;
+  const content: ChatMessage['content'] =
+    typeof first.content === 'string'
+      ? `${system}\n\n${first.content}`
+      : [{ type: 'text', text: system }, ...first.content];
+  return [{ role: 'user', content }, ...rest.slice(1)];
+}
+
 async function callCompatible(
   req: CompletionRequest,
   model: string,
@@ -248,12 +264,21 @@ async function callCompatible(
     ...(jsonMode && req.jsonSchema ? { response_format: { type: 'json_object' } } : {}),
     ...(req.onDelta ? { stream: true } : {}),
   };
-  const res = await (req.fetchImpl ?? fetch)(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${req.apiKey}`, 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(req.timeoutMs ?? 240_000),
-  });
+  const send = (payload: typeof body) =>
+    (req.fetchImpl ?? fetch)(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${req.apiKey}`, 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(req.timeoutMs ?? 240_000),
+    });
+  let res = await send(body);
+  // Alcuni modelli (es. Gemma, certi Mistral) rifiutano il ruolo "system": si riprova una volta
+  // con le istruzioni dentro il primo messaggio dell'utente.
+  if (res.status === 400 && body.messages.some((m) => m.role === 'system')) {
+    const text = await res.clone().text();
+    if (/system|role|instruction/i.test(text))
+      res = await send({ ...body, messages: foldSystem(body.messages) });
+  }
   if (res.ok && req.onDelta && isEventStream(res))
     return readOpenRouterStream(res, model, req.onDelta);
   const json = (await res.json().catch(() => null)) as {
