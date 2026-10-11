@@ -259,7 +259,7 @@
     "ocrReceiptsHint": "Tries a free text reader first, with no AI and no quota; the AI only steps in when the reading is not reliable.",
     "profiles": {
       "title": "AI configurations",
-      "hint": "Each configuration is a provider with its own key, a model and a backup. They are tried in order: if one fails (invalid key, credit or quota used up, provider unreachable) the next one is used. Users' personal keys always take precedence.",
+      "hint": "Add a provider with its key (it is verified), then pick the model and the backup and test them with a real request. Rows are used in order: if one fails (invalid key, credit or quota used up, provider unreachable) the next one is used. Users' personal keys always take precedence.",
       "legacy": "You are using the {{provider}} key from the previous settings.",
       "import": "Import as the first configuration",
       "empty": "No configurations: add one to enable the central AI.",
@@ -268,17 +268,28 @@
       "down": "Move down",
       "name": "Name",
       "model": "Model",
-      "modelHint": "Used for every function (choosing by use comes later).",
       "backup": "Backup model",
-      "backupHint": "Tried on the same provider if the main model does not answer.",
       "noBackup": "None",
       "removeBackup": "Remove the backup model",
-      "saveFirst": "Save your changes before testing",
       "errors": {
         "AI_KEY_REQUIRED": "Enter the API key for new configurations.",
-        "DUPLICATE_ID": "Duplicate configuration."
+        "DUPLICATE_ID": "Duplicate configuration.",
+        "OPENROUTER_INVALID_KEY": "Invalid key, rejected by OpenRouter.",
+        "GEMINI_INVALID_KEY": "Invalid key, rejected by Gemini.",
+        "GROQ_INVALID_KEY": "Invalid key, rejected by Groq."
       },
-      "key": "API key"
+      "key": "API key",
+      "order": "Order",
+      "config": "Configuration",
+      "test": "Test",
+      "runTest": "Test",
+      "mainShort": "Main",
+      "backupShort": "Backup",
+      "provider": "Provider",
+      "keyPlaceholder": "Paste the API key",
+      "verifyAdd": "Verify and add",
+      "unsaved": "unsaved",
+      "changeKey": "Change"
     }
   },
   "legal": {

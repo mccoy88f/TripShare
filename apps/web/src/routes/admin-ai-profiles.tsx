@@ -1,5 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowDown, ArrowUp, Loader2, Plus, Save, Send, Trash2 } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  CheckCircle2,
+  KeyRound,
+  Loader2,
+  Plus,
+  Save,
+  Send,
+  Trash2,
+  XCircle,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -7,12 +18,13 @@ import { ModelPicker } from '@/components/model-picker';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Field, Input } from '@/components/ui/input';
+import { Input, Select } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { useTRPC } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
 type Provider = 'openrouter' | 'gemini' | 'groq';
+type Catalog = React.ComponentProps<typeof ModelPicker>['models'];
 
 interface Item {
   id: string;
@@ -23,26 +35,37 @@ interface Item {
   enabled: boolean;
   /** Anteprima della chiave già salvata (assente per le nuove). */
   keyPreview?: string;
-  /** Nuova chiave digitata; vuota = si tiene quella salvata. */
+  /** Chiave nuova (aggiunta o sostituita); vuota = si tiene quella salvata. */
   newKey: string;
   saved: boolean;
+  /** Modelli letti al momento della verifica, per le configurazioni non ancora salvate. */
+  catalog?: Catalog;
 }
 
-const DEFAULT_MODEL: Record<Provider, string> = {
-  openrouter: 'openrouter/auto',
-  gemini: 'gemini-flash-latest',
-  groq: 'llama-3.3-70b-versatile',
-};
 const PROVIDER_NAME: Record<Provider, string> = {
   openrouter: 'OpenRouter',
   gemini: 'Google Gemini',
   groq: 'Groq',
 };
+/** Modello proposto all'inizio, se il provider lo elenca (altrimenti il primo dell'elenco). */
+const PREFERRED_MODEL: Record<Provider, string> = {
+  openrouter: 'openrouter/auto',
+  gemini: 'gemini-flash-latest',
+  groq: 'llama-3.3-70b-versatile',
+};
+
+interface TestResult {
+  ok: boolean;
+  ms: number;
+  model: string;
+  text: string;
+}
 
 /**
- * Configurazioni AI centrali: ognuna è un provider con la sua chiave, un modello e uno di
- * riserva. Si provano nell'ordine dell'elenco: se una fallisce (chiave, credito, limiti, rete)
- * si passa alla successiva.
+ * Configurazioni AI centrali in una tabella: in alto si aggiunge un provider verificandone la
+ * chiave, poi si scelgono modello e riserva e si prova ogni modello con una richiesta vera. Le
+ * righe si provano in ordine: se una fallisce (chiave, credito, limiti, rete) si passa alla
+ * successiva.
  */
 export function AiProfiles() {
   const { t } = useTranslation();
@@ -105,25 +128,7 @@ export function AiProfiles() {
       return next;
     });
   };
-  const add = (provider: Provider) => {
-    setDirty(true);
-    setItems((list) => [
-      ...list!,
-      {
-        id: `p-${Math.random().toString(36).slice(2, 8)}`,
-        name: PROVIDER_NAME[provider],
-        provider,
-        model: DEFAULT_MODEL[provider],
-        backupModel: '',
-        enabled: true,
-        newKey: '',
-        saved: false,
-      },
-    ]);
-  };
-  const invalid = items.some(
-    (i) => !i.name.trim() || !i.model.trim() || (!i.saved && i.newKey.trim().length < 10),
-  );
+  const invalid = items.some((i) => !i.name.trim() || !i.model.trim());
 
   return (
     <Card>
@@ -132,6 +137,12 @@ export function AiProfiles() {
         <CardDescription>{t('admin.profiles.hint')}</CardDescription>
       </CardHeader>
       <CardContent className="grid grid-cols-1 gap-4">
+        <AddProfile
+          onAdd={(item) => {
+            setDirty(true);
+            setItems((list) => [...list!, item]);
+          }}
+        />
         {data?.legacy && items.length === 0 && (
           <div className="flex flex-wrap items-center gap-3 rounded-xl bg-muted/60 px-4 py-3 text-sm">
             <span className="min-w-0 flex-1">
@@ -149,41 +160,48 @@ export function AiProfiles() {
             </Button>
           </div>
         )}
-        {items.length === 0 && !data?.legacy && (
+        {items.length === 0 && !data?.legacy ? (
           <p className="rounded-xl border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
             {t('admin.profiles.empty')}
           </p>
+        ) : (
+          items.length > 0 && (
+            <div className="overflow-x-auto rounded-xl border">
+              <table className="w-full min-w-[44rem] text-sm">
+                <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
+                  <tr>
+                    <th className="w-12 px-2 py-2 font-medium">#</th>
+                    <th className="w-44 px-2 py-2 font-medium">{t('admin.profiles.config')}</th>
+                    <th className="w-48 px-2 py-2 font-medium">{t('admin.profiles.model')}</th>
+                    <th className="w-48 px-2 py-2 font-medium">{t('admin.profiles.backup')}</th>
+                    <th className="w-32 px-2 py-2 font-medium">{t('admin.profiles.test')}</th>
+                    <th className="w-14 px-2 py-2 text-center font-medium">
+                      {t('admin.profiles.enabled')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {items.map((item, index) => (
+                    <ProfileRow
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      last={index === items.length - 1}
+                      onChange={(patch) => update(item.id, patch)}
+                      onMove={(by) => move(index, by)}
+                      onRemove={() => {
+                        setDirty(true);
+                        setItems((list) => list!.filter((i) => i.id !== item.id));
+                      }}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
         )}
-        {items.map((item, index) => (
-          <ProfileCard
-            key={item.id}
-            item={item}
-            index={index}
-            last={index === items.length - 1}
-            canTest={item.saved && !dirty}
-            onChange={(patch) => update(item.id, patch)}
-            onMove={(by) => move(index, by)}
-            onRemove={() => {
-              setDirty(true);
-              setItems((list) => list!.filter((i) => i.id !== item.id));
-            }}
-          />
-        ))}
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" size="sm" variant="outline" onClick={() => add('openrouter')}>
-            <Plus />
-            OpenRouter
-          </Button>
-          <Button type="button" size="sm" variant="outline" onClick={() => add('gemini')}>
-            <Plus />
-            Gemini
-          </Button>
-          <Button type="button" size="sm" variant="outline" onClick={() => add('groq')}>
-            <Plus />
-            Groq
-          </Button>
-          <span className="flex-1" />
-          {dirty && (
+        {dirty && (
+          <div className="flex justify-end">
             <Button
               type="button"
               disabled={invalid || save.isPending}
@@ -204,18 +222,93 @@ export function AiProfiles() {
               {save.isPending ? <Loader2 className="animate-spin" /> : <Save />}
               {t('common.save')}
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
 
-function ProfileCard({
+/** Scelta del provider e della chiave: la chiave si verifica prima di aggiungere la riga. */
+function AddProfile({ onAdd }: { onAdd: (item: Item) => void }) {
+  const { t } = useTranslation();
+  const trpc = useTRPC();
+  const [provider, setProvider] = useState<Provider>('openrouter');
+  const [key, setKey] = useState('');
+  const verify = useMutation(trpc.admin.aiProfiles.verify.mutationOptions());
+
+  const add = async () => {
+    const apiKey = key.trim();
+    const result = await verify.mutateAsync({ provider, apiKey }).catch(() => null);
+    if (!result) return;
+    const models = result.models;
+    const preferred = models.find((m) => m.id === PREFERRED_MODEL[provider]) ?? models[0];
+    onAdd({
+      id: `p-${Math.random().toString(36).slice(2, 8)}`,
+      name: PROVIDER_NAME[provider],
+      provider,
+      model: preferred?.id ?? PREFERRED_MODEL[provider],
+      backupModel: '',
+      enabled: true,
+      newKey: apiKey,
+      saved: false,
+      catalog: models,
+    });
+    setKey('');
+    verify.reset();
+  };
+
+  return (
+    <div className="grid grid-cols-1 gap-2 rounded-xl bg-muted/50 p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Select
+          aria-label={t('admin.profiles.provider')}
+          className="w-44"
+          value={provider}
+          onChange={(e) => {
+            setProvider(e.target.value as Provider);
+            verify.reset();
+          }}
+        >
+          {(Object.keys(PROVIDER_NAME) as Provider[]).map((p) => (
+            <option key={p} value={p}>
+              {PROVIDER_NAME[p]}
+            </option>
+          ))}
+        </Select>
+        <Input
+          aria-label={t('admin.profiles.key')}
+          className="min-w-48 flex-1"
+          type="password"
+          autoComplete="off"
+          placeholder={t('admin.profiles.keyPlaceholder')}
+          value={key}
+          onChange={(e) => {
+            setKey(e.target.value);
+            verify.reset();
+          }}
+        />
+        <Button type="button" disabled={key.trim().length < 10 || verify.isPending} onClick={add}>
+          {verify.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
+          {t('admin.profiles.verifyAdd')}
+        </Button>
+      </div>
+      {verify.error && (
+        <p className="flex items-center gap-1.5 text-sm text-destructive">
+          <XCircle className="size-4 shrink-0" />
+          {t(`admin.profiles.errors.${verify.error.message}`, {
+            defaultValue: verify.error.message,
+          })}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ProfileRow({
   item,
   index,
   last,
-  canTest,
   onChange,
   onMove,
   onRemove,
@@ -223,169 +316,213 @@ function ProfileCard({
   item: Item;
   index: number;
   last: boolean;
-  canTest: boolean;
   onChange: (patch: Partial<Item>) => void;
   onMove: (by: -1 | 1) => void;
   onRemove: () => void;
 }) {
   const { t } = useTranslation();
   const trpc = useTRPC();
+  const [changingKey, setChangingKey] = useState(false);
+  const [results, setResults] = useState<{ main?: TestResult; backup?: TestResult } | null>(null);
   const catalog = useQuery({
     ...trpc.admin.aiProfiles.models.queryOptions({ id: item.id }),
-    enabled: item.saved,
+    enabled: item.saved && !item.catalog,
     staleTime: 3600_000,
     retry: false,
   });
   const test = useMutation(trpc.admin.aiProfiles.test.mutationOptions());
-  const list = catalog.data?.models ?? [];
-  const usable = item.saved && !catalog.isError && list.length > 0;
+  const list = item.catalog ?? catalog.data?.models ?? [];
+  const usable = list.length > 0;
+  const auto = item.provider === 'openrouter';
+
+  /** Prova il modello principale e poi la riserva, ognuno da solo. */
+  const runTest = async () => {
+    setResults({});
+    const base = {
+      id: item.saved ? item.id : undefined,
+      provider: item.provider,
+      ...(item.newKey.trim() ? { apiKey: item.newKey.trim() } : {}),
+    };
+    const one = async (model: string): Promise<TestResult> => {
+      try {
+        const r = await test.mutateAsync({ ...base, model });
+        return r.ok
+          ? { ok: true, ms: r.ms, model: r.model, text: r.content }
+          : { ok: false, ms: r.ms, model: r.model, text: r.error };
+      } catch (err) {
+        return {
+          ok: false,
+          ms: 0,
+          model,
+          text: err instanceof Error ? err.message : t('common.error'),
+        };
+      }
+    };
+    const main = await one(item.model);
+    setResults({ main });
+    if (item.backupModel) setResults({ main, backup: await one(item.backupModel) });
+  };
+
+  const picker = (value: string | null, onPick: (id: string) => void, placeholder?: string) =>
+    usable ? (
+      <ModelPicker
+        models={list}
+        value={value}
+        allowAuto={auto}
+        placeholder={placeholder}
+        onChange={onPick}
+      />
+    ) : (
+      <Input
+        className="font-mono text-xs"
+        value={value ?? ''}
+        placeholder={placeholder}
+        onChange={(e) => onPick(e.target.value)}
+      />
+    );
 
   return (
-    <div
-      className={cn('grid grid-cols-1 gap-3 rounded-xl border p-4', !item.enabled && 'opacity-60')}
-    >
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="outline" className="tabular">
-          {index + 1}
-        </Badge>
-        <Badge variant="default">{PROVIDER_NAME[item.provider]}</Badge>
-        <span className="flex-1" />
-        <label className="inline-flex items-center gap-2 text-sm">
-          {t('admin.profiles.enabled')}
-          <Switch checked={item.enabled} onCheckedChange={(v) => onChange({ enabled: v })} />
-        </label>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          className="size-8"
-          aria-label={t('admin.profiles.up')}
-          disabled={index === 0}
-          onClick={() => onMove(-1)}
-        >
-          <ArrowUp />
-        </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          className="size-8"
-          aria-label={t('admin.profiles.down')}
-          disabled={last}
-          onClick={() => onMove(1)}
-        >
-          <ArrowDown />
-        </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          className="size-8 text-destructive"
-          aria-label={t('admin.remove')}
-          onClick={onRemove}
-        >
-          <Trash2 />
-        </Button>
-      </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label={t('admin.profiles.name')} htmlFor={`pn-${item.id}`}>
+    <tr className={cn('align-top', !item.enabled && 'opacity-60')}>
+      <td className="px-2 py-2">
+        <div className="flex flex-col items-center gap-0.5">
+          <Badge variant="outline" className="tabular">
+            {index + 1}
+          </Badge>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="size-7"
+            aria-label={t('admin.profiles.up')}
+            disabled={index === 0}
+            onClick={() => onMove(-1)}
+          >
+            <ArrowUp />
+          </Button>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="size-7"
+            aria-label={t('admin.profiles.down')}
+            disabled={last}
+            onClick={() => onMove(1)}
+          >
+            <ArrowDown />
+          </Button>
+        </div>
+      </td>
+      <td className="px-2 py-2">
+        <div className="grid grid-cols-1 gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="default">{PROVIDER_NAME[item.provider]}</Badge>
+            {!item.saved && <Badge variant="warning">{t('admin.profiles.unsaved')}</Badge>}
+          </div>
           <Input
-            id={`pn-${item.id}`}
+            aria-label={t('admin.profiles.name')}
+            className="h-8"
             maxLength={60}
             value={item.name}
             onChange={(e) => onChange({ name: e.target.value })}
           />
-        </Field>
-        <Field
-          label={t('admin.profiles.key')}
-          htmlFor={`pk-${item.id}`}
-          hint={item.keyPreview ? t('admin.apiKeySet', { preview: item.keyPreview }) : undefined}
-        >
-          <Input
-            id={`pk-${item.id}`}
-            type="password"
-            autoComplete="off"
-            placeholder={item.keyPreview ? t('admin.apiKeyReplace') : ''}
-            value={item.newKey}
-            onChange={(e) => onChange({ newKey: e.target.value })}
-          />
-        </Field>
-        <Field label={t('admin.profiles.model')} hint={t('admin.profiles.modelHint')}>
-          {usable ? (
-            <ModelPicker
-              models={list}
-              value={item.model}
-              allowAuto={item.provider === 'openrouter'}
-              onChange={(id) => onChange({ model: id })}
+          {changingKey ? (
+            <Input
+              aria-label={t('admin.profiles.key')}
+              className="h-8"
+              type="password"
+              autoComplete="off"
+              autoFocus
+              placeholder={t('admin.profiles.keyPlaceholder')}
+              value={item.newKey}
+              onChange={(e) => onChange({ newKey: e.target.value })}
             />
           ) : (
-            <Input
-              className="font-mono text-sm"
-              value={item.model}
-              onChange={(e) => onChange({ model: e.target.value })}
-            />
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <KeyRound className="size-3.5" />
+              <span className="font-mono">{item.keyPreview ?? '••••'}</span>
+              {item.saved && (
+                <button
+                  type="button"
+                  className="text-primary hover:underline"
+                  onClick={() => setChangingKey(true)}
+                >
+                  {t('admin.profiles.changeKey')}
+                </button>
+              )}
+            </span>
           )}
-        </Field>
-        <Field label={t('admin.profiles.backup')} hint={t('admin.profiles.backupHint')}>
-          {usable ? (
-            <ModelPicker
-              models={list}
-              value={item.backupModel || null}
-              allowAuto={item.provider === 'openrouter'}
-              placeholder={t('admin.profiles.noBackup')}
-              onChange={(id) => onChange({ backupModel: id })}
-            />
-          ) : (
-            <Input
-              className="font-mono text-sm"
-              value={item.backupModel}
-              placeholder={t('admin.profiles.noBackup')}
-              onChange={(e) => onChange({ backupModel: e.target.value })}
-            />
+        </div>
+      </td>
+      <td className="px-2 py-2">{picker(item.model, (id) => onChange({ model: id }))}</td>
+      <td className="px-2 py-2">
+        <div className="grid grid-cols-1 gap-1">
+          {picker(
+            item.backupModel || null,
+            (id) => onChange({ backupModel: id }),
+            t('admin.profiles.noBackup'),
           )}
-        </Field>
-      </div>
-      {item.backupModel && (
-        <Button
-          type="button"
-          variant="link"
-          className="h-auto justify-self-start p-0 text-xs text-muted-foreground"
-          onClick={() => onChange({ backupModel: '' })}
-        >
-          {t('admin.profiles.removeBackup')}
-        </Button>
-      )}
-      {item.saved && (
-        <div className="flex flex-wrap items-center gap-3 text-sm">
+          {item.backupModel && (
+            <button
+              type="button"
+              className="justify-self-start text-xs text-muted-foreground hover:underline"
+              onClick={() => onChange({ backupModel: '' })}
+            >
+              {t('admin.profiles.removeBackup')}
+            </button>
+          )}
+        </div>
+      </td>
+      <td className="px-2 py-2">
+        <div className="grid grid-cols-1 gap-1.5">
           <Button
             type="button"
             size="sm"
             variant="outline"
-            disabled={!canTest || test.isPending}
-            title={canTest ? undefined : t('admin.profiles.saveFirst')}
-            onClick={() => test.mutate({ id: item.id })}
+            className="justify-self-start"
+            disabled={test.isPending || !item.model.trim()}
+            onClick={runTest}
           >
             {test.isPending ? <Loader2 className="animate-spin" /> : <Send />}
-            {t('admin.aiTest')}
+            {t('admin.profiles.runTest')}
           </Button>
-          {test.data && (
-            <span
-              className={cn(
-                'min-w-0 flex-1 text-xs break-words',
-                test.data.ok ? 'text-success' : 'text-destructive',
-              )}
-            >
-              {test.data.ok
-                ? t('admin.aiTestOk', {
-                    model: test.data.model,
-                    ms: test.data.ms,
-                    content: test.data.content,
-                  })
-                : t('admin.aiTestError', { model: test.data.model, error: test.data.error })}
-            </span>
-          )}
+          {results?.main && <Result label={t('admin.profiles.mainShort')} r={results.main} />}
+          {results?.backup && <Result label={t('admin.profiles.backupShort')} r={results.backup} />}
         </div>
+      </td>
+      <td className="px-2 py-2">
+        <div className="flex flex-col items-center gap-1">
+          <Switch checked={item.enabled} onCheckedChange={(v) => onChange({ enabled: v })} />
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="size-8 text-destructive"
+            aria-label={t('admin.remove')}
+            title={t('admin.remove')}
+            onClick={onRemove}
+          >
+            <Trash2 />
+          </Button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function Result({ label, r }: { label: string; r: TestResult }) {
+  return (
+    <span
+      className={cn('flex items-start gap-1 text-xs', r.ok ? 'text-success' : 'text-destructive')}
+      title={`${r.model}: ${r.text}`}
+    >
+      {r.ok ? (
+        <CheckCircle2 className="mt-0.5 size-3.5 shrink-0" />
+      ) : (
+        <XCircle className="mt-0.5 size-3.5 shrink-0" />
       )}
-    </div>
+      <span className="min-w-0 break-words">
+        {label} · {r.ok ? `${r.ms} ms` : r.text.slice(0, 120)}
+      </span>
+    </span>
   );
 }

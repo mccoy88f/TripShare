@@ -28,6 +28,8 @@ async function audit(
   });
 }
 
+const PROVIDERS = ['openrouter', 'gemini', 'groq'] as const;
+
 async function savedProfile(ctx: Context, id: string) {
   const profile = (await ctx.settings.get('ai.profiles')).find((p) => p.id === id);
   if (!profile) throw new TRPCError({ code: 'NOT_FOUND', message: 'PROFILE_NOT_FOUND' });
@@ -215,18 +217,53 @@ export const adminRouter = router({
         }
       }),
 
-    /** Prova reale di una configurazione: una piccola richiesta JSON con modello e riserva. */
-    test: superadminProcedure
-      .input(z.object({ id: z.string() }))
+    /**
+     * Verifica una chiave prima di aggiungerla: se il provider la accetta restituisce l'elenco
+     * dei modelli disponibili, da cui scegliere il modello e la riserva.
+     */
+    verify: superadminProcedure
+      .input(z.object({ provider: z.enum(PROVIDERS), apiKey: z.string().min(10).max(300) }))
       .mutation(async ({ ctx, input }) => {
-        const profile = await savedProfile(ctx, input.id);
+        try {
+          if (input.provider === 'groq')
+            return await listGroqModels(input.apiKey, ctx.httpFetch, true);
+          if (input.provider === 'gemini')
+            return await listGeminiModels(input.apiKey, ctx.httpFetch, true);
+          // OpenRouter elenca i modelli anche senza chiave: la chiave si controlla a parte.
+          await checkKey(input.apiKey, ctx.httpFetch);
+          return await listModels(input.apiKey, ctx.httpFetch, true);
+        } catch (err) {
+          throw new TRPCError({
+            code: 'BAD_GATEWAY',
+            message: err instanceof Error ? err.message : 'AI_UNAVAILABLE',
+          });
+        }
+      }),
+
+    /**
+     * Prova reale di un modello (senza riserva): una piccola richiesta JSON. Per le
+     * configurazioni già salvate la chiave si può omettere.
+     */
+    test: superadminProcedure
+      .input(
+        z.object({
+          id: z.string().optional(),
+          provider: z.enum(PROVIDERS),
+          apiKey: z.string().min(10).max(300).optional(),
+          model: z.string().min(1).max(200),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        const apiKey =
+          input.apiKey ?? (input.id ? (await savedProfile(ctx, input.id)).apiKey : null);
+        if (!apiKey) throw new TRPCError({ code: 'BAD_REQUEST', message: 'AI_KEY_REQUIRED' });
         const start = performance.now();
         try {
           const res = await complete({
-            provider: profile.provider,
-            apiKey: profile.apiKey,
-            model: profile.model,
-            fallbacks: profile.backupModel ? [profile.backupModel] : [],
+            provider: input.provider,
+            apiKey,
+            model: input.model,
+            fallbacks: [],
             messages: [
               {
                 role: 'system',
@@ -249,7 +286,7 @@ export const adminRouter = router({
         } catch (err) {
           return {
             ok: false as const,
-            model: profile.model,
+            model: input.model,
             ms: Math.round(performance.now() - start),
             error: err instanceof Error ? err.message : String(err),
           };

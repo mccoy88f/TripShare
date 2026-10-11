@@ -259,7 +259,7 @@
     "ocrReceiptsHint": "Prima prova con un lettore di testo gratuito, senza AI e senza quota; l'AI interviene solo se la lettura non è sicura.",
     "profiles": {
       "title": "Configurazioni AI",
-      "hint": "Ogni configurazione è un provider con la sua chiave, un modello e uno di riserva. Si provano nell'ordine: se una fallisce (chiave non valida, credito o quota esauriti, provider non raggiungibile) si passa alla successiva. Le chiavi personali degli utenti hanno sempre la precedenza.",
+      "hint": "Aggiungi un provider con la sua chiave (viene verificata), poi scegli il modello e la riserva e provali con una richiesta vera. Le righe si usano in ordine: se una fallisce (chiave non valida, credito o quota esauriti, provider non raggiungibile) si passa alla successiva. Le chiavi personali degli utenti hanno sempre la precedenza.",
       "legacy": "Stai usando la chiave {{provider}} delle impostazioni precedenti.",
       "import": "Importa come prima configurazione",
       "empty": "Nessuna configurazione: aggiungine una per attivare l'AI centrale.",
@@ -268,17 +268,28 @@
       "down": "Sposta giù",
       "name": "Nome",
       "model": "Modello",
-      "modelHint": "Usato per tutte le funzioni (più avanti si sceglierà per uso).",
       "backup": "Modello di riserva",
-      "backupHint": "Provato dallo stesso provider se il modello principale non risponde.",
       "noBackup": "Nessuno",
       "removeBackup": "Togli il modello di riserva",
-      "saveFirst": "Salva le modifiche prima di provare",
       "errors": {
         "AI_KEY_REQUIRED": "Inserisci la chiave API per le nuove configurazioni.",
-        "DUPLICATE_ID": "Configurazione duplicata."
+        "DUPLICATE_ID": "Configurazione duplicata.",
+        "OPENROUTER_INVALID_KEY": "Chiave non valida o rifiutata da OpenRouter.",
+        "GEMINI_INVALID_KEY": "Chiave non valida o rifiutata da Gemini.",
+        "GROQ_INVALID_KEY": "Chiave non valida o rifiutata da Groq."
       },
-      "key": "Chiave API"
+      "key": "Chiave API",
+      "order": "Ordine",
+      "config": "Configurazione",
+      "test": "Prova",
+      "runTest": "Prova",
+      "mainShort": "Principale",
+      "backupShort": "Riserva",
+      "provider": "Provider",
+      "keyPlaceholder": "Incolla la chiave API",
+      "verifyAdd": "Verifica e aggiungi",
+      "unsaved": "da salvare",
+      "changeKey": "Cambia"
     }
   },
   "legal": {
