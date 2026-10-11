@@ -456,12 +456,23 @@
     "errors": {
       "LAST_OWNER": "The trip must keep at least one owner.",
       "PLACEHOLDER_ROLE": "People without an account have no role.",
-      "ALREADY_MEMBER": "This person is already in the trip."
+      "ALREADY_MEMBER": "This person is already in the trip.",
+      "MERGE_NOT_PLACEHOLDER": "Only a person without an account can be merged into another.",
+      "MERGE_SAME_MEMBER": "Choose a different person."
     },
     "pending": "Invited · {{email}}",
     "resend": "Resend",
     "inviteName": "Name (optional)",
-    "inviteNamePlaceholder": "How they appear in the trip"
+    "inviteNamePlaceholder": "How they appear in the trip",
+    "rename": "Rename",
+    "renameHint": "Use the real name: expenses already recorded stay linked to this person.",
+    "merge": "Merge into another person",
+    "mergeTitle": "Merge “{{name}}” into a person",
+    "mergeHint": "Paid expenses, shares, settlements, tickets, notes and packing ticks of this placeholder move to the chosen person, then the placeholder is removed. This can't be undone.",
+    "mergeInto": "Merge into",
+    "mergeAction": "Merge",
+    "merged": "Done: everything moved to the chosen person.",
+    "confirmRemovePlaceholder": "If this person has expenses, they stay in the accounts under their name. To give everything to a real person use “Merge”; to just change the name use the pencil."
   },
   "trip": {
     "totalSpent": "{{amount}} spent",

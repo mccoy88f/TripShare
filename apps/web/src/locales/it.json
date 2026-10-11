@@ -456,12 +456,23 @@
     "errors": {
       "LAST_OWNER": "Il viaggio deve avere almeno un proprietario.",
       "PLACEHOLDER_ROLE": "Le persone senza account non hanno un ruolo.",
-      "ALREADY_MEMBER": "Questa persona fa già parte del viaggio."
+      "ALREADY_MEMBER": "Questa persona fa già parte del viaggio.",
+      "MERGE_NOT_PLACEHOLDER": "Solo una persona senza account può essere unita a un'altra.",
+      "MERGE_SAME_MEMBER": "Scegli un'altra persona."
     },
     "pending": "Invitato · {{email}}",
     "resend": "Reinvia",
     "inviteName": "Nome (facoltativo)",
-    "inviteNamePlaceholder": "Come compare nel viaggio"
+    "inviteNamePlaceholder": "Come compare nel viaggio",
+    "rename": "Cambia nome",
+    "renameHint": "Usa il nome vero: le spese già segnate restano collegate a questa persona.",
+    "merge": "Unisci a un'altra persona",
+    "mergeTitle": "Unisci «{{name}}» a una persona",
+    "mergeHint": "Spese pagate, quote, rimborsi, biglietti, note e bagagli di questo segnaposto passano alla persona scelta, poi il segnaposto viene tolto. Non si può annullare.",
+    "mergeInto": "Unisci a",
+    "mergeAction": "Unisci",
+    "merged": "Fatto: tutto è passato alla persona scelta.",
+    "confirmRemovePlaceholder": "Se questa persona ha spese, restano nei conti con il suo nome. Per dare tutto a una persona vera usa «Unisci»; per cambiare solo il nome usa la matita."
   },
   "trip": {
     "totalSpent": "Spesi {{amount}}",

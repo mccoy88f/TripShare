@@ -6,9 +6,12 @@ import {
   aiConversation,
   bookingTicket,
   expense,
+  expensePayer,
+  expenseShare,
   packingCheck,
   settlement,
   trip,
+  tripInvitation,
   tripMember,
   tripNote,
   user,
@@ -361,6 +364,122 @@ export const tripsRouter = router({
           type: 'member.left',
           entityId: target.id,
           data: { name: target.name },
+        });
+        return { ok: true };
+      }),
+
+    /**
+     * Sostituisce un segnaposto (es. "Adulto 2") con una persona già nel viaggio: spese pagate,
+     * quote, rimborsi, biglietti, note e spunte passano a lei e il segnaposto sparisce. Serve
+     * quando la persona vera è stata aggiunta a parte invece di prendere il posto del segnaposto.
+     */
+    merge: authedProcedure
+      .input(z.object({ tripId: z.uuid(), fromMemberId: z.uuid(), intoMemberId: z.uuid() }))
+      .mutation(async ({ ctx, input }) => {
+        await requireMember(ctx.db, input.tripId, ctx.user.id, 'owner');
+        if (input.fromMemberId === input.intoMemberId)
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'MERGE_SAME_MEMBER' });
+        const active = await ctx.db
+          .select()
+          .from(tripMember)
+          .where(
+            and(
+              eq(tripMember.tripId, input.tripId),
+              isNull(tripMember.removedAt),
+              sql`${tripMember.id} in (${input.fromMemberId}, ${input.intoMemberId})`,
+            ),
+          );
+        const from = active.find((m) => m.id === input.fromMemberId);
+        const into = active.find((m) => m.id === input.intoMemberId);
+        if (!from || !into) throw new TRPCError({ code: 'NOT_FOUND' });
+        // Solo un segnaposto può essere assorbito: una persona vera ha il suo account.
+        if (from.userId)
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'MERGE_NOT_PLACEHOLDER' });
+
+        await ctx.db.transaction(async (tx) => {
+          // Pagamenti e quote: se la persona è già nella stessa spesa gli importi si sommano.
+          const paid = await tx
+            .select()
+            .from(expensePayer)
+            .where(eq(expensePayer.memberId, input.fromMemberId));
+          for (const row of paid)
+            await tx
+              .insert(expensePayer)
+              .values({ ...row, memberId: input.intoMemberId })
+              .onConflictDoUpdate({
+                target: [expensePayer.expenseId, expensePayer.memberId],
+                set: { amount: sql`${expensePayer.amount} + ${row.amount}` },
+              });
+          await tx.delete(expensePayer).where(eq(expensePayer.memberId, input.fromMemberId));
+          const shares = await tx
+            .select()
+            .from(expenseShare)
+            .where(eq(expenseShare.memberId, input.fromMemberId));
+          for (const row of shares)
+            await tx
+              .insert(expenseShare)
+              .values({ ...row, memberId: input.intoMemberId })
+              .onConflictDoUpdate({
+                target: [expenseShare.expenseId, expenseShare.memberId],
+                // Anche le parti o percentuali indicate a mano si sommano.
+                set: {
+                  amount: sql`${expenseShare.amount} + ${row.amount}`,
+                  weight: sql`case when ${expenseShare.weight} is null and ${row.weight}::double precision is null then null else coalesce(${expenseShare.weight}, 0) + coalesce(${row.weight}::double precision, 0) end`,
+                },
+              });
+          await tx.delete(expenseShare).where(eq(expenseShare.memberId, input.fromMemberId));
+          await tx
+            .update(settlement)
+            .set({ fromMemberId: input.intoMemberId })
+            .where(eq(settlement.fromMemberId, input.fromMemberId));
+          await tx
+            .update(settlement)
+            .set({ toMemberId: input.intoMemberId })
+            .where(eq(settlement.toMemberId, input.fromMemberId));
+          // Un rimborso tra il segnaposto e la persona stessa non ha più senso.
+          await tx
+            .update(settlement)
+            .set({ deletedAt: new Date() })
+            .where(
+              and(
+                eq(settlement.tripId, input.tripId),
+                eq(settlement.fromMemberId, input.intoMemberId),
+                eq(settlement.toMemberId, input.intoMemberId),
+                isNull(settlement.deletedAt),
+              ),
+            );
+          const checks = await tx
+            .select()
+            .from(packingCheck)
+            .where(eq(packingCheck.memberId, input.fromMemberId));
+          if (checks.length)
+            await tx
+              .insert(packingCheck)
+              .values(checks.map((c) => ({ ...c, memberId: input.intoMemberId })))
+              .onConflictDoNothing();
+          await tx.delete(packingCheck).where(eq(packingCheck.memberId, input.fromMemberId));
+          await tx
+            .update(bookingTicket)
+            .set({ memberId: input.intoMemberId })
+            .where(eq(bookingTicket.memberId, input.fromMemberId));
+          await tx
+            .update(tripNote)
+            .set({ memberId: input.intoMemberId })
+            .where(eq(tripNote.memberId, input.fromMemberId));
+          // Gli inviti pendenti per il segnaposto non servono più.
+          await tx
+            .update(tripInvitation)
+            .set({ revokedAt: new Date() })
+            .where(
+              and(
+                eq(tripInvitation.memberId, input.fromMemberId),
+                isNull(tripInvitation.revokedAt),
+              ),
+            );
+          await tx
+            .update(tripMember)
+            .set({ removedAt: new Date(), role: 'viewer', invitedEmail: null })
+            .where(eq(tripMember.id, input.fromMemberId));
         });
         return { ok: true };
       }),

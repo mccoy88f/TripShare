@@ -1,6 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { Copy, Link2, Loader2, LogOut, Mail, Share2, UserPlus, X } from 'lucide-react';
+import {
+  Copy,
+  Link2,
+  Loader2,
+  LogOut,
+  Mail,
+  Merge,
+  Pencil,
+  Share2,
+  UserPlus,
+  X,
+} from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -8,6 +19,7 @@ import { UserAvatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Input, Select } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { shortDate } from '@/lib/format';
@@ -33,6 +45,9 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
     enabled: canEdit,
   });
   const [placeholder, setPlaceholder] = useState('');
+  /** Segnaposto di cui si cambia il nome o che si unisce a una persona vera. */
+  const [renaming, setRenaming] = useState<TripDetail['members'][number] | null>(null);
+  const [merging, setMerging] = useState<TripDetail['members'][number] | null>(null);
   const [email, setEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
   const [emailRole, setEmailRole] = useState<'editor' | 'viewer'>('editor');
@@ -174,6 +189,30 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
                   {t('members.inviteThem')}
                 </Button>
               )}
+              {canEdit && m.placeholder && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="size-9 text-muted-foreground"
+                  aria-label={t('members.rename')}
+                  title={t('members.rename')}
+                  onClick={() => setRenaming(m)}
+                >
+                  <Pencil />
+                </Button>
+              )}
+              {isOwner && m.placeholder && active.length > 1 && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="size-9 text-muted-foreground"
+                  aria-label={t('members.merge')}
+                  title={t('members.merge')}
+                  onClick={() => setMerging(m)}
+                >
+                  <Merge />
+                </Button>
+              )}
               {isOwner && m.id !== trip.myMemberId && (
                 <Button
                   size="icon"
@@ -184,6 +223,9 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
                     if (
                       !(await confirmDialog({
                         title: t('members.confirmRemove', { name: m.name }),
+                        description: m.placeholder
+                          ? t('members.confirmRemovePlaceholder')
+                          : undefined,
                         confirmLabel: t('members.remove'),
                       }))
                     )
@@ -199,6 +241,24 @@ export function MembersTab({ trip }: { trip: TripDetail }) {
           </div>
         ))}
       </Card>
+
+      {renaming && (
+        <RenameDialog
+          tripId={trip.id}
+          member={renaming}
+          onClose={() => setRenaming(null)}
+          onDone={refresh}
+        />
+      )}
+      {merging && (
+        <MergeDialog
+          tripId={trip.id}
+          member={merging}
+          others={active.filter((m) => m.id !== merging.id)}
+          onClose={() => setMerging(null)}
+          onDone={refresh}
+        />
+      )}
 
       {canEdit && (
         <Card>
@@ -399,5 +459,129 @@ function MuteTripRow({ tripId }: { tripId: string }) {
         aria-label={t('notifications.muteTrip')}
       />
     </label>
+  );
+}
+
+type Member = TripDetail['members'][number];
+
+/** Cambia il nome di una persona senza account: le sue spese restano collegate a lei. */
+function RenameDialog({
+  tripId,
+  member,
+  onClose,
+  onDone,
+}: {
+  tripId: string;
+  member: Member;
+  onClose: () => void;
+  onDone: () => Promise<unknown>;
+}) {
+  const { t } = useTranslation();
+  const trpc = useTRPC();
+  const [name, setName] = useState(member.name);
+  const update = useMutation(
+    trpc.trips.members.update.mutationOptions({
+      onSuccess: async () => {
+        await onDone();
+        onClose();
+      },
+      onError: () => toast.error(t('common.error')),
+    }),
+  );
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const next = name.trim();
+    if (next && next !== member.name) update.mutate({ tripId, memberId: member.id, name: next });
+    else onClose();
+  };
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent title={t('members.rename')} description={t('members.renameHint')}>
+        <form onSubmit={submit} className="grid grid-cols-1 gap-3 pt-2">
+          <Input
+            autoFocus
+            value={name}
+            maxLength={80}
+            onChange={(e) => setName(e.target.value)}
+            aria-label={t('members.rename')}
+          />
+          <div className="flex items-center gap-2">
+            <div className="flex-1" />
+            <Button type="button" variant="ghost" onClick={onClose}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" disabled={update.isPending || !name.trim()}>
+              {update.isPending && <Loader2 className="animate-spin" />}
+              {t('common.save')}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Passa tutto ciò che riguarda un segnaposto a una persona già nel viaggio. */
+function MergeDialog({
+  tripId,
+  member,
+  others,
+  onClose,
+  onDone,
+}: {
+  tripId: string;
+  member: Member;
+  others: Member[];
+  onClose: () => void;
+  onDone: () => Promise<unknown>;
+}) {
+  const { t } = useTranslation();
+  const trpc = useTRPC();
+  const [target, setTarget] = useState(others[0]?.id ?? '');
+  const merge = useMutation(
+    trpc.trips.members.merge.mutationOptions({
+      onSuccess: async () => {
+        await onDone();
+        toast.success(t('members.merged'));
+        onClose();
+      },
+      onError: (err) =>
+        toast.error(t(`members.errors.${err.message}`, { defaultValue: t('common.error') })),
+    }),
+  );
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent
+        title={t('members.mergeTitle', { name: member.name })}
+        description={t('members.mergeHint')}
+      >
+        <div className="grid grid-cols-1 gap-3 pt-2">
+          <Field label={t('members.mergeInto')} htmlFor="merge-into">
+            <Select id="merge-into" value={target} onChange={(e) => setTarget(e.target.value)}>
+              {others.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <div className="flex items-center gap-2">
+            <div className="flex-1" />
+            <Button type="button" variant="ghost" onClick={onClose}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              disabled={merge.isPending || !target}
+              onClick={() =>
+                merge.mutate({ tripId, fromMemberId: member.id, intoMemberId: target })
+              }
+            >
+              {merge.isPending ? <Loader2 className="animate-spin" /> : <Merge />}
+              {t('members.mergeAction')}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

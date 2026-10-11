@@ -38,6 +38,102 @@ run('trips, invitations, expenses and balances (integration)', () => {
     return { marco, tripId, lucaPlaceholder: luca.data.id };
   }
 
+  it('merges a placeholder into a real person, moving expenses and balances', async () => {
+    const { marco, tripId, lucaPlaceholder } = await setupTrip();
+    const sara = (await t.signUp('sara@example.com', 'Sara')).cookie;
+    const link = await t.trpc<{ token: string }>('invitations.create', marco, { tripId });
+    await t.trpc('invitations.accept', sara, { token: link.data.token });
+    const trip = await t.trpc<{ myMemberId: string; members: { id: string; name: string }[] }>(
+      'trips.get',
+      marco,
+      { id: tripId },
+      'query',
+    );
+    const me = trip.data.myMemberId;
+    const saraId = trip.data.members.find((m) => m.name === 'Sara')!.id;
+
+    // Alloggio pagato da Luca (segnaposto), diviso in tre; cena pagata da Marco, divisa in tre.
+    await t.trpc('expenses.create', marco, {
+      tripId,
+      title: 'Alloggio',
+      category: 'lodging',
+      amount: 30000,
+      currency: 'EUR',
+      date: '2026-10-13',
+      payers: [{ memberId: lucaPlaceholder, amount: 30000 }],
+      split: { method: 'equal', members: [me, saraId, lucaPlaceholder] },
+    });
+    await t.trpc('expenses.create', marco, {
+      tripId,
+      title: 'Cena',
+      category: 'food',
+      amount: 9000,
+      currency: 'EUR',
+      date: '2026-10-13',
+      payers: [{ memberId: me, amount: 9000 }],
+      split: { method: 'shares', shares: { [me]: 1, [saraId]: 1, [lucaPlaceholder]: 1 } },
+    });
+    const balances = async () =>
+      (
+        await t.trpc<{ ledger: { balances: Record<string, number>; total: number } }>(
+          'trips.get',
+          marco,
+          { id: tripId },
+          'query',
+        )
+      ).data.ledger;
+    const before = await balances();
+
+    // Solo il proprietario può unire; e solo un segnaposto.
+    expect(
+      (
+        await t.trpc('trips.members.merge', sara, {
+          tripId,
+          fromMemberId: lucaPlaceholder,
+          intoMemberId: saraId,
+        })
+      ).error,
+    ).toBeDefined();
+    expect(
+      (
+        await t.trpc('trips.members.merge', marco, {
+          tripId,
+          fromMemberId: saraId,
+          intoMemberId: me,
+        })
+      ).error?.message,
+    ).toBe('MERGE_NOT_PLACEHOLDER');
+
+    expect(
+      (
+        await t.trpc('trips.members.merge', marco, {
+          tripId,
+          fromMemberId: lucaPlaceholder,
+          intoMemberId: saraId,
+        })
+      ).status,
+    ).toBe(200);
+
+    // Il totale non cambia e il saldo di Luca è passato a Sara (che aveva già le sue quote).
+    const after = await balances();
+    expect(after.total).toBe(before.total);
+    expect(after.balances[saraId]).toBe(
+      (before.balances[saraId] ?? 0) + (before.balances[lucaPlaceholder] ?? 0),
+    );
+    expect(after.balances[lucaPlaceholder]).toBeUndefined();
+    expect(after.balances[me]).toBe(before.balances[me]);
+    // Ora il segnaposto non compare più tra i partecipanti attivi.
+    const members = (
+      await t.trpc<{ members: { id: string; removed: boolean }[] }>(
+        'trips.get',
+        marco,
+        { id: tripId },
+        'query',
+      )
+    ).data.members;
+    expect(members.find((m) => m.id === lucaPlaceholder)!.removed).toBe(true);
+  });
+
   it('creates a trip with the owner as member', async () => {
     const { marco, tripId } = await setupTrip();
     const list = await t.trpc<{ id: string; role: string; members: unknown[] }[]>(
