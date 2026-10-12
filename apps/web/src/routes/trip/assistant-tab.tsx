@@ -174,12 +174,17 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
   const streaming = streamed.length > 0;
   // Corpo tra graffe: in Chrome recente scrollIntoView restituisce una Promise, che React
   // scambierebbe per la funzione di pulizia dell'effetto.
-  const scrollToEnd = () => {
-    bottom.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  const scrollToEnd = (behavior: ScrollBehavior = 'smooth') => {
+    bottom.current?.scrollIntoView({ behavior, block: 'end' });
   };
   useEffect(() => {
     scrollToEnd();
   }, [history?.length, sent, conversationId, streaming]);
+  // Mentre Nina scrive la risposta si segue il testo che cresce (senza animazione, che a ogni
+  // pezzo ripartirebbe da capo e resterebbe indietro).
+  useEffect(() => {
+    if (streamed) scrollToEnd('auto');
+  }, [streamed]);
   // Con la tastiera aperta l'ultimo messaggio resta visibile sopra la casella di testo.
   useEffect(() => {
     if (keyboard.open) scrollToEnd();
@@ -279,7 +284,7 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
   const suggestions = [t('ai.chat.s1'), t('ai.chat.s2'), t('ai.chat.s3'), t('ai.chat.s4')];
 
   return (
-    <div className="grid grid-cols-1 gap-4 pb-40">
+    <div className="grid grid-cols-1 gap-4 pb-12">
       {conversations && conversations.length > 0 && (
         <div className="flex items-center gap-2">
           <Select
@@ -463,7 +468,8 @@ export function AssistantTab({ trip }: { trip: TripDetail }) {
           )}
         </>
       )}
-      <div ref={bottom} />
+      {/* Il margine tiene l'ultimo messaggio sopra la casella di testo e la barra in basso. */}
+      <div ref={bottom} className="scroll-mb-36" />
       {reviewing && (
         <ProposalDialog
           ops={reviewing.ops}
