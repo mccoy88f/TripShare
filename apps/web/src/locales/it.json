@@ -1261,7 +1261,8 @@
     "downloadStarted": "Download avviato",
     "shareRetry": "File pronti: tocca di nuovo Condividi.",
     "shareUnsupported": "Questo dispositivo non può condividere i file: usa Scarica.",
-    "by": "Di {{name}}"
+    "by": "Di {{name}}",
+    "onlyMedia": "Si possono aggiungere solo foto e video."
   },
   "generation": {
     "title": {

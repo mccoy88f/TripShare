@@ -189,12 +189,20 @@ function MemoriesView() {
       <input
         ref={input}
         type="file"
-        accept="image/*,video/*"
+        // Con anche i PDF nell'elenco Android mostra la scelta di sistema (fotocamera, galleria,
+        // file) come per le spese, invece del solo selettore di foto; i PDF si scartano sotto.
+        accept="image/*,video/*,application/pdf"
         multiple
         className="sr-only"
         onChange={(e) => {
-          const files = [...(e.target.files ?? [])];
+          const picked = [...(e.target.files ?? [])];
           e.target.value = '';
+          const files = picked.filter(
+            (f) =>
+              /^(image|video)\//.test(f.type) ||
+              /\.(heic|heif|avif|mov|mp4|m4v|webm|3gp)$/i.test(f.name),
+          );
+          if (picked.length > files.length) toast.error(t('memories.onlyMedia'));
           if (files.length > 0) setStaged(files);
         }}
       />

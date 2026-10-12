@@ -1261,7 +1261,8 @@
     "downloadStarted": "Download started",
     "shareRetry": "Files ready: tap Share again.",
     "shareUnsupported": "This device cannot share files: use Download.",
-    "by": "By {{name}}"
+    "by": "By {{name}}",
+    "onlyMedia": "Only photos and videos can be added."
   },
   "generation": {
     "title": {
