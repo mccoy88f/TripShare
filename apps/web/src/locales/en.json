@@ -804,7 +804,8 @@
     "chart": "Budget and spending by category",
     "chartHint": "Inner ring: budget · outer ring: spent",
     "noBudget": "no budget",
-    "notSpent": "not spent yet"
+    "notSpent": "not spent yet",
+    "vsPlanned": "vs planned"
   },
   "packing": {
     "progress": "{{done}} of {{total}} ready",

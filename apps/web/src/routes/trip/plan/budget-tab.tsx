@@ -80,29 +80,44 @@ export function BudgetTab({ trip }: { trip: TripDetail }) {
     }
   };
 
-  const stat = (label: string, value: number, tone?: 'good' | 'bad') => (
+  const stat = (
+    label: string,
+    value: number,
+    sub?: { text: string; tone?: 'good' | 'bad' | 'muted' },
+  ) => (
     <Card className="p-4">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p
-        className={cn(
-          'tabular mt-1 text-xl font-bold',
-          tone === 'good' && 'text-success',
-          tone === 'bad' && 'text-destructive',
-        )}
-      >
-        {money(value, trip.currency)}
-      </p>
+      <p className={cn('tabular mt-1 text-xl font-bold')}>{money(value, trip.currency)}</p>
+      {sub && (
+        <p
+          className={cn(
+            'tabular mt-0.5 text-xs font-medium',
+            sub.tone === 'good' && 'text-success',
+            sub.tone === 'bad' && 'text-destructive',
+            (!sub.tone || sub.tone === 'muted') && 'text-muted-foreground',
+          )}
+        >
+          {sub.text}
+        </p>
+      )}
     </Card>
   );
 
   return (
     <div className="grid grid-cols-1 gap-6 pb-8">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(9rem,1fr))]">
-        {stat(t('budget.planned'), summary.total)}
-        {stat(t('budget.perPerson'), Math.round(summary.total / travelers))}
-        {stat(t('budget.spent'), spent)}
+        {stat(t('budget.planned'), summary.total, {
+          text: `${t('budget.left')}: ${left < 0 ? '−' : ''}${money(Math.abs(left), trip.currency)}`,
+          tone: left >= 0 ? 'good' : 'bad',
+        })}
+        {stat(t('budget.spent'), spent, {
+          text: `${spent > summary.total ? '+' : '−'}${money(Math.abs(spent - summary.total), trip.currency)} ${t('budget.vsPlanned')}`,
+          tone: spent > summary.total ? 'bad' : 'good',
+        })}
+        {stat(t('budget.perPerson'), Math.round(summary.total / travelers), {
+          text: `${t('budget.spent')}: ${money(Math.round(spent / travelers), trip.currency)}`,
+        })}
         {toPay > 0 && stat(t('expense.toPay'), toPay)}
-        {stat(t('budget.left'), left, left >= 0 ? 'good' : 'bad')}
       </div>
 
       {summary.missingRates.length > 0 && (

@@ -804,7 +804,8 @@
     "chart": "Budget e spese per categoria",
     "chartHint": "Anello interno: budget · anello esterno: speso",
     "noBudget": "senza budget",
-    "notSpent": "non ancora speso"
+    "notSpent": "non ancora speso",
+    "vsPlanned": "rispetto al previsto"
   },
   "packing": {
     "progress": "{{done}} di {{total}} pronti",
