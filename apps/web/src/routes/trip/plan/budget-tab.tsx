@@ -80,6 +80,9 @@ export function BudgetTab({ trip }: { trip: TripDetail }) {
     }
   };
 
+  const plannedPp = Math.round(summary.total / travelers);
+  const spentPp = Math.round(spent / travelers);
+
   const stat = (
     label: string,
     value: number,
@@ -114,9 +117,37 @@ export function BudgetTab({ trip }: { trip: TripDetail }) {
           text: `${spent > summary.total ? '+' : '−'}${money(Math.abs(spent - summary.total), trip.currency)} ${t('budget.vsPlanned')}`,
           tone: spent > summary.total ? 'bad' : 'good',
         })}
-        {stat(t('budget.perPerson'), Math.round(summary.total / travelers), {
-          text: `${t('budget.spent')}: ${money(Math.round(spent / travelers), trip.currency)}`,
-        })}
+        <Card className="col-span-2 p-4 sm:col-span-full">
+          <p className="text-xs font-medium text-muted-foreground">{t('budget.perPerson')}</p>
+          <div className="mt-1 grid grid-cols-2 gap-3">
+            <div>
+              <p className="tabular text-xl font-bold">{money(plannedPp, trip.currency)}</p>
+              <p className="text-xs text-muted-foreground">{t('budget.planned')}</p>
+              <p
+                className={cn(
+                  'tabular mt-0.5 text-xs font-medium',
+                  plannedPp - spentPp >= 0 ? 'text-success' : 'text-destructive',
+                )}
+              >
+                {t('budget.left')}: {plannedPp - spentPp < 0 ? '−' : ''}
+                {money(Math.abs(plannedPp - spentPp), trip.currency)}
+              </p>
+            </div>
+            <div>
+              <p className="tabular text-xl font-bold">{money(spentPp, trip.currency)}</p>
+              <p className="text-xs text-muted-foreground">{t('budget.spent')}</p>
+              <p
+                className={cn(
+                  'tabular mt-0.5 text-xs font-medium',
+                  spentPp > plannedPp ? 'text-destructive' : 'text-success',
+                )}
+              >
+                {spentPp > plannedPp ? '+' : '−'}
+                {money(Math.abs(spentPp - plannedPp), trip.currency)} {t('budget.vsPlanned')}
+              </p>
+            </div>
+          </div>
+        </Card>
         {toPay > 0 && stat(t('expense.toPay'), toPay)}
       </div>
 
